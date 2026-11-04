@@ -21,6 +21,11 @@ return [
     'default_for_reranking' => 'cohere',
     'default_for_classification' => 'typesafe',
 
+    'inventory' => [
+        'provider' => env('INVENTORY_AI_PROVIDER', 'anthropic'),
+        'model' => env('INVENTORY_AI_MODEL'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Caching
