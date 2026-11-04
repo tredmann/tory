@@ -20,6 +20,8 @@ docker compose exec app php artisan test            # Pest
 docker compose exec app ./vendor/bin/pint            # formatter
 docker compose exec app ./vendor/bin/phpstan analyse # Larastan
 docker compose exec app php artisan make:filament-user --name=Admin --email=admin@example.com --password=secret
+# CLI-created users are unverified; mark one verified with:
+docker compose exec app php artisan tinker --execute='App\Models\User::firstWhere("email", "admin@example.com")->markEmailAsVerified();'
 docker compose exec vite npm <command>
 docker compose exec db psql -U tory -d tory
 ```
@@ -32,7 +34,7 @@ Supervised processes: `docker compose exec app supervisorctl status` (frankenphp
 - Auth is Filament's: login, registration, password reset, email verification and profile are enabled on the panel. `App\Models\User` implements `FilamentUser` (every user may access the panel) and `MustVerifyEmail`.
 - Filament assets are generated (`public/{css,js,fonts}/filament`, gitignored). `composer dump-autoload` runs `filament:upgrade`; run `php artisan filament:assets` after a manual Filament upgrade.
 - Styling: Filament's precompiled theme. `resources/css/app.css` is a plain Tailwind 4 entry that nothing loads yet; add a custom theme with `php artisan make:filament-theme admin` when needed.
-- Livewire 4 single-file components without the ⚡ emoji prefix (`config/livewire.php`) for any non-Filament components.
+- Build UI as Filament pages, resources and widgets. There is no app-level Blade layout: `config/livewire.php` still carries Livewire's default `layouts::`/`pages::` namespaces and `component_layout => 'layouts::app'`, but those directories do not exist, so a `Route::livewire()` full-page component would fail until you create a layout (`php artisan livewire:layout`). Livewire's `make_command.emoji` is off, so generated component files have no ⚡ prefix.
 - AI: `laravel/ai` with Anthropic as the default provider (`config/ai.php`). Agents live in `app/Ai/Agents/` (`Assistant`); there is no UI for it yet. Set `ANTHROPIC_API_KEY` in `.env`. In tests use `Assistant::fake()` / `Assistant::assertPrompted()`.
 - Mail uses the `log` driver in development; verification and reset links are in `storage/logs/laravel.log`.
 - Tests use Pest with an in-memory SQLite database (`phpunit.xml`); `RefreshDatabase` is applied to every Feature test in `tests/Pest.php`. Panel pages are tested with `Livewire::test(PageClass::class)->fillForm([...])->call('action')`.

@@ -31,6 +31,12 @@ Register at http://localhost:8000/register, or create one from the CLI:
 docker compose exec app php artisan make:filament-user --name=Admin --email=admin@example.com --password=secret
 ```
 
+Users created from the CLI are not email-verified, and the panel requires verification. Either follow the verification link that is written to `storage/logs/laravel.log` on first login, or mark the user verified directly:
+
+```sh
+docker compose exec app php artisan tinker --execute='App\Models\User::firstWhere("email", "admin@example.com")->markEmailAsVerified();'
+```
+
 ## AI
 
 `laravel/ai` is installed with Anthropic as the default provider (`config/ai.php`). Set `ANTHROPIC_API_KEY` in `.env`. The `App\Ai\Agents\Assistant` agent exists but has no UI yet.
