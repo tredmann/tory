@@ -44,3 +44,15 @@ test('instructions are German and forbid inventing details', function () {
 
     expect($instructions)->toContain('Deutsch')->toContain('sichtbar');
 });
+
+test('an empty model env value falls back to the provider default', function () {
+    config(['ai.inventory.model' => '']);
+
+    expect((new InventoryExtractor)->model())->toBeNull();
+});
+
+test('an empty provider env value falls back to anthropic', function () {
+    config(['ai.inventory.provider' => '']);
+
+    expect((new InventoryExtractor)->provider())->toBe('anthropic');
+});

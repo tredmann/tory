@@ -44,6 +44,8 @@ class ExtractItem extends Page
                 FileUpload::make('photos')
                     ->label('Fotos')
                     ->image()
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+                    ->validationMessages(['mimetypes' => 'Nur JPEG-, PNG-, WebP- oder GIF-Bilder sind erlaubt.'])
                     ->multiple()
                     ->required()
                     ->minFiles(1)
@@ -78,14 +80,20 @@ class ExtractItem extends Page
                 ->prompt('Analysiere die Fotos und liefere Titel und Beschreibung.', $attachments)
                 ->toArray();
 
-            if (! filled($result['title'] ?? null) || ! filled($result['description'] ?? null)) {
+            $title = $result['title'] ?? null;
+            $description = $result['description'] ?? null;
+
+            if (! is_string($title) || trim($title) === '' || ! is_string($description) || trim($description) === '') {
                 throw new RuntimeException('Das Modell hat keine vollständige Antwort geliefert.');
             }
 
-            $this->extractedTitle = $result['title'];
-            $this->extractedDescription = $result['description'];
+            $this->extractedTitle = $title;
+            $this->extractedDescription = $description;
         } catch (Throwable $e) {
             report($e);
+
+            $this->extractedTitle = null;
+            $this->extractedDescription = null;
 
             Notification::make()
                 ->title('Analyse fehlgeschlagen')

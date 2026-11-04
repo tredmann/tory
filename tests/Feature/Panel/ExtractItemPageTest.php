@@ -102,3 +102,26 @@ test('treats an incomplete structured answer as a failure', function () {
         ->assertNotified('Analyse fehlgeschlagen')
         ->assertSet('extractedTitle', null);
 });
+
+test('treats a non-string description as a failure without leaving a partial result', function () {
+    Exceptions::fake();
+    InventoryExtractor::fake([['title' => 'X', 'description' => ['a', 'b']]]);
+
+    Livewire::test(ExtractItem::class)
+        ->fillForm(['photos' => [UploadedFile::fake()->image('front.jpg')]])
+        ->call('analyze')
+        ->assertNotified('Analyse fehlgeschlagen')
+        ->assertSet('extractedTitle', null)
+        ->assertSet('extractedDescription', null);
+});
+
+test('rejects image formats the provider cannot read', function () {
+    InventoryExtractor::fake();
+
+    Livewire::test(ExtractItem::class)
+        ->fillForm(['photos' => [UploadedFile::fake()->create('photo.heic', 10, 'image/heic')]])
+        ->call('analyze')
+        ->assertHasFormErrors(['photos']);
+
+    InventoryExtractor::assertNeverPrompted();
+});

@@ -45,12 +45,12 @@ final class InventoryExtractor implements Agent, HasStructuredOutput
 
     public function provider(): string
     {
-        return config('ai.inventory.provider');
+        return config('ai.inventory.provider') ?: 'anthropic';
     }
 
     public function model(): ?string
     {
-        return config('ai.inventory.model');
+        return config('ai.inventory.model') ?: null;
     }
 
     public function timeout(): int
