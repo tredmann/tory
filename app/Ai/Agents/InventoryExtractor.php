@@ -25,6 +25,8 @@ final class InventoryExtractor implements Agent, HasStructuredOutput
         Nenne Farbe, Material, Anschlüsse, Größenhinweise sowie sichtbaren Zustand und Beschädigungen.
 
         Schreibe alles auf Deutsch. Liefere einen knappen `title` aus wenigen Worten und eine `description` aus einigen sachlichen Sätzen oder einer kompakten Merkmalsliste, ohne Werbesprache.
+
+        Antworte nur mit dem reinen JSON-Objekt. Beginne direkt mit `{` und ende mit `}`, ohne vorangestelltes Wort wie "json", ohne Codeblock und ohne doppelte Klammern.
         TXT;
     }
 

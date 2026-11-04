@@ -41,6 +41,14 @@ docker compose exec app php artisan tinker --execute='App\Models\User::firstWher
 
 `laravel/ai` is installed with Anthropic as the default provider (`config/ai.php`). Set `ANTHROPIC_API_KEY` in `.env`. The `App\Ai\Agents\Assistant` agent exists but has no UI yet.
 
+The "Erfassen" page (`/erfassen`) turns photos into a German title and description via `App\Ai\Agents\InventoryExtractor`. Its provider and model are set separately; locally it runs on Ollama with `gemma4:e4b-mlx`, reached from the container via `host.docker.internal`:
+
+```dotenv
+INVENTORY_AI_PROVIDER=ollama
+INVENTORY_AI_MODEL=gemma4:e4b-mlx
+OLLAMA_URL=http://host.docker.internal:11434
+```
+
 ## Everyday commands
 
 ```sh
