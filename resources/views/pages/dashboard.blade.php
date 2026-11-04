@@ -16,4 +16,6 @@ new #[Title('Dashboard')] class extends Component
             <p class="text-base-content/70">{{ __('You are signed in to :app.', ['app' => config('app.name')]) }}</p>
         </div>
     </div>
+
+    <livewire:assistant />
 </div>
