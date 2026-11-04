@@ -13,6 +13,7 @@ services:
     environment:
       SERVER_NAME: ":80"
       AUTO_MIGRATE: "true"
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -28,10 +29,13 @@ services:
     volumes:
       - db_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tory -d tory"]
+      # -h forces TCP: the image's init phase runs a socket-only temporary
+      # server that would otherwise satisfy a socket-based pg_isready.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U tory -d tory"]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 10s
 
   vite:
     image: node:22-alpine

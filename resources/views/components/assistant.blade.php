@@ -23,7 +23,11 @@ new class extends Component
         try {
             $this->answer = (string) Assistant::make()->prompt($this->prompt);
         } catch (\Throwable $e) {
-            $this->error = $e->getMessage();
+            report($e);
+
+            $this->error = app()->hasDebugModeEnabled()
+                ? $e->getMessage()
+                : __('The assistant is unavailable right now. Please try again later.');
         }
     }
 };
