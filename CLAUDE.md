@@ -1,10 +1,10 @@
 # Tory
 
-Laravel 13 + Livewire 4 + daisyUI application running on FrankenPHP (PHP 8.5) with Postgres 18, developed entirely in Docker.
+Laravel 13 + Filament 5 application running on FrankenPHP (PHP 8.5) with Postgres 18, developed entirely in Docker. The Filament panel is the whole app and is served at `/`.
 
 ## Running the app
 
-- `docker compose up -d` starts three services: `app` (FrankenPHP + queue + scheduler under supervisord, http://localhost:8000), `db` (Postgres 18, port 5432), `vite` (Vite dev server, http://localhost:5173).
+- `docker compose up -d` starts three services: `app` (FrankenPHP + queue + scheduler under supervisord, http://localhost:8000), `db` (Postgres 18, port 5432), `vite` (Vite dev server, http://localhost:5173; idle until a custom Filament theme exists).
 - The project directory is bind-mounted into `app` and `vite` at `/app`. Edit files on the host; no rebuild needed.
 - The app entrypoint (`docker/entrypoint.sh`) creates `.env`, generates `APP_KEY`, runs `composer install` when `vendor/` is missing, and runs migrations when `AUTO_MIGRATE=true` (set in `compose.yaml`).
 - Rebuild the image after changing `docker/`: `docker compose build app`.
@@ -19,6 +19,7 @@ docker compose exec app composer <command>
 docker compose exec app php artisan test            # Pest
 docker compose exec app ./vendor/bin/pint            # formatter
 docker compose exec app ./vendor/bin/phpstan analyse # Larastan
+docker compose exec app php artisan make:filament-user --name=Admin --email=admin@example.com --password=secret
 docker compose exec vite npm <command>
 docker compose exec db psql -U tory -d tory
 ```
@@ -27,16 +28,15 @@ Supervised processes: `docker compose exec app supervisorctl status` (frankenphp
 
 ## Conventions
 
-- Livewire 4 single-file components without the ⚡ emoji prefix (`config/livewire.php`). Pages live in `resources/views/pages/` and are routed with `Route::livewire()`; shared components live in `resources/views/components/`.
-- Layouts: `layouts::app` (authenticated shell with navbar) and `layouts::guest` (centered card for auth pages).
-- Styling is Tailwind 4 + daisyUI 5 (`resources/css/app.css`). Prefer daisyUI component classes over custom CSS.
-- Auth is Laravel Fortify (headless). Auth screens are plain Blade forms in `resources/views/auth/` posting to Fortify routes; the view callbacks are registered in `app/Providers/FortifyServiceProvider.php`.
-- AI: `laravel/ai` with Anthropic as the default provider (`config/ai.php`). Agents live in `app/Ai/Agents/`. Set `ANTHROPIC_API_KEY` in `.env`. In tests use `Assistant::fake()` / `Assistant::assertPrompted()`.
+- The panel is configured in `app/Providers/Filament/AdminPanelProvider.php` (id `admin`, path `''`). Resources, pages and widgets live under `app/Filament/` and are auto-discovered. `routes/web.php` must never define `/`.
+- Auth is Filament's: login, registration, password reset, email verification and profile are enabled on the panel. `App\Models\User` implements `FilamentUser` (every user may access the panel) and `MustVerifyEmail`.
+- Filament assets are generated (`public/{css,js,fonts}/filament`, gitignored). `composer dump-autoload` runs `filament:upgrade`; run `php artisan filament:assets` after a manual Filament upgrade.
+- Styling: Filament's precompiled theme. `resources/css/app.css` is a plain Tailwind 4 entry that nothing loads yet; add a custom theme with `php artisan make:filament-theme admin` when needed.
+- Livewire 4 single-file components without the ⚡ emoji prefix (`config/livewire.php`) for any non-Filament components.
+- AI: `laravel/ai` with Anthropic as the default provider (`config/ai.php`). Agents live in `app/Ai/Agents/` (`Assistant`); there is no UI for it yet. Set `ANTHROPIC_API_KEY` in `.env`. In tests use `Assistant::fake()` / `Assistant::assertPrompted()`.
 - Mail uses the `log` driver in development; verification and reset links are in `storage/logs/laravel.log`.
-- Tests use Pest with an in-memory SQLite database (`phpunit.xml`); `RefreshDatabase` is applied to every Feature test in `tests/Pest.php`.
+- Tests use Pest with an in-memory SQLite database (`phpunit.xml`); `RefreshDatabase` is applied to every Feature test in `tests/Pest.php`. Panel pages are tested with `Livewire::test(PageClass::class)->fillForm([...])->call('action')`.
 - Write a failing test before production code. Run Pint and PHPStan before committing.
-
-===
 
 <laravel-boost-guidelines>
 === foundation rules ===

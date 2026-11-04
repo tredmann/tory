@@ -1,6 +1,8 @@
 # Tory
 
-Laravel 13 · Livewire 4 · Tailwind 4 + daisyUI 5 · Laravel AI SDK · Laravel Fortify · FrankenPHP (PHP 8.5) · Postgres 18
+Laravel 13 · Filament 5 · Livewire 4 · Laravel AI SDK · FrankenPHP (PHP 8.5) · Postgres 18
+
+The Filament panel is the whole app and answers at `/`.
 
 Development happens entirely in Docker. You only need Docker Desktop (or compatible) on the host.
 
@@ -21,9 +23,17 @@ On first start the `app` container copies `.env.example` to `.env`, generates `A
 
 Mail uses the `log` driver: verification and password-reset links appear in `storage/logs/laravel.log`.
 
-## AI assistant
+## Create a user
 
-Set `ANTHROPIC_API_KEY` in `.env` (Anthropic is the default provider in `config/ai.php`; `OPENAI_API_KEY` works too if you switch the default). The dashboard has an assistant backed by `app/Ai/Agents/Assistant.php`.
+Register at http://localhost:8000/register, or create one from the CLI:
+
+```sh
+docker compose exec app php artisan make:filament-user --name=Admin --email=admin@example.com --password=secret
+```
+
+## AI
+
+`laravel/ai` is installed with Anthropic as the default provider (`config/ai.php`). Set `ANTHROPIC_API_KEY` in `.env`. The `App\Ai\Agents\Assistant` agent exists but has no UI yet.
 
 ## Everyday commands
 
@@ -43,7 +53,7 @@ Smoke-test the queue worker: `docker compose exec app php artisan tinker --execu
 
 ## Laravel Boost
 
-`.mcp.json` runs the Boost MCP server inside the container (`docker compose exec -T app php artisan boost:mcp`), so Claude Code picks it up from the project root with no host PHP. Guidelines live in `CLAUDE.md`, skills in `.claude/skills`. Refresh them with `docker compose exec app php artisan boost:update`.
+`.mcp.json` runs the Boost MCP server inside the container (`docker compose exec -T app php artisan boost:mcp`), so Claude Code picks it up from the project root with no host PHP. Guidelines live in `CLAUDE.md`, skills in `.claude/skills`. Refresh them with `docker compose exec app php artisan boost:install --guidelines --skills --mcp` (then `git checkout .mcp.json`, since Boost rewrites it for host PHP).
 
 ## Production image
 
