@@ -100,6 +100,8 @@ class ExtractItem extends Page
                     report($e);
                 }
             }
+
+            $this->form->fill();
         }
     }
 }

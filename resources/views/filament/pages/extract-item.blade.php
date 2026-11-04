@@ -9,7 +9,7 @@
     </form>
 
     @if ($this->extractedTitle !== null)
-        <x-filament::section heading="{{ $this->extractedTitle }}">
+        <x-filament::section :heading="$this->extractedTitle">
             <p class="whitespace-pre-line">{{ $this->extractedDescription }}</p>
         </x-filament::section>
     @endif

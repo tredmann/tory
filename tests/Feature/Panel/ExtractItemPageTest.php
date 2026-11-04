@@ -13,6 +13,13 @@ test('the page is reachable for verified users', function () {
     $this->get('/erfassen')->assertOk()->assertSee('Erfassen');
 });
 
+test('unverified users are redirected to the verification prompt', function () {
+    auth()->logout();
+    $this->actingAs(User::factory()->unverified()->create());
+
+    $this->get('/erfassen')->assertRedirect('/email-verification/prompt');
+});
+
 test('guests are redirected to login', function () {
     auth()->logout();
 
@@ -56,15 +63,16 @@ test('rejects more than six images', function () {
 
 test('shows the extracted title and description for the uploaded images', function () {
     InventoryExtractor::fake([
-        ['title' => 'Raspberry Pi 4 Model B', 'description' => 'Grüne Platine, vier USB-Anschlüsse, Aufdruck "Raspberry Pi 4 Model B".'],
+        ['title' => 'Hammer & Meißel "Profi"', 'description' => 'Grüne Platine, vier USB-Anschlüsse, Aufdruck "Raspberry Pi 4 Model B".'],
     ]);
 
     Livewire::test(ExtractItem::class)
         ->fillForm(['photos' => [UploadedFile::fake()->image('front.jpg'), UploadedFile::fake()->image('back.jpg')]])
         ->call('analyze')
         ->assertHasNoFormErrors()
-        ->assertSet('extractedTitle', 'Raspberry Pi 4 Model B')
-        ->assertSee('Raspberry Pi 4 Model B')
+        ->assertSet('extractedTitle', 'Hammer & Meißel "Profi"')
+        ->assertSee('Hammer & Meißel "Profi"')
+        ->assertSet('data.photos', [])
         ->assertSee('Aufdruck "Raspberry Pi 4 Model B"');
 
     InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->attachments->count() === 2);
@@ -79,7 +87,8 @@ test('shows an error notification when the agent throws', function () {
         ->call('analyze')
         ->assertNotified('Analyse fehlgeschlagen')
         ->assertSet('extractedTitle', null)
-        ->assertSet('extractedDescription', null);
+        ->assertSet('extractedDescription', null)
+        ->assertSet('data.photos', []);
 
     Exceptions::assertReported(fn (RuntimeException $e) => $e->getMessage() === 'Connection refused');
 });
