@@ -24,7 +24,7 @@ class Import extends Model
     ];
 
     /**
-     * @return array<string, string>
+     * @return array{status: 'App\\Enums\\ImportStatus', photos: 'array'}
      */
     protected function casts(): array
     {
