@@ -1,0 +1,40 @@
+<?php
+
+use App\Enums\ImportStatus;
+use App\Models\Import;
+use App\Models\User;
+
+test('status labels and colours', function () {
+    expect(ImportStatus::Pending->getLabel())->toBe('Wartet')
+        ->and(ImportStatus::Running->getLabel())->toBe('Läuft')
+        ->and(ImportStatus::Completed->getLabel())->toBe('Fertig')
+        ->and(ImportStatus::Failed->getLabel())->toBe('Fehlgeschlagen')
+        ->and(ImportStatus::Pending->getColor())->toBe('gray')
+        ->and(ImportStatus::Running->getColor())->toBe('warning')
+        ->and(ImportStatus::Completed->getColor())->toBe('success')
+        ->and(ImportStatus::Failed->getColor())->toBe('danger');
+});
+
+test('pending and running are active, completed and failed are not', function () {
+    expect(ImportStatus::Pending->isActive())->toBeTrue()
+        ->and(ImportStatus::Running->isActive())->toBeTrue()
+        ->and(ImportStatus::Completed->isActive())->toBeFalse()
+        ->and(ImportStatus::Failed->isActive())->toBeFalse();
+});
+
+test('an import casts its status and photos and belongs to a user', function () {
+    $import = Import::factory()->failed()->create();
+
+    expect($import->fresh()->status)->toBe(ImportStatus::Failed)
+        ->and($import->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg'])
+        ->and($import->fresh()->error)->toBe('Connection refused')
+        ->and($import->user)->toBeInstanceOf(User::class);
+});
+
+test('factory states set the matching status', function () {
+    expect(Import::factory()->create()->status)->toBe(ImportStatus::Pending)
+        ->and(Import::factory()->running()->create()->status)->toBe(ImportStatus::Running)
+        ->and(Import::factory()->completed()->create())
+        ->status->toBe(ImportStatus::Completed)
+        ->title->toBe('Raspberry Pi 4');
+});
