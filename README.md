@@ -77,4 +77,4 @@ Smoke-test the queue worker: `docker compose exec app php artisan tinker --execu
 docker build -f docker/Dockerfile --target prod -t tory:prod .
 ```
 
-Provide a real `.env` (or environment variables) and set `AUTO_MIGRATE=true` if you want migrations to run on start.
+Provide a real `.env` (or environment variables) and set `AUTO_MIGRATE=true` if you want migrations to run on start. Keep `DB_QUEUE_RETRY_AFTER` above the import job timeout (200 seconds; the default is 300), otherwise a second worker can re-run a running extraction.

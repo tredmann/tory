@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       target: dev
+    stop_grace_period: 4m
     ports:
       - "8000:80"
     volumes:

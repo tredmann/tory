@@ -7,6 +7,7 @@ use App\Filament\Resources\Imports\ImportResource;
 use App\Jobs\ExtractImport;
 use App\Models\Import;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Validation\ValidationException;
 
 class CreateImport extends CreateRecord
 {
@@ -20,6 +21,12 @@ class CreateImport extends CreateRecord
      */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        foreach ($data['photos'] ?? [] as $path) {
+            if (! is_string($path) || ! str_starts_with($path, 'imports/')) {
+                throw ValidationException::withMessages(['data.photos' => 'Ungültiger Foto-Pfad.']);
+            }
+        }
+
         $data['user_id'] = auth()->id();
         $data['status'] = ImportStatus::Pending;
 

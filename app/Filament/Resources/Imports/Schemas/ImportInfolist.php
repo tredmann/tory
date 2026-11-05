@@ -31,6 +31,7 @@ class ImportInfolist
                             ->visible(fn (Import $record): bool => filled($record->title)),
                         TextEntry::make('description')
                             ->label('Beschreibung')
+                            ->extraAttributes(['style' => 'white-space: pre-line'])
                             ->visible(fn (Import $record): bool => filled($record->description)),
                         TextEntry::make('error')
                             ->label('Fehler')

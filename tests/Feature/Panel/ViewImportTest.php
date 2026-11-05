@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use PHPUnit\Framework\ExpectationFailedException;
 
 beforeEach(function () {
     Storage::fake('local');
@@ -96,4 +97,33 @@ test('retry is hidden for running imports', function () {
     $import = Import::factory()->running()->create();
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])->assertActionHidden('retry');
+});
+
+test('retry cannot be forced on a completed import', function () {
+    $import = Import::factory()->completed()->create();
+
+    $page = Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()]);
+
+    expect(fn () => $page->callAction('retry'))->toThrow(ExpectationFailedException::class);
+    expect($import->fresh()->status)->toBe(ImportStatus::Completed);
+    Queue::assertNothingPushed();
+});
+
+test('retry cannot be forced on a pending import', function () {
+    $import = Import::factory()->create();
+
+    $page = Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()]);
+
+    expect(fn () => $page->callAction('retry'))->toThrow(ExpectationFailedException::class);
+    expect($import->fresh()->status)->toBe(ImportStatus::Pending);
+    Queue::assertNothingPushed();
+});
+
+test('multi-line descriptions keep their line breaks', function () {
+    $import = Import::factory()->completed()->create(['description' => "Zeile eins\nZeile zwei"]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertSee('Zeile eins')
+        ->assertSee('Zeile zwei')
+        ->assertSeeHtml('white-space: pre-line');
 });

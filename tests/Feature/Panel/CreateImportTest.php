@@ -94,3 +94,13 @@ test('a valid upload stores the photos, creates a pending import, dispatches the
 test('the old synchronous page is gone', function () {
     $this->get('/erfassen')->assertNotFound();
 });
+
+test('rejects photo paths outside the imports directory', function () {
+    Livewire::test(CreateImport::class)
+        ->fillForm(['photos' => ['livewire-tmp/secret.jpg']])
+        ->call('create')
+        ->assertHasFormErrors(['photos']);
+
+    expect(Import::count())->toBe(0);
+    Queue::assertNothingPushed();
+});

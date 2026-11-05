@@ -92,3 +92,9 @@ test('a missing photo file fails instead of prompting', function () {
     expect(fn () => (new ExtractImport($import))->handle())->toThrow(RuntimeException::class, 'Foto imports/missing.jpg wurde nicht gefunden.');
     InventoryExtractor::assertNeverPrompted();
 });
+
+test('the database queue retry_after exceeds the job timeout', function () {
+    $job = new ExtractImport(Import::factory()->create());
+
+    expect(config('queue.connections.database.retry_after'))->toBeGreaterThan($job->timeout);
+});
