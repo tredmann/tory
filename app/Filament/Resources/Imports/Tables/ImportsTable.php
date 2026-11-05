@@ -2,10 +2,10 @@
 
 namespace App\Filament\Resources\Imports\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
+use App\Filament\Resources\Imports\ImportResource;
+use App\Models\Import;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 class ImportsTable
@@ -14,19 +14,24 @@ class ImportsTable
     {
         return $table
             ->columns([
-                //
+                ImageColumn::make('photos')
+                    ->label('Foto')
+                    ->disk('local')
+                    ->visibility('private')
+                    ->limit(1),
+                TextColumn::make('title')
+                    ->label('Titel')
+                    ->placeholder('—'),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->badge(),
+                TextColumn::make('created_at')
+                    ->label('Angelegt')
+                    ->dateTime()
+                    ->sortable(),
             ])
-            ->filters([
-                //
-            ])
-            ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->defaultSort('created_at', 'desc')
+            ->recordUrl(fn (Import $record): string => ImportResource::getUrl('view', ['record' => $record]))
+            ->poll('10s');
     }
 }
