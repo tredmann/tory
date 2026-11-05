@@ -13,6 +13,7 @@ services:
     environment:
       SERVER_NAME: ":80"
       AUTO_MIGRATE: "true"
+      DB_QUEUE_RETRY_AFTER: "300"
     restart: unless-stopped
     depends_on:
       db:
