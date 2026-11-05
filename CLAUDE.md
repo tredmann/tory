@@ -1,13 +1,17 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Tory
 
-Laravel 13 + Filament 5 application running on FrankenPHP (PHP 8.5) with Postgres 18, developed entirely in Docker. The Filament panel is the whole app and is served at `/`.
+Laravel 13 + Filament 5 inventory app running on FrankenPHP (PHP 8.5) with Postgres 18, developed entirely in Docker. The Filament panel is the whole app and is served at `/`. Feature design docs and implementation plans live in `docs/superpowers/specs/` and `docs/superpowers/plans/` (one pair per feature, dated).
 
 ## Running the app
 
-- `docker compose up -d` starts three services: `app` (FrankenPHP + queue + scheduler under supervisord, http://localhost:8000), `db` (Postgres 18, port 5432), `vite` (Vite dev server, http://localhost:5173; idle until a custom Filament theme exists).
+- `docker compose up -d` starts three services: `app` (FrankenPHP + queue worker + scheduler under supervisord, http://localhost:8000), `db` (Postgres 18, port 5432), `vite` (Vite dev server, http://localhost:5173; idle until a custom Filament theme exists).
 - The project directory is bind-mounted into `app` and `vite` at `/app`. Edit files on the host; no rebuild needed.
 - The app entrypoint (`docker/entrypoint.sh`) creates `.env`, generates `APP_KEY`, runs `composer install` when `vendor/` is missing, and runs migrations when `AUTO_MIGRATE=true` (set in `compose.yaml`).
-- Rebuild the image after changing `docker/`: `docker compose build app`.
+- Rebuild the image after changing `docker/` (`docker compose build app && docker compose up -d app`); recreate the container after changing `compose.yaml` (`docker compose up -d app`). The `app` service has a 4-minute stop grace period so a running extraction job can finish; a hard kill leaves an import on "Läuft" until the queue's `retry_after` (300 s) fails it.
 
 ## Running commands
 
@@ -16,30 +20,43 @@ Everything PHP runs inside the `app` container; everything npm runs inside the `
 ```sh
 docker compose exec app php artisan <command>
 docker compose exec app composer <command>
-docker compose exec app php artisan test            # Pest
-docker compose exec app ./vendor/bin/pint            # formatter
+docker compose exec app php artisan test --compact                                  # whole Pest suite
+docker compose exec app php artisan test --compact tests/Feature/Panel/ViewImportTest.php          # one file
+docker compose exec app php artisan test --compact tests/Feature/Panel/ViewImportTest.php --filter=retry  # one test
+docker compose exec app ./vendor/bin/pint --dirty    # formatter (changed files)
 docker compose exec app ./vendor/bin/phpstan analyse # Larastan
 docker compose exec app php artisan make:filament-user --name=Admin --email=admin@example.com --password=secret
 # CLI-created users are unverified; mark one verified with:
 docker compose exec app php artisan tinker --execute='App\Models\User::firstWhere("email", "admin@example.com")->markEmailAsVerified();'
+docker compose exec app php artisan queue:failed     # database queue; failed jobs land in failed_jobs
 docker compose exec vite npm <command>
 docker compose exec db psql -U tory -d tory
 ```
 
-Supervised processes: `docker compose exec app supervisorctl status` (frankenphp, queue, scheduler). Logs: `docker compose logs -f app`.
+Supervised processes: `docker compose exec app supervisorctl status` (frankenphp, queue, scheduler). Logs: `docker compose logs -f app`. Mail uses the `log` driver in development; verification and reset links are in `storage/logs/laravel.log`.
 
-## Conventions
+Generator quirk: `php artisan make:enum` writes to `app/`, not `app/Enums/`; move the file by hand.
 
-- The panel is configured in `app/Providers/Filament/AdminPanelProvider.php` (id `admin`, path `''`). Resources, pages and widgets live under `app/Filament/` and are auto-discovered. `routes/web.php` must never define `/`.
-- Auth is Filament's: login, registration, password reset, email verification and profile are enabled on the panel. `App\Models\User` implements `FilamentUser` (every user may access the panel) and `MustVerifyEmail`.
-- Filament assets are generated (`public/{css,js,fonts}/filament`, gitignored). `composer dump-autoload` runs `filament:upgrade`; run `php artisan filament:assets` after a manual Filament upgrade.
-- Styling: Filament's precompiled theme. `resources/css/app.css` is a plain Tailwind 4 entry that nothing loads yet; add a custom theme with `php artisan make:filament-theme admin` when needed.
-- Build UI as Filament pages, resources and widgets. There is no app-level Blade layout: `config/livewire.php` still carries Livewire's default `layouts::`/`pages::` namespaces and `component_layout => 'layouts::app'`, but those directories do not exist, so a `Route::livewire()` full-page component would fail until you create a layout (`php artisan livewire:layout`). Livewire's `make_command.emoji` is off, so generated component files have no ⚡ prefix.
-- AI: `laravel/ai` with Anthropic as the default provider (`config/ai.php`). Agents live in `app/Ai/Agents/` (`Assistant`); there is no UI for it yet. Set `ANTHROPIC_API_KEY` in `.env`. In tests use `Assistant::fake()` / `Assistant::assertPrompted()`.
-- Inventory extraction: photos are imported through the resource `app/Filament/Resources/Imports/` (`/importe`: list, create titled "Erfassen", view). `App\Models\Import` carries an `App\Enums\ImportStatus` (Pending/Running/Completed/Failed); uploads are stored on the private `local` disk under `imports/`. Creating an import queues `app/Jobs/ExtractImport.php` (1 try, 200 s timeout), which runs the structured-output agent `app/Ai/Agents/InventoryExtractor.php` and stores a German `title` and `description` on the import. `DB_QUEUE_RETRY_AFTER=300` must stay above the job timeout, and the supervisord queue worker runs with `--timeout=210`. The view page polls while the import is pending or running, offers a Retry action on failed imports, and shows the raw error text only when `app.debug` is on. Provider and model come from `INVENTORY_AI_PROVIDER` / `INVENTORY_AI_MODEL` (`config('ai.inventory.*')`); for local Ollama also set `OLLAMA_URL`. The instructions tell the model to answer with a bare JSON object because the local `gemma4:e4b-mlx` ignores Ollama's `format` schema and otherwise prefixes `json`, which fails decoding.
-- Mail uses the `log` driver in development; verification and reset links are in `storage/logs/laravel.log`.
-- Tests use Pest with an in-memory SQLite database (`phpunit.xml`); `RefreshDatabase` is applied to every Feature test in `tests/Pest.php`. Panel pages are tested with `Livewire::test(PageClass::class)->fillForm([...])->call('action')`.
+## Architecture
+
+- **Panel:** configured in `app/Providers/Filament/AdminPanelProvider.php` (id `admin`, path `''`). Everything under `app/Filament/` is auto-discovered. `routes/web.php` must never define `/`. Auth is Filament's (login, registration, password reset, email verification, profile); `App\Models\User` implements `FilamentUser` (every user may access the panel) and `MustVerifyEmail`. There is no policy layer: every verified user sees every record (single household).
+- **Resource layout:** a resource is a directory, e.g. `app/Filament/Resources/Imports/` with `ImportResource.php`, `Schemas/ImportForm.php` (create form), `Schemas/ImportInfolist.php` (view page), `Tables/ImportsTable.php` and `Pages/{List,Create,View}Import.php`. Status enums in `app/Enums/` implement Filament's `HasLabel`/`HasColor` so a `TextEntry`/`TextColumn` `->badge()` renders German labels and colours directly. UI copy is German.
+- **Import pipeline (the core feature):** "Importe" → "Erfassen" (`/importe/create`) uploads 1–6 photos to the private `local` disk under `imports/`, creates an `App\Models\Import` as `pending` and dispatches `app/Jobs/ExtractImport.php`. The job marks the import `running`, sends the photos to the structured-output agent `app/Ai/Agents/InventoryExtractor.php`, and stores a German `title` and `description` (or, via `failed()`, the `error`). The view page (`/importe/{id}`) polls with `wire:poll.5s` while the import is pending/running, has a Retry action on failed imports, and shows the raw error only when `app.debug` is on. Imports are not inventory items yet; editing and conversion come later.
+- **Queue timing invariant:** job `$tries = 1`, `$timeout = 200`; supervisord runs the worker with `--timeout=210` (dev uses `queue:listen`, which kills the child at its own timeout regardless of the job's); the database queue `retry_after` defaults to 300 (`DB_QUEUE_RETRY_AFTER`). Keep 200 < 210 < 300 when changing any of them. Dispatch happens inside Filament's create transaction.
+- **AI:** `laravel/ai` with Anthropic as the app default (`config/ai.php`, `ANTHROPIC_API_KEY`). The extractor reads its own provider/model from `config('ai.inventory.*')` (`INVENTORY_AI_PROVIDER`, `INVENTORY_AI_MODEL`); for local Ollama set `INVENTORY_AI_PROVIDER=ollama`, `INVENTORY_AI_MODEL=gemma4:e4b-mlx`, `OLLAMA_URL=http://host.docker.internal:11434`. The extractor's instructions ask for a bare JSON object because `gemma4` ignores Ollama's `format` schema and otherwise prefixes `json`, which fails decoding. `app/Ai/Agents/Assistant.php` is an unused stub.
+- **Assets/styling:** Filament's precompiled theme; generated assets in `public/{css,js,fonts}/filament` are gitignored and refreshed by `filament:upgrade` on `composer dump-autoload` (run `php artisan filament:assets` after a manual upgrade). `resources/css/app.css` is a Tailwind 4 entry nothing loads yet; add a theme with `php artisan make:filament-theme admin` when needed. No app-level Blade layout exists, so a `Route::livewire()` full-page component would fail until `php artisan livewire:layout` creates one. Livewire's `make_command.emoji` is off.
+
+## Testing conventions
+
+- Pest with an in-memory SQLite database (`phpunit.xml`); `RefreshDatabase` is applied to every Feature test in `tests/Pest.php`.
+- Panel pages: `Livewire::test(PageClass::class, ['record' => $id])->fillForm([...])->call('create')`, `->callAction('retry')`, `->assertActionHidden(...)`, `->assertCanSeeTableRecords([...], inOrder: true)`. Use `Storage::fake('local')` for uploads and `Queue::fake()` unless the job itself is under test.
+- AI agents: `InventoryExtractor::fake([['title' => ..., 'description' => ...]])`, `fake(fn () => throw ...)`, `assertPrompted(fn ($prompt) => $prompt->attachments->count() === 2)`; `Exceptions::fake()` to assert `report()`. No automated test talks to Ollama; a live check is `Import::create([...]) + ExtractImport::dispatch()` in tinker with a JPEG under `storage/app/private/imports/`.
 - Write a failing test before production code. Run Pint and PHPStan before committing.
+
+## Laravel Boost
+
+- Boost's MCP server must run inside Docker: `.mcp.json` uses `docker compose exec -T app php artisan boost:mcp`. `php artisan boost:install` overwrites it with a host command; restore with `git checkout .mcp.json`.
+- Third-party skills (e.g. `filament-development`) are only discovered when the package is listed under `packages` in `boost.json`; refresh guidelines and skills with `php artisan boost:update`. The `<laravel-boost-guidelines>` block below is managed by Boost; do not hand-edit it.
 
 <laravel-boost-guidelines>
 === foundation rules ===
