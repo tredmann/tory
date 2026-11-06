@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Jobs\EmbedItem;
+use App\Models\Concerns\RegeneratesTexts;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\AsVector;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * @property string $id
+ * @property list<string>|null $search_terms null on a model created in this request without the database default
  */
 #[Hidden(['embedding'])]
 class Item extends Model
@@ -22,6 +24,7 @@ class Item extends Model
     use HasFactory;
 
     use HasUuids;
+    use RegeneratesTexts;
 
     /** @var list<string> */
     protected $fillable = [
@@ -29,6 +32,7 @@ class Item extends Model
         'title',
         'description',
         'photos',
+        'search_terms',
     ];
 
     protected static function booted(): void
@@ -38,13 +42,13 @@ class Item extends Model
         });
 
         static::updating(function (Item $item): void {
-            if ($item->isDirty(['title', 'description'])) {
+            if ($item->isDirty(['title', 'description', 'search_terms'])) {
                 $item->embedding = null;
             }
         });
 
         static::updated(function (Item $item): void {
-            if ($item->wasChanged(['title', 'description'])) {
+            if ($item->wasChanged(['title', 'description', 'search_terms'])) {
                 EmbedItem::dispatch($item)->afterCommit();
             }
         });
@@ -55,12 +59,13 @@ class Item extends Model
     }
 
     /**
-     * @return array{photos: 'array', embedding: 'Illuminate\\Database\\Eloquent\\Casts\\AsVector'}
+     * @return array{photos: 'array', search_terms: 'array', embedding: 'Illuminate\\Database\\Eloquent\\Casts\\AsVector'}
      */
     protected function casts(): array
     {
         return [
             'photos' => 'array',
+            'search_terms' => 'array',
             'embedding' => AsVector::class,
         ];
     }

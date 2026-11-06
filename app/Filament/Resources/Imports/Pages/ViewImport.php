@@ -3,12 +3,14 @@
 namespace App\Filament\Resources\Imports\Pages;
 
 use App\Enums\ImportStatus;
+use App\Filament\Actions\RegenerateTextsAction;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Resources\StorageLocations\Schemas\StorageLocationSelect;
 use App\Jobs\ExtractImport;
 use App\Models\Import;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -38,6 +40,7 @@ class ViewImport extends ViewRecord
                         'failure_provider' => null,
                         'title' => null,
                         'description' => null,
+                        'search_terms' => [],
                     ]);
 
                     ExtractImport::dispatch($import);
@@ -47,12 +50,14 @@ class ViewImport extends ViewRecord
                         ->success()
                         ->send();
                 }),
+            RegenerateTextsAction::make(),
             Action::make('convert')
                 ->label('Übernehmen')
-                ->visible(fn (): bool => $this->isFinished())
+                ->visible(fn (): bool => $this->isFinished() && ! $this->import()->isRegenerating())
                 ->fillForm(fn (): array => [
                     'title' => $this->import()->title,
                     'description' => $this->import()->description,
+                    'search_terms' => $this->import()->search_terms ?? [],
                     'storage_location_id' => $this->import()->storage_location_id
                         ?? auth()->user()?->last_storage_location_id,
                 ])
@@ -63,12 +68,15 @@ class ViewImport extends ViewRecord
                         ->maxLength(255),
                     Textarea::make('description')
                         ->label('Beschreibung'),
+                    TagsInput::make('search_terms')
+                        ->label('Suchbegriffe')
+                        ->splitKeys(['Tab', ',']),
                     StorageLocationSelect::make(),
                 ])
                 ->action(function (array $data): void {
                     $locationId = (int) $data['storage_location_id'];
 
-                    $this->import()->convertToItem($data['title'], $data['description'] ?? null, $locationId);
+                    $this->import()->convertToItem($data['title'], $data['description'] ?? null, $locationId, $data['search_terms'] ?? []);
 
                     auth()->user()?->forceFill(['last_storage_location_id' => $locationId])->save();
 

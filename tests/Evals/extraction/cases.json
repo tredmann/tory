@@ -1,0 +1,37 @@
+[
+    {
+        "name": "RØDE Wireless GO",
+        "photos": ["photos/rode-1.jpg", "photos/rode-2.jpg", "photos/rode-3.jpg"],
+        "search_words": ["mikrofon", "rode"],
+        "title_words": ["Mikrofon"],
+        "forbidden_words": ["Verpackung", "Karton", "Gebrauchsspuren", "beschädigt"]
+    },
+    {
+        "name": "APC",
+        "photos": ["photos/apc.jpg"],
+        "search_words": ["apc", "usv", "strom", "steckdose"],
+        "title_words": ["USV"],
+        "forbidden_words": ["Netzteil", "Gehäuse"]
+    },
+    {
+        "name": "Raspberry Pi 5",
+        "photos": ["photos/raspberry-pi.jpg"],
+        "search_words": ["raspberry", "pi5"],
+        "title_words": ["Raspberry Pi 5"],
+        "forbidden_words": ["Platine"]
+    },
+    {
+        "name": "Pelikan 4001",
+        "photos": ["photos/pelikan.jpg"],
+        "search_words": ["patronen", "tinte"],
+        "title_words": ["Tintenpatronen"],
+        "forbidden_words": ["Verpackung", "Packung", "Best Quality"]
+    },
+    {
+        "name": "Soennecken 3155",
+        "photos": ["photos/soennecken-1.jpg", "photos/soennecken-2.jpg"],
+        "search_words": ["hefter", "tacker", "klammer"],
+        "title_words": ["Hefter"],
+        "forbidden_words": ["Metallklammer", "Gebrauchsspuren"]
+    }
+]

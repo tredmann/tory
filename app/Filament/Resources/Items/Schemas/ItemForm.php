@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Items\Schemas;
 
 use App\Filament\Resources\StorageLocations\Schemas\StorageLocationSelect;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -20,6 +21,9 @@ class ItemForm
                 Textarea::make('description')
                     ->label('Beschreibung')
                     ->rows(5),
+                TagsInput::make('search_terms')
+                    ->label('Suchbegriffe')
+                    ->splitKeys(['Tab', ',']),
                 StorageLocationSelect::make(),
             ]);
     }

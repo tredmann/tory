@@ -1,8 +1,10 @@
 <?php
 
 use App\Ai\Agents\InventoryExtractor;
+use App\Ai\ExtractedTexts;
 use App\Enums\AiVendor;
 use App\Models\AiProvider;
+use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Laravel\Ai\Files\Image;
 
 test('provider and model come from the inventory config', function () {
@@ -41,10 +43,20 @@ test('returns a structured title and description for the attached images', funct
     InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->attachments->count() === 2);
 });
 
-test('instructions are German and forbid inventing details', function () {
+test('instructions ask for German texts with search terms and forbid inventing details', function () {
     $instructions = (string) (new InventoryExtractor)->instructions();
 
-    expect($instructions)->toContain('Deutsch')->toContain('sichtbar');
+    expect($instructions)
+        ->toContain('Deutsch')
+        ->toContain('Erfinde')
+        ->toContain('search_terms')
+        ->not->toContain('sichtbaren Zustand');
+});
+
+test('the schema requires search terms', function () {
+    $schema = (new InventoryExtractor)->schema(new JsonSchemaTypeFactory);
+
+    expect($schema)->toHaveKeys(['title', 'description', 'search_terms']);
 });
 
 test('an empty model env value falls back to the provider default', function () {
@@ -86,3 +98,27 @@ test('extract rejects an incomplete answer', function () {
 
     InventoryExtractor::make()->extract([]);
 })->throws(RuntimeException::class, 'Das Modell hat keine vollständige Antwort geliefert.');
+
+test('extract returns a DTO with cleaned search terms', function () {
+    InventoryExtractor::fake([[
+        'title' => 'Hefter', 'description' => 'Roter Hefter.',
+        'search_terms' => [' Hefter ', 'hefter', 'Tacker', '', 42],
+    ]]);
+
+    $texts = InventoryExtractor::make()->extract([]);
+
+    expect($texts)->toBeInstanceOf(ExtractedTexts::class)
+        ->and($texts->title)->toBe('Hefter')
+        ->and($texts->description)->toBe('Roter Hefter.')
+        ->and($texts->searchTerms)->toBe(['Hefter', 'Tacker']);
+});
+
+test('extract tolerates missing or unusable search terms', function (array $extra) {
+    InventoryExtractor::fake([['title' => 'Hefter', 'description' => 'Roter Hefter.', ...$extra]]);
+
+    expect(InventoryExtractor::make()->extract([])->searchTerms)->toBe([]);
+})->with([
+    'missing key' => [[]],
+    'string' => [['search_terms' => 'Hefter, Tacker']],
+    'null' => [['search_terms' => null]],
+]);

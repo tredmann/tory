@@ -100,6 +100,14 @@ test('retry resets a failed import and dispatches the job again', function () {
     Queue::assertPushed(ExtractImport::class, 1);
 });
 
+test('retry clears the search terms', function () {
+    $import = Import::factory()->failed()->create(['search_terms' => ['Hefter']]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])->callAction('retry');
+
+    expect($import->fresh()->search_terms)->toBe([]);
+});
+
 test('retry is hidden for running imports', function () {
     $import = Import::factory()->running()->create();
 
@@ -171,6 +179,34 @@ test('convert is prefilled from the import', function () {
             'description' => 'Grüne Platine mit vier USB-Anschlüssen.',
             'storage_location_id' => $location->id,
         ]);
+});
+
+test('convert prefills the search terms', function () {
+    $import = Import::factory()->completed()->create(['search_terms' => ['Tacker', 'Büro']]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->mountAction('convert')
+        ->assertActionDataSet(['search_terms' => ['Tacker', 'Büro']]);
+});
+
+test('convert stores the edited search terms', function () {
+    $location = StorageLocation::factory()->create();
+    $import = Import::factory()->completed()->create(['search_terms' => ['Tacker', 'Büro'], 'storage_location_id' => $location->id]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->callAction('convert', data: ['search_terms' => ['Tacker']])
+        ->assertHasNoActionErrors();
+
+    expect(Item::sole()->search_terms)->toBe(['Tacker']);
+});
+
+test('the view page shows search terms', function () {
+    $import = Import::factory()->completed()->create(['search_terms' => ['Tacker', 'Büro']]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertSee('Suchbegriffe')
+        ->assertSee('Tacker')
+        ->assertSee('Büro');
 });
 
 test('convert falls back to the last used location when the import has none', function () {

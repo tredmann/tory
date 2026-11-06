@@ -8,7 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
 /**
- * Computes and stores the embedding of an item's current title and description.
+ * Computes and stores the embedding of an item's current title, description and search terms.
  */
 class EmbedItem implements ShouldQueue
 {

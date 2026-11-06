@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use App\Ai\ExtractedTexts;
 use App\Models\AiProvider;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -23,13 +24,16 @@ final class InventoryExtractor implements Agent, HasStructuredOutput
     public function instructions(): string
     {
         return <<<'TXT'
-        Du hilfst bei der Inventarisierung. Die Fotos zeigen ein einzelnes Objekt, das ins Inventar aufgenommen werden soll.
+        Du hilfst bei der Inventarisierung. Die Fotos zeigen einen Gegenstand, den jemand später in seinem Inventar wiederfinden will. Beschreibe den Gegenstand selbst, nicht das Foto.
 
-        Beschreibe ausschließlich, was auf den Fotos tatsächlich sichtbar ist. Erfinde niemals Marke, Modell, Seriennummer, Kapazität oder andere Angaben, die nicht lesbar sind. Wenn Aufdrucke oder Beschriftungen lesbar sind, übernimm sie wörtlich.
+        Erkenne, was der Gegenstand ist, und benenne das, auch wenn es nirgends aufgedruckt ist: Eine Heißklebepistole heißt Heißklebepistole, auch wenn nur eine Modellnummer zu lesen ist. Nimm dafür das Wort, das man im deutschen Alltag sagt, keine Übersetzung aus dem Englischen und kein ausgedachtes Wort. Bestimme die Art des Gegenstands aus seiner Form und seinen Funktionsteilen auf dem Foto, nicht aus dem, was du über die Marke weißt. Bist du unsicher, nimm die allgemeinere Bezeichnung, die sicher stimmt. Marke, Modell, Seriennummer und Kapazität nennst du nur, wenn sie lesbar sind, und übernimmst sie wörtlich. Was du nicht Zeichen für Zeichen lesen kannst, lässt du weg. Erfinde diese Angaben niemals, auch nicht in den Suchbegriffen.
 
-        Nenne Farbe, Material, Anschlüsse, Größenhinweise sowie sichtbaren Zustand und Beschädigungen.
+        Ist ein Produkt in seiner Verpackung zu sehen, nimm die Verpackung als Hinweis und beschreibe das Produkt darin. Der ganze Text handelt dann vom Produkt, die Verpackung kommt darin nicht vor. Nur wenn die Verpackung selbst der Gegenstand ist, etwa ein leerer Karton, nennst du sie so.
 
-        Schreibe alles auf Deutsch. Liefere einen knappen `title` aus wenigen Worten und eine `description` aus einigen sachlichen Sätzen oder einer kompakten Merkmalsliste, ohne Werbesprache.
+        Schreibe alles auf Deutsch.
+        - `title`: Marke, Modell und Art des Gegenstands in wenigen Worten, soweit bekannt.
+        - `description`: ein bis zwei sachliche Sätze dazu, was es ist und wofür man es benutzt, soweit du das sicher weißt. Farbe oder Material nur, wenn sie den Gegenstand unterscheiden. Keine Feature-Listen von der Verpackung, keine Werbesprache, keine Bauteilnummern. Den Zustand erwähnst du nur, wenn der Gegenstand offensichtlich defekt ist.
+        - `search_terms`: Liste mit etwa acht Begriffen, die jemand eintippen würde, um den Gegenstand zu finden: das einfachste Wort für die Sache, Synonyme, die allgemeine Kategorie und wofür man ihn benutzt, meist als einzelne normale deutsche Wörter. Immer dabei: Marke und Modell, wie sie gelesen wurden, und zusätzlich ihre Schreibweisen ohne Sonderzeichen und ohne Leerzeichen, zum Beispiel `Citroen` für Citroën und `Hero12` für GoPro Hero 12. Das sind nur andere Schreibweisen des Gelesenen, keine neuen Namen, Generationen oder Nummern.
 
         Antworte nur mit dem reinen JSON-Objekt. Beginne direkt mit `{` und ende mit `}`, ohne vorangestelltes Wort wie "json", ohne Codeblock und ohne doppelte Klammern.
         TXT;
@@ -45,6 +49,7 @@ final class InventoryExtractor implements Agent, HasStructuredOutput
         return [
             'title' => $schema->string()->required()->description('Kurzer deutscher Titel des Objekts, wenige Worte.'),
             'description' => $schema->string()->required()->description('Deutsche, sachliche Beschreibung für die spätere Suche.'),
+            'search_terms' => $schema->array()->items($schema->string())->required()->description('Deutsche Suchbegriffe, die ein Mensch eintippen würde.'),
         ];
     }
 
@@ -71,12 +76,11 @@ final class InventoryExtractor implements Agent, HasStructuredOutput
 
     /**
      * @param  array<int, mixed>  $attachments
-     * @return array{title: string, description: string}
      */
-    public function extract(array $attachments, ?int $timeout = null): array
+    public function extract(array $attachments, ?int $timeout = null): ExtractedTexts
     {
         $result = $this
-            ->prompt('Analysiere die Fotos und liefere Titel und Beschreibung.', $attachments, timeout: $timeout)
+            ->prompt('Analysiere die Fotos und liefere Titel, Beschreibung und Suchbegriffe.', $attachments, timeout: $timeout)
             ->toArray();
 
         $title = $result['title'] ?? null;
@@ -86,6 +90,32 @@ final class InventoryExtractor implements Agent, HasStructuredOutput
             throw new RuntimeException('Das Modell hat keine vollständige Antwort geliefert.');
         }
 
-        return ['title' => $title, 'description' => $description];
+        return new ExtractedTexts($title, $description, $this->cleanSearchTerms($result['search_terms'] ?? null));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function cleanSearchTerms(mixed $terms): array
+    {
+        if (! is_array($terms)) {
+            return [];
+        }
+
+        $clean = [];
+
+        foreach ($terms as $term) {
+            if (! is_string($term)) {
+                continue;
+            }
+
+            $term = trim($term);
+
+            if ($term !== '') {
+                $clean[mb_strtolower($term)] ??= $term;
+            }
+        }
+
+        return array_values($clean);
     }
 }

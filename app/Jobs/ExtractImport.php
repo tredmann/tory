@@ -3,15 +3,13 @@
 namespace App\Jobs;
 
 use App\Ai\Agents\InventoryExtractor;
+use App\Ai\PhotoAttachments;
 use App\Ai\ProviderFailure;
 use App\Enums\ImportStatus;
 use App\Models\AiProvider;
 use App\Models\Import;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Storage;
-use Laravel\Ai\Files\Image;
-use RuntimeException;
 use Throwable;
 
 /**
@@ -37,21 +35,16 @@ class ExtractImport implements ShouldQueue
             /** @var list<string> $photos */
             $photos = $this->import->photos;
 
-            $attachments = array_map(function (string $path): Image {
-                if (! Storage::disk('local')->exists($path)) {
-                    throw new RuntimeException("Foto {$path} wurde nicht gefunden.");
-                }
-
-                return Image::fromStorage($path, 'local');
-            }, $photos);
+            $attachments = PhotoAttachments::fromStorage($photos);
 
             $aiProvider = AiProvider::active();
 
             $result = InventoryExtractor::make(aiProvider: $aiProvider)->extract($attachments);
 
             $this->import->update([
-                'title' => $result['title'],
-                'description' => $result['description'],
+                'title' => $result->title,
+                'description' => $result->description,
+                'search_terms' => $result->searchTerms,
                 'error' => null,
                 'failure_reason' => null,
                 'failure_provider' => null,
@@ -74,6 +67,7 @@ class ExtractImport implements ShouldQueue
             'status' => ImportStatus::Failed,
             'title' => null,
             'description' => null,
+            'search_terms' => [],
             'error' => $exception?->getMessage() ?: 'Der Auftrag wurde abgebrochen.',
             'failure_reason' => $exception instanceof ProviderFailure ? $exception->reason : null,
             'failure_provider' => $exception instanceof ProviderFailure && $exception->reason !== null ? $exception->providerName : null,

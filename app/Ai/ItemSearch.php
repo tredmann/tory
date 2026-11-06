@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Throwable;
 
 /**
- * Finds items by keyword (every word in title or description) and, when the
+ * Finds items by keyword (every word in title, description or search terms) and, when the
  * query can be embedded, by meaning. Keyword matches rank first.
  */
 final class ItemSearch
@@ -50,7 +50,7 @@ final class ItemSearch
 
     /**
      * The keyword condition as one SQL fragment with bound patterns: every
-     * whitespace-separated word must occur in title or description, with
+     * whitespace-separated word must occur in title, description or one search term, with
      * `\`, `%` and `_` escaped. Used for both filtering and ranking.
      *
      * @return array{sql: literal-string, bindings: list<string>}|null null when the term has no words
@@ -69,8 +69,8 @@ final class ItemSearch
 
         foreach ($words as $word) {
             $pattern = '%'.addcslashes($word, '\\%_').'%';
-            $sql[] = "(title ilike ? or coalesce(description, '') ilike ?)";
-            array_push($bindings, $pattern, $pattern);
+            $sql[] = "(title ilike ? or coalesce(description, '') ilike ? or exists (select 1 from jsonb_array_elements_text(search_terms) as term where term ilike ?))";
+            array_push($bindings, $pattern, $pattern, $pattern);
         }
 
         return ['sql' => '('.implode(' and ', $sql).')', 'bindings' => $bindings];

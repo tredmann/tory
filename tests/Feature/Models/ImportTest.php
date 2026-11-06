@@ -5,6 +5,7 @@ use App\Models\Import;
 use App\Models\Item;
 use App\Models\StorageLocation;
 use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
@@ -77,6 +78,15 @@ test('converting creates the item, removes the import and keeps the files', func
     Storage::disk('local')->assertExists('imports/x.jpg');
 });
 
+test('conversion takes over the search terms', function () {
+    $location = StorageLocation::factory()->create();
+    $import = Import::factory()->completed()->create();
+
+    $item = $import->convertToItem('Tacker', null, $location->id, ['Hefter', 'Büro']);
+
+    expect($item->fresh()->search_terms)->toBe(['Hefter', 'Büro']);
+});
+
 test('an import that was converted already cannot be converted again', function () {
     Storage::disk('local')->put('imports/x.jpg', 'x');
     $location = StorageLocation::factory()->create();
@@ -86,7 +96,7 @@ test('an import that was converted already cannot be converted again', function 
     $import->convertToItem('Erster', null, $location->id);
 
     expect(fn () => $stale->convertToItem('Zweiter', null, $location->id))
-        ->toThrow(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+        ->toThrow(ModelNotFoundException::class);
     expect(Item::count())->toBe(1);
     Storage::disk('local')->assertExists('imports/x.jpg');
 });

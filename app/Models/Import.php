@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ImportStatus;
 use App\Enums\ProviderFailureReason;
+use App\Models\Concerns\RegeneratesTexts;
 use Database\Factories\ImportFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * @property string $id
+ * @property list<string>|null $search_terms null on a model created in this request without the database default
  */
 class Import extends Model
 {
@@ -22,6 +24,7 @@ class Import extends Model
     use HasFactory;
 
     use HasUuids;
+    use RegeneratesTexts;
 
     /** @var list<string> */
     protected $fillable = [
@@ -31,6 +34,7 @@ class Import extends Model
         'photos',
         'title',
         'description',
+        'search_terms',
         'error',
         'failure_reason',
         'failure_provider',
@@ -44,13 +48,14 @@ class Import extends Model
     }
 
     /**
-     * @return array{status: 'App\\Enums\\ImportStatus', photos: 'array', failure_reason: 'App\\Enums\\ProviderFailureReason'}
+     * @return array{status: 'App\\Enums\\ImportStatus', photos: 'array', search_terms: 'array', failure_reason: 'App\\Enums\\ProviderFailureReason'}
      */
     protected function casts(): array
     {
         return [
             'status' => ImportStatus::class,
             'photos' => 'array',
+            'search_terms' => 'array',
             'failure_reason' => ProviderFailureReason::class,
         ];
     }
@@ -88,11 +93,13 @@ class Import extends Model
      * photo files, which now belong to the item. When the row is already gone (a
      * concurrent conversion or deletion), nothing is created.
      *
+     * @param  array<int, string>  $searchTerms
+     *
      * @throws ModelNotFoundException
      */
-    public function convertToItem(string $title, ?string $description, int $storageLocationId): Item
+    public function convertToItem(string $title, ?string $description, int $storageLocationId, array $searchTerms = []): Item
     {
-        return DB::transaction(function () use ($title, $description, $storageLocationId): Item {
+        return DB::transaction(function () use ($title, $description, $storageLocationId, $searchTerms): Item {
             if (static::query()->whereKey($this->getKey())->delete() === 0) {
                 throw (new ModelNotFoundException)->setModel(static::class, [$this->getKey()]);
             }
@@ -101,6 +108,7 @@ class Import extends Model
                 'storage_location_id' => $storageLocationId,
                 'title' => $title,
                 'description' => $description,
+                'search_terms' => $searchTerms,
                 'photos' => $this->photos,
             ]);
         });

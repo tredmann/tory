@@ -51,6 +51,28 @@ test('changing title or description clears the embedding and queues a new one', 
     Queue::assertPushed(EmbedItem::class, 2);
 })->with(['title', 'description']);
 
+test('changing search terms clears the embedding and queues a new one', function () {
+    Queue::fake();
+    $item = Item::factory()->create();
+    $item->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->saveQuietly();
+
+    $item->update(['search_terms' => ['Tacker']]);
+
+    expect($item->fresh()->embedding)->toBeNull();
+    Queue::assertPushed(EmbedItem::class, 2);
+});
+
+test('saving unchanged search terms queues nothing', function () {
+    Queue::fake();
+    $item = Item::factory()->create(['search_terms' => ['Tacker']]);
+    $item->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->saveQuietly();
+
+    $item->update(['search_terms' => ['Tacker']]);
+
+    expect($item->fresh()->embedding)->not->toBeNull();
+    Queue::assertPushed(EmbedItem::class, 1);
+});
+
 test('moving an item keeps its embedding and queues nothing', function () {
     Queue::fake();
     $item = Item::factory()->create();

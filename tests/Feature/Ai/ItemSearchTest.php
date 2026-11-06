@@ -122,3 +122,34 @@ test('a blank term returns everything and embeds nothing', function () {
         ->and(searchItems("\u{00A0}\u{00A0}")->count())->toBe(2);
     Embeddings::assertNothingGenerated();
 });
+
+test('finds an item through a search term', function () {
+    queriesEmbedTo(axis(9));
+    $item = itemWith(['title' => 'Hefter', 'description' => 'Zum Heften', 'search_terms' => ['Tacker']]);
+    itemWith(['title' => 'Lampe', 'search_terms' => ['Licht']]);
+
+    expect(searchItems('tacker')->pluck('id')->all())->toBe([$item->id]);
+});
+
+test('every word may match in a different field', function () {
+    queriesEmbedTo(axis(9));
+    $item = itemWith(['title' => 'Hefter', 'description' => null, 'search_terms' => ['Tacker']]);
+    itemWith(['title' => 'Hefter', 'description' => null, 'search_terms' => ['Klammer']]);
+
+    expect(searchItems('hefter tacker')->pluck('id')->all())->toBe([$item->id]);
+});
+
+test('finds umlauts in search terms', function (string $query) {
+    queriesEmbedTo(axis(9));
+    $item = itemWith(['title' => 'Hefter', 'description' => null, 'search_terms' => ['Heftgerät']]);
+
+    expect(searchItems($query)->pluck('id')->all())->toBe([$item->id]);
+})->with(['heftgerät', 'HEFTGERÄT']);
+
+test('json syntax does not match search terms', function (string $character) {
+    Exceptions::fake();
+    Embeddings::fake(fn () => throw new RuntimeException('down'));
+    itemWith(['title' => 'Hefter', 'description' => null, 'search_terms' => ['A', 'B']]);
+
+    expect(searchItems($character)->count())->toBe(0);
+})->with(['[', ']', ',', '"']);

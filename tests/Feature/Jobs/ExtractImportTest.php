@@ -227,3 +227,20 @@ test('a long key echoed past the exception truncation does not leak', function (
     expect($import->fresh()->error)->not->toContain(substr($key, 0, 20));
     Exceptions::assertReported(fn (ProviderFailure $e) => ! str_contains($e->getMessage(), substr($key, 0, 20)));
 });
+
+test('stores the search terms', function () {
+    InventoryExtractor::fake([['title' => 'A', 'description' => 'B', 'search_terms' => ['Hefter']]]);
+    $import = Import::factory()->create();
+
+    (new ExtractImport($import))->handle();
+
+    expect($import->fresh()->search_terms)->toBe(['Hefter']);
+});
+
+test('failed clears the search terms', function () {
+    $import = Import::factory()->completed()->create(['search_terms' => ['Hefter']]);
+
+    (new ExtractImport($import))->failed(new RuntimeException('x'));
+
+    expect($import->fresh()->search_terms)->toBe([]);
+});

@@ -66,8 +66,19 @@ final class ItemEmbedder
 
     public function textFor(Item $item): string
     {
+        $parts = [$item->title];
         $description = trim((string) $item->description);
 
-        return $description === '' ? $item->title : "{$item->title}\n\n{$description}";
+        if ($description !== '') {
+            $parts[] = $description;
+        }
+
+        $terms = $item->search_terms ?? [];
+
+        if ($terms !== []) {
+            $parts[] = 'Suchbegriffe: '.implode(', ', $terms);
+        }
+
+        return implode("\n\n", $parts);
     }
 }

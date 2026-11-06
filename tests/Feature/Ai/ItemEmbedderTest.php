@@ -43,3 +43,22 @@ test('an item without a description is embedded from its title alone', function 
 
     expect(app(ItemEmbedder::class)->textFor($item))->toBe('Pi-Gehäuse');
 });
+
+test('text for includes search terms', function () {
+    $item = new Item(['title' => 'T', 'description' => 'D', 'search_terms' => ['A', 'B']]);
+
+    expect(app(ItemEmbedder::class)->textFor($item))->toBe("T\n\nD\n\nSuchbegriffe: A, B");
+});
+
+test('text for without search terms equals the previous text', function () {
+    $embedder = app(ItemEmbedder::class);
+
+    expect($embedder->textFor(new Item(['title' => 'T', 'description' => 'D', 'search_terms' => []])))->toBe("T\n\nD")
+        ->and($embedder->textFor(new Item(['title' => 'T', 'description' => '', 'search_terms' => []])))->toBe('T');
+});
+
+test('text for works with search terms and an empty description', function () {
+    $item = new Item(['title' => 'T', 'description' => null, 'search_terms' => ['A']]);
+
+    expect(app(ItemEmbedder::class)->textFor($item))->toBe("T\n\nSuchbegriffe: A");
+});

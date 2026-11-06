@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Items\Schemas;
 
 use App\Filament\Resources\StorageLocations\StorageLocationResource;
+use App\Filament\Schemas\RegenerationEntries;
 use App\Models\Item;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -16,6 +17,7 @@ class ItemInfolist
         return $schema
             ->components([
                 Section::make()
+                    ->extraAttributes(fn (Item $record): array => $record->isRegenerating() ? ['wire:poll.5s' => ''] : [])
                     ->schema([
                         ImageEntry::make('photos')
                             ->label('Fotos')
@@ -28,6 +30,11 @@ class ItemInfolist
                             ->label('Beschreibung')
                             ->placeholder('—')
                             ->extraAttributes(['style' => 'white-space: pre-line']),
+                        TextEntry::make('search_terms')
+                            ->label('Suchbegriffe')
+                            ->badge()
+                            ->placeholder('—'),
+                        ...RegenerationEntries::make(),
                         TextEntry::make('storageLocation.label')
                             ->label('Lagerort')
                             ->url(fn (Item $record): string => StorageLocationResource::getUrl('view', ['record' => $record->storageLocation])),

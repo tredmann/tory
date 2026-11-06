@@ -50,6 +50,26 @@ test('the view page shows title, description and location', function () {
         ->assertSeeHtml("/lagerorte/{$location->code}");
 });
 
+test('the view page shows search terms', function () {
+    $item = Item::factory()->create(['search_terms' => ['Akkubohrer', 'Werkzeug']]);
+
+    Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
+        ->assertSee('Suchbegriffe')
+        ->assertSee('Akkubohrer')
+        ->assertSee('Werkzeug');
+});
+
+test('the edit page removes a search term', function () {
+    $item = Item::factory()->create(['search_terms' => ['A', 'B']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->fillForm(['search_terms' => ['A']])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh()->search_terms)->toBe(['A']);
+});
+
 test('editing changes the title and moves the item to another location', function () {
     $item = Item::factory()->create();
     $target = StorageLocation::factory()->create();

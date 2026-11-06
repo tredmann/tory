@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Imports\Schemas;
 
 use App\Enums\ImportStatus;
 use App\Filament\Resources\AiProviders\AiProviderResource;
+use App\Filament\Schemas\RegenerationEntries;
 use App\Models\Import;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -18,7 +19,7 @@ class ImportInfolist
         return $schema
             ->components([
                 Section::make()
-                    ->extraAttributes(fn (Import $record): array => $record->status->isActive() ? ['wire:poll.5s' => ''] : [])
+                    ->extraAttributes(fn (Import $record): array => $record->status->isActive() || $record->isRegenerating() ? ['wire:poll.5s' => ''] : [])
                     ->schema([
                         ImageEntry::make('photos')
                             ->label('Fotos')
@@ -38,6 +39,10 @@ class ImportInfolist
                             ->label('Beschreibung')
                             ->extraAttributes(['style' => 'white-space: pre-line'])
                             ->visible(fn (Import $record): bool => filled($record->description)),
+                        TextEntry::make('search_terms')
+                            ->label('Suchbegriffe')
+                            ->badge()
+                            ->visible(fn (Import $record): bool => filled($record->search_terms)),
                         TextEntry::make('failure_message')
                             ->label('Fehler')
                             ->color('danger')
@@ -52,6 +57,7 @@ class ImportInfolist
                             ->state(fn (Import $record, Application $app): ?string => $app->hasDebugModeEnabled()
                                 ? $record->error
                                 : 'Die Analyse ist fehlgeschlagen. Bitte erneut versuchen.'),
+                        ...RegenerationEntries::make(),
                         TextEntry::make('created_at')
                             ->label('Angelegt')
                             ->dateTime(),
