@@ -5,6 +5,7 @@ use App\Filament\Resources\Items\Pages\EditItem;
 use App\Filament\Resources\Items\Pages\ListItems;
 use App\Filament\Resources\Items\Pages\ViewItem;
 use App\Models\Item;
+use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
@@ -119,4 +120,46 @@ test('the search field above the list finds items by keyword and by meaning', fu
         ->searchTable('Gehäuse')
         ->assertCanSeeTableRecords([$keyword, $semantic], inOrder: true)
         ->assertCanNotSeeTableRecords([$other]);
+});
+
+test('the list and view page show the location', function () {
+    $spot = Spot::factory()->create([
+        'location_id' => Location::factory()->create(['name' => 'Keller'])->id,
+    ]);
+    $item = Item::factory()->create(['spot_id' => $spot->id]);
+
+    Livewire::test(ListItems::class)
+        ->assertSee('Keller → ')
+        ->assertSeeHtml("/spots/{$spot->code}");
+
+    Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
+        ->assertSee('Keller → ')
+        ->assertSeeHtml("/spots/{$spot->code}");
+});
+
+test('filters items by location', function () {
+    $keller = Location::factory()->create(['name' => 'Keller']);
+    $garage = Location::factory()->create(['name' => 'Garage']);
+    $inKeller = Item::factory()->create(['spot_id' => Spot::factory()->create(['location_id' => $keller->id])->id]);
+    $inGarage = Item::factory()->create(['spot_id' => Spot::factory()->create(['location_id' => $garage->id])->id]);
+
+    Livewire::test(ListItems::class)
+        ->filterTable('location', $keller->getKey())
+        ->assertCanSeeTableRecords([$inKeller])
+        ->assertCanNotSeeTableRecords([$inGarage]);
+});
+
+test('the location filter narrows a text search', function () {
+    $keller = Location::factory()->create(['name' => 'Keller']);
+    $garage = Location::factory()->create(['name' => 'Garage']);
+    $kellerSpot = Spot::factory()->create(['location_id' => $keller->id]);
+    $inKeller = Item::factory()->create(['title' => 'Hammerfix', 'spot_id' => $kellerSpot->id]);
+    $unrelated = Item::factory()->create(['title' => 'Gießkanne', 'spot_id' => $kellerSpot->id]);
+    $inGarage = Item::factory()->create(['title' => 'Hammerfix', 'spot_id' => Spot::factory()->create(['location_id' => $garage->id])->id]);
+
+    Livewire::test(ListItems::class)
+        ->searchTable('Hammerfix')
+        ->filterTable('location', $keller->getKey())
+        ->assertCanSeeTableRecords([$inKeller])
+        ->assertCanNotSeeTableRecords([$inGarage, $unrelated]);
 });

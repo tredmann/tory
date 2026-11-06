@@ -10,6 +10,7 @@ use App\Jobs\ExtractImport;
 use App\Models\AiProvider;
 use App\Models\Import;
 use App\Models\Item;
+use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
@@ -149,6 +150,14 @@ test('the view page shows the spot', function () {
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
         ->assertSee("{$spot->code} · {$spot->name}");
+});
+
+test('the view page shows the location of the spot', function () {
+    $spot = Spot::factory()->create(['location_id' => Location::factory()->create(['name' => 'Keller'])->id]);
+    $import = Import::factory()->create(['spot_id' => $spot->id]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertSee('Keller → ');
 });
 
 test('the view page renders an import without a spot', function () {

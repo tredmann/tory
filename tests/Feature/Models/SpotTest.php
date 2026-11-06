@@ -60,3 +60,12 @@ test('a spot exposes its items and imports', function () {
     expect($spot->items->modelKeys())->toBe([$item->id])
         ->and($spot->imports->modelKeys())->toBe([$import->id]);
 });
+
+test('the full label names the location', function () {
+    $spot = Spot::factory()->create([
+        'name' => 'Regal',
+        'location_id' => Location::factory()->create(['name' => 'Keller'])->id,
+    ]);
+
+    expect($spot->full_label)->toBe("Keller → {$spot->code} · Regal");
+});

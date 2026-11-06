@@ -35,7 +35,7 @@ class ItemInfolist
                             ->badge()
                             ->placeholder('—'),
                         ...RegenerationEntries::make(),
-                        TextEntry::make('spot.label')
+                        TextEntry::make('spot.full_label')
                             ->label('Lagerplatz')
                             ->url(fn (Item $record): string => SpotResource::getUrl('view', ['record' => $record->spot])),
                         TextEntry::make('created_at')

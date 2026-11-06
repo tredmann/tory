@@ -61,6 +61,14 @@ class Spot extends Model
     }
 
     /**
+     * @return Attribute<non-falsy-string, never>
+     */
+    protected function fullLabel(): Attribute
+    {
+        return Attribute::get(fn (): string => "{$this->location->name} → {$this->label}");
+    }
+
+    /**
      * @return HasMany<Item, $this>
      */
     public function items(): HasMany

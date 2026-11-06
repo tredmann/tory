@@ -2,6 +2,7 @@
 
 use App\Filament\Resources\Imports\Pages\ListImports;
 use App\Models\Import;
+use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -40,4 +41,14 @@ test('the list shows the spot or a placeholder', function () {
         ->assertCanSeeTableRecords([$with, $without])
         ->assertSee("{$spot->code} · {$spot->name}")
         ->assertSee('—');
+});
+
+test('the list shows the location of the spot', function () {
+    $spot = Spot::factory()->create(['location_id' => Location::factory()->create(['name' => 'Keller'])->id]);
+    $with = Import::factory()->completed()->create(['spot_id' => $spot->id]);
+    $without = Import::factory()->completed()->create(['spot_id' => null]);
+
+    Livewire::test(ListImports::class)
+        ->assertCanSeeTableRecords([$with, $without])
+        ->assertSee('Keller → ');
 });

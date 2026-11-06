@@ -7,12 +7,14 @@ use App\Models\Import;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ImportsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('spot.location'))
             ->columns([
                 ImageColumn::make('photos')
                     ->label('Foto')
@@ -22,7 +24,7 @@ class ImportsTable
                 TextColumn::make('title')
                     ->label('Titel')
                     ->placeholder('—'),
-                TextColumn::make('spot.label')
+                TextColumn::make('spot.full_label')
                     ->label('Lagerplatz')
                     ->placeholder('—'),
                 TextColumn::make('status')
