@@ -1,6 +1,7 @@
 <?php
 
 use App\Ai\ItemSearch;
+use App\Models\AiProvider;
 use App\Models\Item;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Exceptions;
@@ -153,3 +154,39 @@ test('json syntax does not match search terms', function (string $character) {
 
     expect(searchItems($character)->count())->toBe(0);
 })->with(['[', ']', ',', '"']);
+
+test('the threshold comes from the active search provider', function () {
+    config(['ai.inventory.search_min_similarity' => 0.1]);
+    AiProvider::factory()->activeForSearch()->create(['search_min_similarity' => 0.9]);
+    $half = array_fill(0, 1024, 0.0);
+    $half[1] = $half[2] = 1.0;
+    queriesEmbedTo(axis(1));
+    itemWith(['title' => 'Irgendwas'], $half);
+
+    expect(searchItems('Suchbegriff')->count())->toBe(0);
+});
+
+test('a repeated query is embedded once', function () {
+    $calls = 0;
+    Embeddings::fake(function () use (&$calls) {
+        $calls++;
+
+        return [axis(1)];
+    });
+
+    app(ItemSearch::class)->apply(Item::query(), 'Kabel');
+    app(ItemSearch::class)->apply(Item::query(), 'Kabel');
+
+    expect($calls)->toBe(1);
+});
+
+test('a failed query embedding is not cached', function () {
+    Exceptions::fake();
+    Embeddings::fake(fn () => throw new RuntimeException('down'));
+    searchItems('Kabel')->count();
+
+    queriesEmbedTo(axis(1));
+    $semantic = itemWith(['title' => 'Irgendwas'], axis(1));
+
+    expect(searchItems('Kabel')->pluck('id')->all())->toBe([$semantic->id]);
+});

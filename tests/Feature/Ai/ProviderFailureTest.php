@@ -2,6 +2,7 @@
 
 use App\Ai\Agents\InventoryExtractor;
 use App\Ai\ProviderFailure;
+use App\Ai\WrongEmbeddingDimensions;
 use App\Enums\AiVendor;
 use App\Enums\ProviderFailureReason;
 use App\Models\AiProvider;
@@ -90,4 +91,15 @@ test('ProviderFailure scrubs the key and drops the previous exception', function
         ->and($failure->getPrevious())->toBeNull()
         ->and($failure->providerName)->toBe('Claude schnell')
         ->and($failure->reason)->toBeNull();
+});
+
+test('user message is the detail, else the reason message', function () {
+    $provider = AiProvider::factory()->create(['name' => 'Claude']);
+
+    $dimensions = ProviderFailure::from(new WrongEmbeddingDimensions(768), $provider);
+    $plain = new ProviderFailure('x', ProviderFailureReason::KeyRejected, 'Claude');
+
+    expect($dimensions->userMessage())->toBe('Das Embedding-Modell von Claude liefert 768 statt 1024 Dimensionen.')
+        ->and($plain->userMessage())->toBe('Claude hat den API-Key abgelehnt.')
+        ->and(ProviderFailure::from(new RuntimeException('x'), $provider)->userMessage())->toBeNull();
 });

@@ -67,6 +67,17 @@ test('semantic hit uses the configured threshold', function () {
         ->and($hits['fern']->semantic)->toBeFalse();
 });
 
+test('semantic hit uses the threshold of the active search provider', function () {
+    config(['ai.inventory.search_min_similarity' => 0.1]);
+    AiProvider::factory()->activeForSearch()->create(['search_min_similarity' => 0.9]);
+    fakeVectors(['nah' => [3.0, 4.0, ...array_fill(0, 1022, 0.0)]]);
+    InventoryExtractor::fake([['title' => 'Etwas', 'description' => 'Anderes.']]);
+
+    $hit = runEval([evalCase(searchWords: ['nah'])])->results[0]->hits[0];
+
+    expect($hit->similarity)->toBe(0.6)->and($hit->semantic)->toBeFalse();
+});
+
 test('a missing title word is reported', function () {
     fakeVectors();
     InventoryExtractor::fake([['title' => 'Mikrofon', 'description' => 'x']]);

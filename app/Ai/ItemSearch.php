@@ -12,6 +12,8 @@ use Throwable;
  */
 final class ItemSearch
 {
+    public const int QUERY_CACHE_SECONDS = 600;
+
     public function __construct(private ItemEmbedder $embedder) {}
 
     /**
@@ -28,7 +30,8 @@ final class ItemSearch
         }
 
         try {
-            $vector = $this->embedder->embed($term, timeout: 3);
+            $target = EmbeddingTarget::current();
+            $vector = $this->embedder->embedFor($target, $term, timeout: 3, cacheSeconds: self::QUERY_CACHE_SECONDS);
         } catch (Throwable $exception) {
             report($exception);
 
@@ -37,7 +40,7 @@ final class ItemSearch
             return;
         }
 
-        $maxDistance = 1 - (float) config('ai.inventory.search_min_similarity');
+        $maxDistance = 1 - $target->minSimilarity;
 
         $query
             ->where(function (Builder $group) use ($keyword, $vector, $maxDistance): void {

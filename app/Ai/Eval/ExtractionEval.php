@@ -3,6 +3,7 @@
 namespace App\Ai\Eval;
 
 use App\Ai\Agents\InventoryExtractor;
+use App\Ai\EmbeddingTarget;
 use App\Ai\ExtractedTexts;
 use App\Ai\ItemEmbedder;
 use App\Ai\ProviderFailure;
@@ -147,7 +148,7 @@ final class ExtractionEval
 
         $similarity = $this->cosine($wordVector, $itemVector);
 
-        return new WordHit($word, $keyword, $similarity >= (float) config('ai.inventory.search_min_similarity'), $similarity);
+        return new WordHit($word, $keyword, $similarity >= EmbeddingTarget::current()->minSimilarity, $similarity);
     }
 
     private function containsWholeWord(string $text, string $word): bool

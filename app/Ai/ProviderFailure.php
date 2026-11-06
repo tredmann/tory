@@ -21,6 +21,7 @@ final class ProviderFailure extends RuntimeException
         string $message,
         public readonly ?ProviderFailureReason $reason,
         public readonly string $providerName,
+        public readonly ?string $detail = null,
     ) {
         parent::__construct($message);
     }
@@ -35,6 +36,14 @@ final class ProviderFailure extends RuntimeException
             $message,
             ProviderFailureReason::fromThrowable($e),
             $provider->name,
+            $e instanceof WrongEmbeddingDimensions
+                ? "Das Embedding-Modell von {$provider->name} liefert {$e->actual} statt ".ItemEmbedder::DIMENSIONS.' Dimensionen.'
+                : null,
         );
+    }
+
+    public function userMessage(): ?string
+    {
+        return $this->detail ?? $this->reason?->message($this->providerName);
     }
 }

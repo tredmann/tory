@@ -1,7 +1,11 @@
 <?php
 
 use App\Ai\ItemEmbedder;
+use App\Ai\ProviderFailure;
+use App\Enums\AiVendor;
+use App\Models\AiProvider;
 use App\Models\Item;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
 
@@ -61,4 +65,45 @@ test('text for works with search terms and an empty description', function () {
     $item = new Item(['title' => 'T', 'description' => null, 'search_terms' => ['A']]);
 
     expect(app(ItemEmbedder::class)->textFor($item))->toBe("T\n\nSuchbegriffe: A");
+});
+
+test('the active search provider is used instead of the env configuration', function () {
+    AiProvider::factory()->activeForSearch()->create(['vendor' => AiVendor::OpenAi, 'embedding_model' => 'text-embedding-3-small']);
+    Embeddings::fake();
+
+    app(ItemEmbedder::class)->embed('x');
+
+    Embeddings::assertGenerated(fn (EmbeddingsPrompt $prompt) => $prompt->model === 'text-embedding-3-small'
+        && $prompt->provider->driver() === 'openai');
+});
+
+test('a failure on a provider leaves scrubbed', function () {
+    AiProvider::factory()->activeForSearch()->create(['api_key' => 'sk-secret-9999']);
+    Embeddings::fake(fn () => throw new RuntimeException('boom sk-secret-9999'));
+
+    expect(fn () => app(ItemEmbedder::class)->embed('x'))
+        ->toThrow(fn (ProviderFailure $e) => expect($e->getMessage())->not->toContain('sk-secret-9999'));
+});
+
+test('a vector of another length names both lengths', function () {
+    AiProvider::factory()->activeForSearch()->create(['name' => 'OpenAI']);
+    Embeddings::fake([[array_fill(0, 768, 0.1)]]);
+
+    expect(fn () => app(ItemEmbedder::class)->embed('x'))
+        ->toThrow(fn (ProviderFailure $e) => expect($e->userMessage())
+            ->toBe('Das Embedding-Modell von OpenAI liefert 768 statt 1024 Dimensionen.'));
+});
+
+test('a vector computed before a switch is not stored', function () {
+    Queue::fake();
+    $item = Item::factory()->create();
+    $next = AiProvider::factory()->embedding()->create();
+    Embeddings::fake(function () use ($next) {
+        $next->forceFill(['is_active_for_search' => true])->saveQuietly();
+
+        return [array_fill(0, 1024, 0.1)];
+    });
+
+    expect(app(ItemEmbedder::class)->embedAndStore($item))->toBeFalse()
+        ->and($item->fresh()->embedding)->toBeNull();
 });
