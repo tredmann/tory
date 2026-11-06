@@ -70,6 +70,8 @@ const itemPhotos = ({ statePath, photos }) => {
     let queue = Promise.resolve();
     let wire;
     let destroyed = false;
+    // The photos whose ✕ took the overview mark away, oldest first, for as long as "rückgängig" should give it back.
+    let displaced = [];
 
     return {
         tiles: storedTiles(photos),
@@ -104,6 +106,7 @@ const itemPhotos = ({ statePath, photos }) => {
                 return;
             }
 
+            displaced = [];
             this.overview = tile.id;
             this.syncMarks();
         },
@@ -112,6 +115,8 @@ const itemPhotos = ({ statePath, photos }) => {
             tile.marked = true;
 
             if (this.overview === tile.id) {
+                displaced.push(tile.id);
+
                 const position = this.tiles.findIndex((other) => other.id === tile.id);
                 const next = [...this.tiles.slice(position + 1), ...this.tiles.slice(0, position)].find((other) =>
                     this.isAvailable(other),
@@ -126,7 +131,13 @@ const itemPhotos = ({ statePath, photos }) => {
         undo(tile) {
             tile.marked = false;
 
-            if (this.overview === null && this.isAvailable(tile)) {
+            const position = displaced.indexOf(tile.id);
+
+            if (position !== -1) {
+                // Before this photo's ✕ the later ones never held the mark, so they lose their claim to it.
+                displaced = displaced.slice(0, position);
+                this.overview = tile.id;
+            } else if (this.overview === null && this.isAvailable(tile)) {
                 this.overview = tile.id;
             }
 
@@ -271,8 +282,10 @@ const itemPhotos = ({ statePath, photos }) => {
 
         /** After a save that left the list as it was, the page keeps this component, and its marks must go. */
         reset() {
+            this.tiles.filter((tile) => tile.uploading).forEach((tile) => this.cancel(tile));
             this.tiles.forEach(revokePreview);
             this.tiles = storedTiles(photos);
+            displaced = [];
             this.overview = photos[0]?.path ?? null;
             this.message = null;
             this.syncMarks();
