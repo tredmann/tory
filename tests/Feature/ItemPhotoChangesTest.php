@@ -171,3 +171,16 @@ test('changing photos keeps the embedding and dispatches no job', function () {
     Queue::assertNotPushed(EmbedItem::class);
     expect($item->fresh()->embedding)->not->toBeNull();
 });
+
+test('a failed file write stores nothing and deletes nothing', function () {
+    $item = itemWithPhotos(['a']);
+    $failing = Mockery::mock(UploadedFile::class)->makePartial();
+    $failing->shouldReceive('store')->andReturn(false);
+
+    expect(fn () => $item->changePhotos(['imports/a.jpg'], ['k1' => newPhoto(), 'k2' => $failing], null))
+        ->toThrow(RuntimeException::class);
+
+    Storage::disk('local')->assertExists('imports/a.jpg');
+    expect(storedFiles())->toBe(['imports/a.jpg'])
+        ->and($item->fresh()->photos)->toBe(['imports/a.jpg']);
+});

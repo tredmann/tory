@@ -15,6 +15,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -114,7 +115,13 @@ class Item extends Model
 
             try {
                 foreach ($uploads as $key => $file) {
-                    $stored[$key] = (string) $file->store('imports', 'local');
+                    $path = $file->store('imports', 'local');
+
+                    if ($path === false) {
+                        throw new RuntimeException('Photo could not be stored.');
+                    }
+
+                    $stored[$key] = $path;
                 }
 
                 $first = $stored[$overview ?? ''] ?? (in_array($overview, $remaining, true) ? $overview : null);
