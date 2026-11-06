@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\EmbedItem;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\AsVector;
@@ -26,6 +27,22 @@ class Item extends Model
 
     protected static function booted(): void
     {
+        static::created(function (Item $item): void {
+            EmbedItem::dispatch($item)->afterCommit();
+        });
+
+        static::updating(function (Item $item): void {
+            if ($item->isDirty(['title', 'description'])) {
+                $item->embedding = null;
+            }
+        });
+
+        static::updated(function (Item $item): void {
+            if ($item->wasChanged(['title', 'description'])) {
+                EmbedItem::dispatch($item)->afterCommit();
+            }
+        });
+
         static::deleted(function (Item $item): void {
             Storage::disk('local')->delete($item->photos ?? []);
         });

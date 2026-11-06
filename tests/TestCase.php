@@ -3,10 +3,21 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Laravel\Ai\Embeddings;
 use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
 {
+    /**
+     * No test may reach a real embedding provider.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Embeddings::fake();
+    }
+
     /**
      * Runs on every application boot, before any refresh. The RefreshDatabase
      * trait's own beforeRefreshingDatabase() hook would shadow a method of

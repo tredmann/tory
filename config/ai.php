@@ -24,6 +24,9 @@ return [
     'inventory' => [
         'provider' => env('INVENTORY_AI_PROVIDER', 'anthropic'),
         'model' => env('INVENTORY_AI_MODEL'),
+        'embedding_provider' => env('INVENTORY_EMBEDDING_PROVIDER', 'ollama'),
+        'embedding_model' => env('INVENTORY_EMBEDDING_MODEL', 'bge-m3'),
+        'search_min_similarity' => (float) env('INVENTORY_SEARCH_MIN_SIMILARITY', 0.5),
     ],
 
     /*
