@@ -59,7 +59,7 @@ enum ProviderFailureReason: string
             return self::UnknownModel;
         }
 
-        if (str_contains($body, 'vision') || (str_contains($body, 'image') && str_contains($body, 'support'))) {
+        if (preg_match('/(not|n\'t|no)\s+support(ed)?\s+(for\s+)?(image|vision)|image_url is only supported by certain models/', $body) === 1) {
             return self::ImagesUnsupported;
         }
 

@@ -210,3 +210,20 @@ test('a success clears earlier failure details', function () {
 
     expect($import->fresh())->failure_reason->toBeNull()->failure_provider->toBeNull();
 });
+
+test('a long key echoed past the exception truncation does not leak', function () {
+    Exceptions::fake();
+    $key = 'sk-proj-'.str_repeat('Ab3dE6gH9k', 16);
+    Http::fake(['*' => Http::response(['error' => ['message' => 'Incorrect API key provided: '.$key]], 401)]);
+    AiProvider::factory()->active()->create(['api_key' => $key]);
+    $job = new ExtractImport($import = Import::factory()->create());
+
+    try {
+        $job->handle();
+    } catch (Throwable $e) {
+        $job->failed($e);
+    }
+
+    expect($import->fresh()->error)->not->toContain(substr($key, 0, 20));
+    Exceptions::assertReported(fn (ProviderFailure $e) => ! str_contains($e->getMessage(), substr($key, 0, 20)));
+});
