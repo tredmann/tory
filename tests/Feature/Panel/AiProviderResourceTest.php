@@ -380,6 +380,88 @@ test('confirming the dialog switches and queues the recomputation', function () 
     Queue::assertPushed(ReembedItems::class);
 });
 
+test('a failing probe at confirm changes nothing and queues nothing', function () {
+    $item = embeddedItem();
+    $probes = 0;
+    Embeddings::fake(function () use (&$probes): array {
+        $probes++;
+
+        return [array_fill(0, $probes === 1 ? 1024 : 768, 0.1)];
+    });
+    $provider = AiProvider::factory()->embedding()->create();
+
+    Livewire::test(ManageAiProviders::class)
+        ->mountAction(TestAction::make('activateForSearch')->table($provider))
+        ->assertActionMounted(TestAction::make('activateForSearch')->table($provider))
+        ->callMountedAction()
+        ->assertNotified('Test fehlgeschlagen')
+        ->assertActionNotMounted();
+
+    expect($probes)->toBe(2)
+        ->and($provider->fresh()->is_active_for_search)->toBeFalse()
+        ->and($item->fresh()->embedding)->not->toBeNull();
+    Queue::assertNotPushed(ReembedItems::class);
+});
+
+test('a confirm request without a mount still probes', function () {
+    $item = embeddedItem();
+    Embeddings::fake([[array_fill(0, 768, 0.1)]]);
+    $provider = AiProvider::factory()->embedding()->create();
+
+    Livewire::test(ManageAiProviders::class)
+        ->set('mountedActions', [['name' => 'activateForSearch', 'arguments' => [], 'context' => ['table' => true, 'recordKey' => $provider->getKey()]]])
+        ->call('callMountedAction')
+        ->assertNotified('Test fehlgeschlagen');
+
+    expect($provider->fresh()->is_active_for_search)->toBeFalse()
+        ->and($item->fresh()->embedding)->not->toBeNull();
+    Queue::assertNotPushed(ReembedItems::class);
+});
+
+test('a model changed between mount and confirm is probed and switches only if that passes', function (int $dimensions, bool $switches) {
+    $item = embeddedItem();
+    $probedModels = [];
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$probedModels, $dimensions): array {
+        $probedModels[] = $prompt->model;
+
+        return [array_fill(0, $prompt->model === 'ungeprueft' ? $dimensions : 1024, 0.1)];
+    });
+    $provider = AiProvider::factory()->embedding('gut')->create();
+
+    $component = Livewire::test(ManageAiProviders::class)
+        ->mountAction(TestAction::make('activateForSearch')->table($provider));
+
+    AiProvider::query()->whereKey($provider->getKey())->update(['embedding_model' => 'ungeprueft']);
+
+    $component->callMountedAction();
+
+    expect($probedModels)->toBe(['gut', 'ungeprueft'])
+        ->and($provider->fresh()->is_active_for_search)->toBe($switches)
+        ->and($provider->fresh()->embedding_model)->toBe('ungeprueft')
+        ->and($item->fresh()->embedding === null)->toBe($switches);
+    $switches ? Queue::assertPushed(ReembedItems::class) : Queue::assertNotPushed(ReembedItems::class);
+})->with([
+    'probe passes' => [1024, true],
+    'probe fails' => [768, false],
+]);
+
+test('a model emptied between mount and confirm does not switch', function () {
+    $item = embeddedItem();
+    Embeddings::fake();
+    $provider = AiProvider::factory()->embedding()->create();
+
+    $component = Livewire::test(ManageAiProviders::class)
+        ->mountAction(TestAction::make('activateForSearch')->table($provider));
+
+    AiProvider::query()->whereKey($provider->getKey())->update(['embedding_model' => null]);
+
+    $component->callMountedAction();
+
+    expect($provider->fresh()->is_active_for_search)->toBeFalse()
+        ->and($item->fresh()->embedding)->not->toBeNull();
+    Queue::assertNotPushed(ReembedItems::class);
+});
+
 test('the activation dialog names both models and the number of items', function () {
     Embeddings::fake();
     AiProvider::factory()->activeForSearch()->create(['embedding_model' => 'altes-modell']);

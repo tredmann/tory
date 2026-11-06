@@ -91,8 +91,23 @@ class AiProvidersTable
                             $action->cancel();
                         }
                     })
-                    ->action(function (AiProvider $record, SearchProviderSwitch $switch): void {
-                        $switch->switchTo($record, (string) $record->embedding_model);
+                    ->action(function (Action $action, AiProvider $record, SearchProviderSwitch $switch): void {
+                        $record->refresh();
+                        $embeddingModel = $record->embedding_model;
+
+                        if (blank($embeddingModel)) {
+                            self::notifyProbeFailure('Für diesen Provider ist kein Embedding-Modell mehr hinterlegt.');
+                            $action->cancel();
+                        }
+
+                        $reason = $switch->probe($record, (string) $embeddingModel);
+
+                        if ($reason !== null) {
+                            self::notifyProbeFailure($reason);
+                            $action->cancel();
+                        }
+
+                        $switch->switchTo($record, (string) $embeddingModel);
 
                         Notification::make()
                             ->title('Suche wird neu aufgebaut')
