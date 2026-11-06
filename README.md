@@ -8,17 +8,16 @@ Development happens entirely in Docker. You only need Docker Desktop (or compati
 
 ## Where things stand
 
-Tory is going to be a household inventory. Built so far (2026-11-04 to 2026-11-06):
+Tory is a household inventory. Built so far (2026-11-04 to 2026-11-06):
 
-- **Stack and tooling.** Dockerised FrankenPHP app with queue worker and scheduler under supervisord, Postgres, Vite service, Pest/Pint/Larastan, Laravel Boost with the Filament skill, GitHub Actions test workflow.
+- **Stack and tooling.** Dockerised FrankenPHP app with queue worker and scheduler under supervisord, Postgres 18 with pgvector, Vite service, Pest/Pint/Larastan, Laravel Boost with the Filament skill, GitHub Actions test workflow.
 - **Panel.** Filament 5 is the whole app at `/`, with login, registration, password reset, email verification and profile. Every verified user sees everything; there is no policy layer yet.
-- **Photo imports.** "Importe" → "Erfassen" uploads 1–6 photos, stores them on the private disk and queues `ExtractImport`. The AI extractor (Anthropic in production, Ollama + gemma4 locally) returns a German title and a search-friendly description that only describes what is visible. The import page polls until the job is done, shows the result or the error, and offers Retry. Verified live against gemma4.
+- **Photo imports.** "Importe" → "Erfassen" uploads 1–6 photos, stores them on the private disk and queues `ExtractImport`. The AI extractor (Anthropic in production, Ollama + gemma4 locally) returns a German title and a search-friendly description. The import page polls until the job is done, shows the result or the error, and offers Retry and "Löschen".
+- **Storage locations.** "Lagerorte": every location has a permanent number (its id, shown as `Nr. 12 · Name`) and a page at `/lagerorte/{id}` that lists the items inside; that address is the future QR target.
+- **Items.** "Gegenstände": "Übernehmen" on a completed import turns it into an item in a chosen storage location (the photos move with it). Items can be edited and deleted (photos included).
+- **Search.** The item list searches by keyword (title and description) and by meaning via embeddings (`bge-m3` on Ollama, 1024 dimensions, stored in pgvector). Run `ollama pull bge-m3` once to enable the semantic part; without it the search still works by keyword. `items:embed` catches up missing embeddings hourly.
 
-Not built yet, in the intended order:
-
-1. Edit the extracted title and description on the import page.
-2. Turn an import into an inventory **item** (the `Item` model does not exist); photos move with it.
-3. Browse and search items; delete imports/items including their photos.
+Next: print labels with QR codes for storage locations.
 
 Design documents and plans for each feature are in `docs/superpowers/specs/` and `docs/superpowers/plans/`. Known small gaps are listed at the end of each plan's execution recap (Retry race under concurrent clicks, list table polling while idle, a handful of test-coverage gaps).
 
