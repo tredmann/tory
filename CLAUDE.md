@@ -62,6 +62,8 @@ Generator quirk: `php artisan make:enum` writes to `app/`, not `app/Enums/`; mov
 
 ## Code conventions
 
+- **YAGNI:** build only what is needed now; no speculative options, abstractions or extension points.
+- **Standard libraries over custom code:** prefer what Laravel, Filament or an established library already provides to building it ourselves. A new dependency still needs approval.
 - **Primary keys:** tables use UUIDs (`HasUuids`, version 7) unless explicitly specified otherwise. `Spot` is such an exception (internal bigint `id` plus the visible `code`); framework tables such as `jobs` stay as they are. `HasUuids` answers 404 for a route key that is no UUID.
 - **DTOs over arrays:** pass and return structured data as DTOs, not arrays. Arrays remain where a framework API demands them (e.g. Filament schemas, `$fillable`, casts).
 - **Constructor injection:** inject dependencies through the constructor instead of calling `resolve()` or `app()` in the code. Where the framework rules out a constructor, use its own injection: typed parameters on Filament closures (`->action(fn (ProviderTransfer $transfer) => ...)`), `$this->app` in service providers. Logic that needs a service does not belong on a model; move it to a class of its own (`ItemSearch`).
