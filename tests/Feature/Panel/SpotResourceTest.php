@@ -5,6 +5,7 @@ use App\Filament\Resources\Spots\Pages\EditSpot;
 use App\Filament\Resources\Spots\Pages\ListSpots;
 use App\Filament\Resources\Spots\Pages\ViewSpot;
 use App\Filament\Resources\Spots\RelationManagers\ItemsRelationManager;
+use App\Filament\Resources\Spots\Schemas\SpotSelect;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\Spot;
@@ -179,4 +180,49 @@ test('a location can be created from the spot form', function () {
 
     expect($location)->not->toBeNull();
     $component->assertFormSet(['location_id' => $location->getKey()]);
+});
+
+test('the picker groups spots by location, sorted by name', function () {
+    $keller = Location::factory()->create(['name' => 'Keller']);
+    $garage = Location::factory()->create(['name' => 'Garage']);
+    $regal = Spot::factory()->create(['name' => 'Regal', 'location_id' => $keller->id]);
+    $kiste = Spot::factory()->create(['name' => 'Kiste', 'location_id' => $keller->id]);
+    $werkbank = Spot::factory()->create(['name' => 'Werkbank', 'location_id' => $garage->id]);
+
+    $options = SpotSelect::options();
+
+    expect($options)->toBe([
+        'Garage' => [$werkbank->id => $werkbank->label],
+        'Keller' => [$kiste->id => $kiste->label, $regal->id => $regal->label],
+    ])->and(array_keys($options))->toBe(['Garage', 'Keller']);
+});
+
+test('the picker finds spots by code, spot name or location name', function (string $term) {
+    $keller = Location::factory()->create(['name' => 'Keller']);
+    $garage = Location::factory()->create(['name' => 'Garage']);
+    $regal = Spot::factory()->create(['name' => 'Regal', 'location_id' => $keller->id, 'code' => 'ABCD']);
+    Spot::factory()->create(['name' => 'Werkbank', 'location_id' => $garage->id, 'code' => 'WXYZ']);
+
+    expect(SpotSelect::options($term))->toBe(['Keller' => [$regal->id => $regal->label]]);
+})->with(['abcd', 'regal', 'keller']);
+
+test('every word of the picker search has to match', function () {
+    $keller = Location::factory()->create(['name' => 'Keller']);
+    $regal = Spot::factory()->create(['name' => 'Regal', 'location_id' => $keller->id]);
+
+    expect(SpotSelect::options('keller regal'))->toBe(['Keller' => [$regal->id => $regal->label]])
+        ->and(SpotSelect::options('keller werkbank'))->toBe([]);
+});
+
+test('percent and underscore are searched literally in the picker', function (string $term) {
+    Spot::factory()->create(['name' => 'Regal']);
+
+    expect(SpotSelect::options($term))->toBe([]);
+})->with(['%', '_']);
+
+test('the picker omits locations without spots', function () {
+    Location::factory()->create(['name' => 'Leer']);
+    $spot = Spot::factory()->create();
+
+    expect(array_keys(SpotSelect::options()))->toBe([$spot->location->name]);
 });
