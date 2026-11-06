@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Imports;
 
+use App\Filament\Resources\Concerns\ResolvesNumericRecordKeys;
 use App\Filament\Resources\Imports\Pages\CreateImport;
 use App\Filament\Resources\Imports\Pages\ListImports;
 use App\Filament\Resources\Imports\Pages\ViewImport;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ImportResource extends Resource
 {
+    use ResolvesNumericRecordKeys;
+
     protected static ?string $model = Import::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhoto;

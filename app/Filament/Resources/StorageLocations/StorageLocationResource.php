@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\StorageLocations;
 
+use App\Filament\Resources\Concerns\ResolvesNumericRecordKeys;
 use App\Filament\Resources\StorageLocations\Pages\CreateStorageLocation;
 use App\Filament\Resources\StorageLocations\Pages\EditStorageLocation;
 use App\Filament\Resources\StorageLocations\Pages\ListStorageLocations;
@@ -19,6 +20,8 @@ use Filament\Tables\Table;
 
 class StorageLocationResource extends Resource
 {
+    use ResolvesNumericRecordKeys;
+
     protected static ?string $model = StorageLocation::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArchiveBox;

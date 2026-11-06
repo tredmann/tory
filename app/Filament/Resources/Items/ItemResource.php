@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Items;
 
+use App\Filament\Resources\Concerns\ResolvesNumericRecordKeys;
 use App\Filament\Resources\Items\Pages\EditItem;
 use App\Filament\Resources\Items\Pages\ListItems;
 use App\Filament\Resources\Items\Pages\ViewItem;
@@ -17,6 +18,8 @@ use Filament\Tables\Table;
 
 class ItemResource extends Resource
 {
+    use ResolvesNumericRecordKeys;
+
     protected static ?string $model = Item::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
