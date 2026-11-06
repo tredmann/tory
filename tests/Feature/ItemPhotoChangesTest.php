@@ -3,6 +3,8 @@
 use App\Jobs\EmbedItem;
 use App\Models\Item;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -166,7 +168,7 @@ test('changing photos keeps the embedding and dispatches no job', function () {
     $item = itemWithPhotos();
     $item->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->save();
 
-    $item->changePhotos([], ['k' => newPhoto()], null);
+    $item->changePhotos(['imports/a.jpg'], ['k' => newPhoto()], null);
 
     Queue::assertNotPushed(EmbedItem::class);
     expect($item->fresh()->embedding)->not->toBeNull();
@@ -174,13 +176,49 @@ test('changing photos keeps the embedding and dispatches no job', function () {
 
 test('a failed file write stores nothing and deletes nothing', function () {
     $item = itemWithPhotos(['a']);
-    $failing = Mockery::mock(UploadedFile::class)->makePartial();
-    $failing->shouldReceive('store')->andReturn(false);
+    breakLocalDisk(writesBeforeFailure: 1);
 
-    expect(fn () => $item->changePhotos(['imports/a.jpg'], ['k1' => newPhoto(), 'k2' => $failing], null))
+    expect(fn () => $item->changePhotos(['imports/a.jpg'], ['k1' => newPhoto(), 'k2' => newPhoto()], null))
         ->toThrow(RuntimeException::class);
 
     Storage::disk('local')->assertExists('imports/a.jpg');
     expect(storedFiles())->toBe(['imports/a.jpg'])
         ->and($item->fresh()->photos)->toBe(['imports/a.jpg']);
+});
+
+test('a removed file stays until the commit and a rollback keeps it', function () {
+    $item = itemWithPhotos();
+
+    expect(fn () => DB::transaction(function () use ($item): void {
+        $item->changePhotos(['imports/a.jpg'], [], null);
+
+        throw new RuntimeException('rolled back');
+    }))->toThrow(RuntimeException::class, 'rolled back');
+
+    Storage::disk('local')->assertExists('imports/a.jpg');
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']);
+});
+
+test('a file that cannot be deleted is reported and the save stands', function () {
+    $item = itemWithPhotos();
+    breakLocalDisk(failsDeletes: true);
+    Exceptions::fake();
+
+    $item->changePhotos(['imports/a.jpg'], [], null);
+
+    Exceptions::assertReported(fn (RuntimeException $e): bool => str_contains($e->getMessage(), 'imports/a.jpg'));
+    expect($item->fresh()->photos)->toBe(['imports/b.jpg', 'imports/c.jpg']);
+});
+
+test('a model that lags behind the row still writes the change', function () {
+    $item = itemWithPhotos(['a', 'b']);
+    Item::query()->whereKey($item->id)->update(['photos' => json_encode(['imports/b.jpg'])]);
+    $stale = $item->fresh();
+    Item::query()->whereKey($item->id)->update(['photos' => json_encode(['imports/a.jpg', 'imports/b.jpg'])]);
+
+    $stale->changePhotos(['imports/a.jpg'], [], null);
+
+    expect($item->fresh()->photos)->toBe(['imports/b.jpg']);
+    Storage::disk('local')->assertMissing('imports/a.jpg');
+    Storage::disk('local')->assertExists('imports/b.jpg');
 });

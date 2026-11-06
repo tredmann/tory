@@ -32,14 +32,7 @@ class ItemPhotos extends Field
         });
 
         $this->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
-            $uploads = is_array($value) && is_array($value['uploads'] ?? null) ? $value['uploads'] : [];
-            $removed = is_array($value) && is_array($value['removed'] ?? null) ? $value['removed'] : [];
-
-            foreach ($uploads as $key => $file) {
-                if (! $file instanceof UploadedFile || in_array($key, $removed, true)) {
-                    continue;
-                }
-
+            foreach (self::keptUploads($value) as $file) {
                 $valid = Validator::make(
                     ['file' => $file],
                     ['file' => ['image', 'mimetypes:image/jpeg,image/png,image/webp,image/gif', 'max:12288']],
@@ -52,6 +45,25 @@ class ItemPhotos extends Field
                 }
             }
         });
+    }
+
+    /**
+     * The new files of a state that are not marked for removal. The server checks and stores exactly these.
+     * Keys are compared as strings, because PHP turns a numeric array key into an integer.
+     *
+     * @return array<string, UploadedFile>
+     */
+    public static function keptUploads(mixed $state): array
+    {
+        $uploads = is_array($state) && is_array($state['uploads'] ?? null) ? $state['uploads'] : [];
+        $removed = is_array($state) && is_array($state['removed'] ?? null) ? $state['removed'] : [];
+        $removedKeys = array_map(strval(...), array_filter($removed, is_scalar(...)));
+
+        return array_filter(
+            $uploads,
+            fn (mixed $file, int|string $key): bool => $file instanceof UploadedFile && ! in_array((string) $key, $removedKeys, true),
+            ARRAY_FILTER_USE_BOTH,
+        );
     }
 
     /**

@@ -457,3 +457,78 @@ test('a save during a regeneration changes no photos', function () {
     expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg']);
     Storage::disk('local')->assertExists('imports/a.jpg');
 });
+
+test('a failed write of an uploaded photo keeps the row and the old photo', function () {
+    Storage::disk('local')->put('imports/a.jpg', 'a');
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    $page = Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.uploads.k', UploadedFile::fake()->image('new.jpg'))
+        ->set('data.photo_edits.removed', ['imports/a.jpg']);
+
+    breakLocalDisk();
+
+    expect(fn () => $page->call('save'))->toThrow(RuntimeException::class);
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg'])
+        ->and(Storage::disk('local')->files('imports'))->toBe(['imports/a.jpg']);
+});
+
+test('a failed write removes the uploaded photos stored before it', function () {
+    Storage::disk('local')->put('imports/a.jpg', 'a');
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    $page = Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.uploads.k1', UploadedFile::fake()->image('one.jpg'))
+        ->set('data.photo_edits.uploads.k2', UploadedFile::fake()->image('two.jpg'));
+
+    breakLocalDisk(writesBeforeFailure: 1);
+
+    expect(fn () => $page->call('save'))->toThrow(RuntimeException::class);
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg'])
+        ->and(Storage::disk('local')->files('imports'))->toBe(['imports/a.jpg']);
+});
+
+test('a write that leaves a shorter file fails and removes that file', function () {
+    Storage::disk('local')->put('imports/a.jpg', 'a');
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    $page = Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.uploads.k', UploadedFile::fake()->image('new.jpg'))
+        ->set('data.photo_edits.removed', ['imports/a.jpg']);
+
+    breakLocalDisk(truncatesWrites: true);
+
+    expect(fn () => $page->call('save'))->toThrow(RuntimeException::class);
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg'])
+        ->and(Storage::disk('local')->files('imports'))->toBe(['imports/a.jpg']);
+});
+
+test('an upload marked by a numeric key is neither checked nor stored', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.uploads.0', UploadedFile::fake()->create('page.html', 10, 'text/html'))
+        ->set('data.photo_edits.removed', [0])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg'])
+        ->and(Storage::disk('local')->files('imports'))->toBe([]);
+});
+
+test('a rejected photo change leaves the title as it was', function () {
+    Storage::disk('local')->put('imports/a.jpg', 'a');
+    $item = Item::factory()->create(['title' => 'Alter Titel', 'photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->fillForm(['title' => 'Neuer Titel'])
+        ->set('data.photo_edits.removed', ['imports/a.jpg'])
+        ->call('save')
+        ->assertHasErrors(['data.photo_edits']);
+
+    expect($item->fresh())->title->toBe('Alter Titel')->photos->toBe(['imports/a.jpg']);
+    Storage::disk('local')->assertExists('imports/a.jpg');
+});

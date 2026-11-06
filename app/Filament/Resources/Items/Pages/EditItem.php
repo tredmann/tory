@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Items\Pages;
 
+use App\Filament\Forms\Components\ItemPhotos;
 use App\Filament\Resources\Items\ItemResource;
 use App\Models\Item;
 use Filament\Actions\Action;
@@ -9,7 +10,6 @@ use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -64,11 +64,7 @@ class EditItem extends EditRecord
         /** @var array{overview?: ?string, removed?: list<string>, uploads?: array<string, mixed>}|null $edits */
         $edits = Arr::pull($data, 'photo_edits');
         $removed = $edits['removed'] ?? [];
-        $uploads = array_filter(
-            $edits['uploads'] ?? [],
-            fn (mixed $file, string $key): bool => $file instanceof UploadedFile && ! in_array($key, $removed, true),
-            ARRAY_FILTER_USE_BOTH,
-        );
+        $uploads = ItemPhotos::keptUploads($edits);
 
         DB::transaction(function () use ($record, $data, $edits, $removed, $uploads): void {
             $record->update($data);

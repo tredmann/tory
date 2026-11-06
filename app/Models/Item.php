@@ -122,6 +122,11 @@ class Item extends Model
                     }
 
                     $stored[$key] = $path;
+
+                    // A temporary upload reports its path even when the disk refused the write.
+                    if (! Storage::disk('local')->exists($path) || Storage::disk('local')->size($path) !== $file->getSize()) {
+                        throw new RuntimeException('Photo could not be stored.');
+                    }
                 }
 
                 $first = $stored[$overview ?? ''] ?? (in_array($overview, $remaining, true) ? $overview : null);
@@ -144,7 +149,9 @@ class Item extends Model
 
             DB::afterCommit(function () use ($deletable): void {
                 try {
-                    Storage::disk('local')->delete($deletable);
+                    if (! Storage::disk('local')->delete($deletable)) {
+                        report(new RuntimeException('Photo files could not be deleted: '.implode(', ', $deletable)));
+                    }
                 } catch (Throwable $e) {
                     report($e);
                 }
