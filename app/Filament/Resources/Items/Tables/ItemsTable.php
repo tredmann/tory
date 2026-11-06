@@ -12,6 +12,15 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ItemsTable
 {
+    /**
+     * @param  Builder<Item>  $query
+     * @return Builder<Item>
+     */
+    private static function search(Builder $query, string $search): Builder
+    {
+        return $query->search($search);
+    }
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -32,6 +41,9 @@ class ItemsTable
                     ->dateTime()
                     ->sortable(),
             ])
+            ->searchable()
+            ->searchPlaceholder('Suchen …')
+            ->searchUsing(self::search(...))
             ->defaultSort('created_at', 'desc')
             ->recordUrl(fn (Item $record): string => ItemResource::getUrl('view', ['record' => $record]));
     }
