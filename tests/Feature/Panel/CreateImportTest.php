@@ -5,8 +5,10 @@ use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Resources\Imports\Pages\CreateImport;
 use App\Jobs\ExtractImport;
 use App\Models\Import;
+use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -139,4 +141,28 @@ test('nothing is preselected after the last used spot was deleted', function () 
     $this->actingAs($this->user->fresh());
 
     Livewire::test(CreateImport::class)->assertFormSet(['spot_id' => null]);
+});
+
+test('a location can be created inside the spot picker', function () {
+    Livewire::test(CreateImport::class)
+        ->callAction([
+            TestAction::make('createOption')->schemaComponent('spot_id'),
+            TestAction::make('createOption')->schemaComponent('location_id', schema: 'mountedActionSchema0'),
+        ], ['name' => 'Keller'])
+        ->assertHasNoFormErrors();
+
+    expect(Location::firstWhere('name', 'Keller'))->not->toBeNull();
+});
+
+test('a spot can be created through the picker', function () {
+    $location = Location::factory()->create();
+
+    $component = Livewire::test(CreateImport::class)
+        ->callAction(TestAction::make('createOption')->schemaComponent('spot_id'), ['name' => 'Regal'])
+        ->assertHasNoFormErrors();
+
+    $spot = Spot::firstWhere('name', 'Regal');
+
+    expect($spot)->not->toBeNull()->and($spot->location->is($location))->toBeTrue();
+    $component->assertFormSet(['spot_id' => $spot->id]);
 });

@@ -1,6 +1,6 @@
 # Spots and locations — design
 
-Date: 2026-11-06. Status: draft for approval. Builds on `2026-11-06-items-locations-search-design.md`. Vocabulary: `CONTEXT.md`.
+Date: 2026-11-06. Status: approved. Builds on `2026-11-06-items-locations-search-design.md`. Vocabulary: `CONTEXT.md`.
 
 ## Intent
 

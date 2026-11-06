@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Ai\Embeddings;
@@ -162,4 +163,17 @@ test('the location filter narrows a text search', function () {
         ->filterTable('location', $keller->getKey())
         ->assertCanSeeTableRecords([$inKeller])
         ->assertCanNotSeeTableRecords([$inGarage, $unrelated]);
+});
+
+test('a location can be created inside the spot picker on the edit page', function () {
+    $item = Item::factory()->create();
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->callAction([
+            TestAction::make('createOption')->schemaComponent('spot_id'),
+            TestAction::make('createOption')->schemaComponent('location_id', schema: 'mountedActionSchema0'),
+        ], ['name' => 'Keller'])
+        ->assertHasNoFormErrors();
+
+    expect(Location::firstWhere('name', 'Keller'))->not->toBeNull();
 });

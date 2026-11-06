@@ -14,6 +14,7 @@ class SpotSelect
             ->label('Lagerplatz')
             ->required()
             ->searchable()
+            ->optionsLimit(1000)
             ->options(fn (): array => self::options())
             ->getSearchResultsUsing(fn (string $search): array => self::options($search))
             ->getOptionLabelUsing(fn (mixed $value): ?string => Spot::query()->whereKey($value)->first()?->label)
@@ -33,8 +34,7 @@ class SpotSelect
         $words = preg_split('/\s+/u', $search ?? '', -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
         $spots = Spot::query()
-            ->select('spots.*')
-            ->with('location')
+            ->select('spots.*', 'locations.name as location_name')
             ->join('locations', 'locations.id', '=', 'spots.location_id')
             ->where(function (Builder $query) use ($words): void {
                 foreach ($words as $word) {
@@ -53,7 +53,7 @@ class SpotSelect
         $options = [];
 
         foreach ($spots as $spot) {
-            $options[$spot->location->name][$spot->id] = $spot->label;
+            $options[$spot->getAttribute('location_name')][$spot->id] = $spot->label;
         }
 
         return $options;

@@ -29,6 +29,7 @@ class SpotForm
                 ->searchable()
                 ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
                 ->exists(Location::class, 'id')
+                ->actionSchemaModel(Location::class)
                 ->createOptionForm(LocationForm::components())
                 ->createOptionUsing(fn (array $data): string => Location::create($data)->getKey())
                 ->default(fn (): ?string => Location::query()->count() === 1 ? Location::query()->value('id') : null),

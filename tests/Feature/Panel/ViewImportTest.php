@@ -13,6 +13,7 @@ use App\Models\Item;
 use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -351,4 +352,17 @@ test('retry clears the failure details and runs on the provider active now', fun
 
     expect($import->fresh())->failure_reason->toBeNull()->failure_provider->toBeNull();
     Queue::assertPushed(ExtractImport::class);
+});
+
+test('a location can be created inside the spot picker of convert', function () {
+    $import = Import::factory()->completed()->create();
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->callAction([
+            TestAction::make('convert'),
+            TestAction::make('createOption')->schemaComponent('spot_id', schema: 'mountedActionSchema0'),
+            TestAction::make('createOption')->schemaComponent('location_id', schema: 'mountedActionSchema1'),
+        ], ['name' => 'Keller']);
+
+    expect(Location::firstWhere('name', 'Keller'))->not->toBeNull();
 });

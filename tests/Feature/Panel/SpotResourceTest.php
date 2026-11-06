@@ -220,9 +220,51 @@ test('percent and underscore are searched literally in the picker', function (st
     expect(SpotSelect::options($term))->toBe([]);
 })->with(['%', '_']);
 
+test('the picker search treats wildcards as literal characters and still finds them', function () {
+    $location = Location::factory()->create(['name' => 'Keller']);
+    $underscore = Spot::factory()->create(['name' => 'a_b', 'location_id' => $location->id]);
+    $other = Spot::factory()->create(['name' => 'aXb', 'location_id' => $location->id]);
+    $backslash = Spot::factory()->create(['name' => 'a\\b', 'location_id' => $location->id]);
+
+    expect(SpotSelect::options('_')['Keller'])->toHaveKey($underscore->id)->not->toHaveKey($other->id)
+        ->and(SpotSelect::options('a_b')['Keller'])->toHaveKey($underscore->id)->not->toHaveKey($other->id)
+        ->and(SpotSelect::options('\\')['Keller'])->toHaveKey($backslash->id)->not->toHaveKey($other->id);
+});
+
 test('the picker omits locations without spots', function () {
     Location::factory()->create(['name' => 'Leer']);
     $spot = Spot::factory()->create();
 
     expect(array_keys(SpotSelect::options()))->toBe([$spot->location->name]);
+});
+
+test('creating a spot rejects a duplicate location name inside the picker form', function () {
+    Location::factory()->create(['name' => 'Keller']);
+
+    Livewire::test(CreateSpot::class)
+        ->callAction(TestAction::make('createOption')->schemaComponent('location_id'), ['name' => 'Keller'])
+        ->assertHasFormErrors(['name']);
+
+    expect(Location::where('name', 'Keller')->count())->toBe(1);
+});
+
+test('a new location may share its name with a spot', function () {
+    Spot::factory()->create(['name' => 'Keller']);
+
+    Livewire::test(CreateSpot::class)
+        ->callAction(TestAction::make('createOption')->schemaComponent('location_id'), ['name' => 'Keller'])
+        ->assertHasNoFormErrors();
+
+    expect(Location::where('name', 'Keller')->count())->toBe(1);
+});
+
+test('a new location from the edit page may share its name with another spot', function () {
+    Spot::factory()->create(['name' => 'Keller']);
+    $spot = Spot::factory()->create();
+
+    Livewire::test(EditSpot::class, ['record' => $spot->getRouteKey()])
+        ->callAction(TestAction::make('createOption')->schemaComponent('location_id'), ['name' => 'Keller'])
+        ->assertHasNoFormErrors();
+
+    expect(Location::where('name', 'Keller')->count())->toBe(1);
 });
