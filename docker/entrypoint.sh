@@ -8,6 +8,12 @@ if [ "${APP_ENV:-local}" = "production" ] && [ -z "${APP_KEY:-}" ]; then
     exit 1
 fi
 
+if [ "${APP_ENV:-local}" = "production" ]; then
+    # A bind mount on storage/ starts empty and hides the directories from the image.
+    mkdir -p storage/app/private storage/app/public storage/logs \
+        storage/framework/cache/data storage/framework/sessions storage/framework/views
+fi
+
 if [ "${APP_ENV:-local}" != "production" ]; then
     if [ ! -f vendor/autoload.php ] && [ -f composer.json ]; then
         echo "[entrypoint] vendor/ missing, running composer install"

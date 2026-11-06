@@ -35,7 +35,7 @@ COPY docker/supervisor/dev.conf /etc/supervisor/conf.d/app.conf
 ############################
 # assets: build Vite bundle
 ############################
-FROM node:22-alpine AS assets
+FROM --platform=$BUILDPLATFORM node:22-alpine AS assets
 
 WORKDIR /app
 COPY package.json package-lock.json .npmrc* ./
@@ -69,5 +69,6 @@ RUN setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 ENV LOG_CHANNEL=stderr
+ENV AUTH_SELF_SERVICE=false
 
 USER www-data

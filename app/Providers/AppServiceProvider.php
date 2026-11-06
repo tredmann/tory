@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +25,19 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureTrustedProxies();
+    }
+
+    /**
+     * Behind a TLS-terminating proxy, URLs are only https if its headers are trusted.
+     */
+    protected function configureTrustedProxies(): void
+    {
+        $proxies = (string) config('app.trusted_proxies');
+
+        if ($proxies !== '') {
+            TrustProxies::at(array_map(trim(...), explode(',', $proxies)));
+        }
     }
 
     /**
