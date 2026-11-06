@@ -28,7 +28,7 @@ The provider and model behind object recognition (`InventoryExtractor`) are set 
 ## Anti-goals
 
 - **Photos reaching a cloud vendor without the user choosing that.** Nothing ever switches the active provider on its own. If the active provider fails, the import fails.
-- **Keys readable in plain text** anywhere after saving: UI, logs, import errors, notifications or exception reports.
+- **Keys readable in plain text** anywhere after saving: UI, logs, import errors, notifications or exception reports. One deliberate exception, added later at the user's request: the provider export file, behind a warning, so credentials can move between installations.
 - **Existing installations breaking on upgrade.** No setup may be required for imports to keep working.
 - **A test gate.** Activating never requires a successful test, so the user is never blocked.
 
@@ -126,7 +126,7 @@ A separate navigation entry below Gegenstände, Lagerorte and Importe.
 
 ## Open before public deployment
 
-Self-registration is switched on in `AdminPanelProvider`. On a publicly reachable install, anyone who registers and verifies an email address could spend the stored keys and change the active provider. Not a problem while Tory runs locally, and out of scope here. It must be decided before going public, for example by turning registration off.
+Self-registration is switched on in `AdminPanelProvider`. On a publicly reachable install, anyone who registers and verifies an email address could download the stored keys in plain text through the export, spend them and change the active provider. Not a problem while Tory runs locally, and out of scope here. It must be decided before going public, for example by turning registration off.
 
 ## Left to the builder
 

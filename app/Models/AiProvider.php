@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\AiVendor;
 use Database\Factories\AiProviderFactory;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
@@ -20,8 +21,11 @@ class AiProvider extends Model
     /** @use HasFactory<AiProviderFactory> */
     use HasFactory;
 
+    use HasUuids;
+
     /** @var list<string> */
     protected $fillable = [
+        'uuid',
         'name',
         'vendor',
         'api_key',
@@ -33,6 +37,16 @@ class AiProvider extends Model
     protected $hidden = [
         'api_key',
     ];
+
+    /**
+     * The uuid identifies a provider across installations; `id` stays the key.
+     *
+     * @return list<string>
+     */
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
 
     /**
      * @return array<string, string>

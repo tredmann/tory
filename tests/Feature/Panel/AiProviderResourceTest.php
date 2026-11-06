@@ -1,6 +1,7 @@
 <?php
 
 use App\Ai\Agents\InventoryExtractor;
+use App\Ai\ProviderTransfer;
 use App\Enums\AiVendor;
 use App\Filament\Resources\AiProviders\AiProviderResource;
 use App\Filament\Resources\AiProviders\Pages\ManageAiProviders;
@@ -11,9 +12,13 @@ use Filament\Actions\Testing\TestAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Livewire\Features\SupportFileUploads\FileUploadConfiguration;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -188,6 +193,85 @@ test('the subheading names the env fallback only without an active provider', fu
 
     Livewire::test(ManageAiProviders::class)->assertDontSee('Serverkonfiguration (.env)');
 });
+
+test('export downloads a file with the key and warns about the plain text', function () {
+    $provider = AiProvider::factory()->create(['api_key' => 'sk-secret-3fa9']);
+
+    Livewire::test(ManageAiProviders::class)
+        ->mountAction('export')
+        ->assertMountedActionModalSee('im Klartext')
+        ->callMountedAction()
+        ->assertFileDownloaded(
+            'tory-ai-providers-'.now()->format('Y-m-d').'.json',
+            json_encode((new ProviderTransfer)->export()['document'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+        );
+
+    expect($provider->fresh()->api_key)->toBe('sk-secret-3fa9');
+});
+
+test('export is disabled without providers', function () {
+    Livewire::test(ManageAiProviders::class)
+        ->assertActionDisabled('export');
+});
+
+test('export warns when a provider with an unreadable key is left out', function () {
+    $broken = AiProvider::factory()->create();
+    AiProvider::factory()->create();
+    DB::table('ai_providers')->where('id', $broken->id)->update(['api_key' => 'not-a-valid-payload']);
+
+    Livewire::test(ManageAiProviders::class)
+        ->callAction('export')
+        ->assertNotified('1 Provider mit unlesbarem Key wurde nicht exportiert.');
+});
+
+test('import through the dialog creates providers inactive and reports the numbers', function () {
+    Storage::fake('local');
+    $existing = AiProvider::factory()->active()->create(['name' => 'OpenAI']);
+    $file = UploadedFile::fake()->createWithContent('provider.json', json_encode([
+        'format' => 'tory-ai-providers',
+        'version' => 1,
+        'providers' => [
+            ['uuid' => $existing->uuid, 'name' => 'OpenAI', 'vendor' => 'openai', 'api_key' => 'sk-a', 'url' => null, 'model' => 'x'],
+            ['uuid' => (string) Str::uuid(), 'name' => 'OpenAI', 'vendor' => 'openai', 'api_key' => 'sk-b', 'url' => null, 'model' => 'x'],
+            ['uuid' => (string) Str::uuid(), 'name' => 'Neu', 'vendor' => 'mistral', 'api_key' => 'sk-c', 'url' => null, 'model' => 'x'],
+        ],
+    ]));
+
+    Livewire::test(ManageAiProviders::class)
+        ->callAction('import', data: ['file' => $file])
+        ->assertHasNoFormErrors()
+        ->assertNotified('2 angelegt, 1 übersprungen, 1 umbenannt');
+
+    expect(AiProvider::query()->count())->toBe(3)
+        ->and(AiProvider::active()?->is($existing))->toBeTrue()
+        ->and(AiProvider::query()->where('name', 'OpenAI (Import)')->exists())->toBeTrue();
+});
+
+test('an invalid import file shows the error and changes nothing', function () {
+    Storage::fake('local');
+    $file = UploadedFile::fake()->createWithContent('provider.json', '{"providers": [sk-secret');
+
+    Livewire::test(ManageAiProviders::class)
+        ->callAction('import', data: ['file' => $file])
+        ->assertNotified('Import fehlgeschlagen');
+
+    expect(AiProvider::query()->count())->toBe(0);
+});
+
+test('the uploaded file is deleted after the import, also after a failed one', function (string $content) {
+    $uploads = Storage::fake(FileUploadConfiguration::disk());
+    $file = UploadedFile::fake()->createWithContent('provider.json', $content);
+
+    Livewire::test(ManageAiProviders::class)
+        ->callAction('import', data: ['file' => $file]);
+
+    $remaining = array_map(fn (string $path): ?string => $uploads->get($path), $uploads->allFiles());
+
+    expect($remaining)->not->toContain($content);
+})->with([
+    'invalid' => ['{"providers": [sk-secret'],
+    'valid' => [json_encode(['format' => 'tory-ai-providers', 'version' => 1, 'providers' => []])],
+]);
 
 test('the navigation entry sorts after Importe', function () {
     expect(AiProviderResource::getNavigationSort())->toBeGreaterThan(ImportResource::getNavigationSort());
