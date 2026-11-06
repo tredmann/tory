@@ -3,6 +3,11 @@ set -e
 
 cd /app
 
+if [ "${APP_ENV:-local}" = "production" ] && [ -z "${APP_KEY:-}" ]; then
+    echo "[entrypoint] APP_KEY is not set; refusing to start" >&2
+    exit 1
+fi
+
 if [ "${APP_ENV:-local}" != "production" ]; then
     if [ ! -f vendor/autoload.php ] && [ -f composer.json ]; then
         echo "[entrypoint] vendor/ missing, running composer install"

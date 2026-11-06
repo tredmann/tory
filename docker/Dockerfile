@@ -51,6 +51,7 @@ RUN npm run build
 FROM base AS prod
 
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+COPY docker/php.prod.ini "$PHP_INI_DIR/conf.d/zz-prod.ini"
 COPY docker/supervisor/prod.conf /etc/supervisor/conf.d/app.conf
 
 COPY composer.json composer.lock ./
@@ -59,7 +60,14 @@ RUN composer install --no-dev --prefer-dist --no-scripts --no-autoloader --no-in
 COPY . .
 COPY --from=assets /app/public/build public/build
 
-RUN composer dump-autoload --optimize --no-dev --no-interaction \
-    && chown -R www-data:www-data storage bootstrap/cache
+RUN composer dump-autoload --optimize --no-dev --no-interaction
+
+# The server runs as www-data and only binds ports 80/443 through this capability.
+RUN setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
+    && chown -R www-data:www-data storage bootstrap/cache /data/caddy /config/caddy
 
 ENV APP_ENV=production
+ENV APP_DEBUG=false
+ENV LOG_CHANNEL=stderr
+
+USER www-data

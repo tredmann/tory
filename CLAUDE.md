@@ -14,6 +14,7 @@ Laravel 13 + Filament 5 inventory app running on FrankenPHP (PHP 8.5) with Postg
 - The project directory is bind-mounted into `app` and `vite` at `/app`. Edit files on the host; no rebuild needed.
 - The app entrypoint (`docker/entrypoint.sh`) creates `.env`, generates `APP_KEY`, runs `composer install` when `vendor/` is missing, and runs migrations when `AUTO_MIGRATE=true` (set in `compose.yaml`).
 - Rebuild the image after changing `docker/` (`docker compose build app && docker compose up -d app`); recreate the container after changing `compose.yaml` (`docker compose up -d app`). The `app` service has a 4-minute stop grace period so a running extraction job can finish; a hard kill leaves an import on "Läuft" until the queue's `retry_after` (300 s) fails it.
+- **Production image:** the `prod` target of `docker/Dockerfile` contains the code and runs as `www-data` (ports 80/443 through a file capability). It refuses to start without `APP_KEY`, has no `.env`, logs to stderr and needs `DB_*`, `APP_URL`, optionally `AUTO_MIGRATE=true`, and a volume on `/app/storage` for the photos. The database needs the `vector` extension. Pushing a tag like `1.0.0` runs `.github/workflows/release.yml`, which pushes `tory:{tag}` and `tory:latest` to `registry.digitalocean.com/$DIGITALOCEAN_REGISTRY` (repository secrets `DIGITALOCEAN_ACCESS_TOKEN`, `DIGITALOCEAN_REGISTRY`). The workflow does not wait for the tests.
 
 ## Running commands
 
