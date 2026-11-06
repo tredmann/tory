@@ -4,7 +4,7 @@ namespace App\Filament\Resources\Items\Tables;
 
 use App\Ai\ItemSearch;
 use App\Filament\Resources\Items\ItemResource;
-use App\Filament\Resources\StorageLocations\StorageLocationResource;
+use App\Filament\Resources\Spots\SpotResource;
 use App\Models\Item;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -24,7 +24,7 @@ class ItemsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('storageLocation'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('spot'))
             ->columns([
                 ImageColumn::make('photos')
                     ->label('Foto')
@@ -33,9 +33,9 @@ class ItemsTable
                     ->limit(1),
                 TextColumn::make('title')
                     ->label('Titel'),
-                TextColumn::make('storageLocation.label')
-                    ->label('Lagerort')
-                    ->url(fn (Item $record): string => StorageLocationResource::getUrl('view', ['record' => $record->storageLocation])),
+                TextColumn::make('spot.label')
+                    ->label('Lagerplatz')
+                    ->url(fn (Item $record): string => SpotResource::getUrl('view', ['record' => $record->spot])),
                 TextColumn::make('created_at')
                     ->label('Angelegt')
                     ->dateTime()

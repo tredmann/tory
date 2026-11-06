@@ -5,7 +5,7 @@ use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Resources\Imports\Pages\CreateImport;
 use App\Jobs\ExtractImport;
 use App\Models\Import;
-use App\Models\StorageLocation;
+use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
@@ -38,7 +38,7 @@ test('guests are redirected to login', function () {
 
 test('submitting without images fails validation and dispatches nothing', function () {
     Livewire::test(CreateImport::class)
-        ->fillForm(['photos' => [], 'storage_location_id' => StorageLocation::factory()->create()->id])
+        ->fillForm(['photos' => [], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 
@@ -48,14 +48,14 @@ test('submitting without images fails validation and dispatches nothing', functi
 
 test('rejects a non-image file', function () {
     Livewire::test(CreateImport::class)
-        ->fillForm(['photos' => [UploadedFile::fake()->create('notes.jpg', 10, 'text/plain')], 'storage_location_id' => StorageLocation::factory()->create()->id])
+        ->fillForm(['photos' => [UploadedFile::fake()->create('notes.jpg', 10, 'text/plain')], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 });
 
 test('rejects image formats the provider cannot read', function () {
     Livewire::test(CreateImport::class)
-        ->fillForm(['photos' => [UploadedFile::fake()->create('photo.heic', 10, 'image/heic')], 'storage_location_id' => StorageLocation::factory()->create()->id])
+        ->fillForm(['photos' => [UploadedFile::fake()->create('photo.heic', 10, 'image/heic')], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 });
@@ -64,14 +64,14 @@ test('rejects more than six images', function () {
     $photos = collect(range(1, 7))->map(fn (int $i) => UploadedFile::fake()->image("p{$i}.jpg"))->all();
 
     Livewire::test(CreateImport::class)
-        ->fillForm(['photos' => $photos, 'storage_location_id' => StorageLocation::factory()->create()->id])
+        ->fillForm(['photos' => $photos, 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 });
 
 test('a valid upload stores the photos, creates a pending import, dispatches the job and redirects to the view page', function () {
     Livewire::test(CreateImport::class)
-        ->fillForm(['photos' => [UploadedFile::fake()->image('front.jpg'), UploadedFile::fake()->image('back.jpg')], 'storage_location_id' => StorageLocation::factory()->create()->id])
+        ->fillForm(['photos' => [UploadedFile::fake()->image('front.jpg'), UploadedFile::fake()->image('back.jpg')], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasNoFormErrors()
         ->assertRedirect(ImportResource::getUrl('view', ['record' => Import::first()]));
@@ -98,7 +98,7 @@ test('the old synchronous page is gone', function () {
 
 test('rejects photo paths outside the imports directory', function () {
     Livewire::test(CreateImport::class)
-        ->fillForm(['photos' => ['livewire-tmp/secret.jpg'], 'storage_location_id' => StorageLocation::factory()->create()->id])
+        ->fillForm(['photos' => ['livewire-tmp/secret.jpg'], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 
@@ -106,37 +106,37 @@ test('rejects photo paths outside the imports directory', function () {
     Queue::assertNothingPushed();
 });
 
-test('a storage location is required', function () {
+test('a spot is required', function () {
     Livewire::test(CreateImport::class)
-        ->fillForm(['photos' => [UploadedFile::fake()->image('a.jpg')], 'storage_location_id' => null])
+        ->fillForm(['photos' => [UploadedFile::fake()->image('a.jpg')], 'spot_id' => null])
         ->call('create')
-        ->assertHasFormErrors(['storage_location_id' => 'required']);
+        ->assertHasFormErrors(['spot_id' => 'required']);
 });
 
-test('the chosen location is stored on the import and remembered for the user', function () {
-    $location = StorageLocation::factory()->create();
+test('the chosen spot is stored on the import and remembered for the user', function () {
+    $spot = Spot::factory()->create();
 
     Livewire::test(CreateImport::class)
-        ->fillForm(['photos' => [UploadedFile::fake()->image('a.jpg')], 'storage_location_id' => $location->id])
+        ->fillForm(['photos' => [UploadedFile::fake()->image('a.jpg')], 'spot_id' => $spot->id])
         ->call('create')
         ->assertHasNoFormErrors();
 
-    expect(Import::sole()->storage_location_id)->toBe($location->id)
-        ->and($this->user->fresh()->last_storage_location_id)->toBe($location->id);
+    expect(Import::sole()->spot_id)->toBe($spot->id)
+        ->and($this->user->fresh()->last_spot_id)->toBe($spot->id);
 });
 
-test('the last used location is preselected', function () {
-    $location = StorageLocation::factory()->create();
-    $this->user->forceFill(['last_storage_location_id' => $location->id])->save();
+test('the last used spot is preselected', function () {
+    $spot = Spot::factory()->create();
+    $this->user->forceFill(['last_spot_id' => $spot->id])->save();
 
-    Livewire::test(CreateImport::class)->assertFormSet(['storage_location_id' => $location->id]);
+    Livewire::test(CreateImport::class)->assertFormSet(['spot_id' => $spot->id]);
 });
 
-test('nothing is preselected after the last used location was deleted', function () {
-    $location = StorageLocation::factory()->create();
-    $this->user->forceFill(['last_storage_location_id' => $location->id])->save();
-    $location->delete();
+test('nothing is preselected after the last used spot was deleted', function () {
+    $spot = Spot::factory()->create();
+    $this->user->forceFill(['last_spot_id' => $spot->id])->save();
+    $spot->delete();
     $this->actingAs($this->user->fresh());
 
-    Livewire::test(CreateImport::class)->assertFormSet(['storage_location_id' => null]);
+    Livewire::test(CreateImport::class)->assertFormSet(['spot_id' => null]);
 });

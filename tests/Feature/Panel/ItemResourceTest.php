@@ -5,7 +5,7 @@ use App\Filament\Resources\Items\Pages\EditItem;
 use App\Filament\Resources\Items\Pages\ListItems;
 use App\Filament\Resources\Items\Pages\ViewItem;
 use App\Models\Item;
-use App\Models\StorageLocation;
+use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -19,15 +19,15 @@ beforeEach(function () {
     $this->actingAs(User::factory()->create());
 });
 
-test('the list shows items newest first with their location', function () {
-    $location = StorageLocation::factory()->create(['name' => 'Elektronik-Kiste']);
-    $old = Item::factory()->create(['storage_location_id' => $location->id, 'created_at' => now()->subDay()]);
-    $new = Item::factory()->create(['storage_location_id' => $location->id]);
+test('the list shows items newest first with their spot', function () {
+    $spot = Spot::factory()->create(['name' => 'Elektronik-Kiste']);
+    $old = Item::factory()->create(['spot_id' => $spot->id, 'created_at' => now()->subDay()]);
+    $new = Item::factory()->create(['spot_id' => $spot->id]);
 
     Livewire::test(ListItems::class)
         ->assertCanSeeTableRecords([$new, $old], inOrder: true)
-        ->assertSee("{$location->code} · Elektronik-Kiste")
-        ->assertSeeHtml("/lagerorte/{$location->code}");
+        ->assertSee("{$spot->code} · Elektronik-Kiste")
+        ->assertSeeHtml("/spots/{$spot->code}");
 });
 
 test('items cannot be created directly', function () {
@@ -35,10 +35,10 @@ test('items cannot be created directly', function () {
         ->and(ItemResource::getPages())->not->toHaveKey('create');
 });
 
-test('the view page shows title, description and location', function () {
-    $location = StorageLocation::factory()->create(['name' => 'Schrank']);
+test('the view page shows title, description and spot', function () {
+    $spot = Spot::factory()->create(['name' => 'Schrank']);
     $item = Item::factory()->create([
-        'storage_location_id' => $location->id,
+        'spot_id' => $spot->id,
         'title' => 'Akkuschrauber',
         'description' => 'Gelb, mit Ladegerät',
     ]);
@@ -46,8 +46,8 @@ test('the view page shows title, description and location', function () {
     Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
         ->assertSee('Akkuschrauber')
         ->assertSee('Gelb, mit Ladegerät')
-        ->assertSee("{$location->code} · Schrank")
-        ->assertSeeHtml("/lagerorte/{$location->code}");
+        ->assertSee("{$spot->code} · Schrank")
+        ->assertSeeHtml("/spots/{$spot->code}");
 });
 
 test('the view page shows search terms', function () {
@@ -70,25 +70,25 @@ test('the edit page removes a search term', function () {
     expect($item->fresh()->search_terms)->toBe(['A']);
 });
 
-test('editing changes the title and moves the item to another location', function () {
+test('editing changes the title and moves the item to another spot', function () {
     $item = Item::factory()->create();
-    $target = StorageLocation::factory()->create();
+    $target = Spot::factory()->create();
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
-        ->fillForm(['title' => 'Neuer Titel', 'storage_location_id' => $target->id])
+        ->fillForm(['title' => 'Neuer Titel', 'spot_id' => $target->id])
         ->call('save')
         ->assertHasNoFormErrors();
 
-    expect($item->fresh())->title->toBe('Neuer Titel')->storage_location_id->toBe($target->id);
+    expect($item->fresh())->title->toBe('Neuer Titel')->spot_id->toBe($target->id);
 });
 
-test('title and location are required when editing', function () {
+test('title and spot are required when editing', function () {
     $item = Item::factory()->create();
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
-        ->fillForm(['title' => '', 'storage_location_id' => null])
+        ->fillForm(['title' => '', 'spot_id' => null])
         ->call('save')
-        ->assertHasFormErrors(['title' => 'required', 'storage_location_id' => 'required']);
+        ->assertHasFormErrors(['title' => 'required', 'spot_id' => 'required']);
 });
 
 test('the edit page offers no delete action', function () {

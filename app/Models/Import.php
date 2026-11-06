@@ -29,7 +29,7 @@ class Import extends Model
     /** @var list<string> */
     protected $fillable = [
         'user_id',
-        'storage_location_id',
+        'spot_id',
         'status',
         'photos',
         'title',
@@ -78,11 +78,11 @@ class Import extends Model
     }
 
     /**
-     * @return BelongsTo<StorageLocation, $this>
+     * @return BelongsTo<Spot, $this>
      */
-    public function storageLocation(): BelongsTo
+    public function spot(): BelongsTo
     {
-        return $this->belongsTo(StorageLocation::class);
+        return $this->belongsTo(Spot::class);
     }
 
     /**
@@ -97,15 +97,15 @@ class Import extends Model
      *
      * @throws ModelNotFoundException
      */
-    public function convertToItem(string $title, ?string $description, int $storageLocationId, array $searchTerms = []): Item
+    public function convertToItem(string $title, ?string $description, int $spotId, array $searchTerms = []): Item
     {
-        return DB::transaction(function () use ($title, $description, $storageLocationId, $searchTerms): Item {
+        return DB::transaction(function () use ($title, $description, $spotId, $searchTerms): Item {
             if (static::query()->whereKey($this->getKey())->delete() === 0) {
                 throw (new ModelNotFoundException)->setModel(static::class, [$this->getKey()]);
             }
 
             return Item::create([
-                'storage_location_id' => $storageLocationId,
+                'spot_id' => $spotId,
                 'title' => $title,
                 'description' => $description,
                 'search_terms' => $searchTerms,

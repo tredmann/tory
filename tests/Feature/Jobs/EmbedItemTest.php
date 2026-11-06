@@ -3,7 +3,7 @@
 use App\Ai\ItemEmbedder;
 use App\Jobs\EmbedItem;
 use App\Models\Item;
-use App\Models\StorageLocation;
+use App\Models\Spot;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
@@ -78,7 +78,7 @@ test('moving an item keeps its embedding and queues nothing', function () {
     $item = Item::factory()->create();
     $item->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->saveQuietly();
 
-    $item->update(['storage_location_id' => StorageLocation::factory()->create()->id]);
+    $item->update(['spot_id' => Spot::factory()->create()->id]);
 
     expect($item->fresh()->embedding)->not->toBeNull();
     Queue::assertPushed(EmbedItem::class, 1);

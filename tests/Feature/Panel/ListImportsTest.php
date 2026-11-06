@@ -2,7 +2,7 @@
 
 use App\Filament\Resources\Imports\Pages\ListImports;
 use App\Models\Import;
-use App\Models\StorageLocation;
+use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -31,13 +31,13 @@ test('the list offers the Erfassen action', function () {
     Livewire::test(ListImports::class)->assertActionVisible('create');
 });
 
-test('the list shows the storage location or a placeholder', function () {
-    $location = StorageLocation::factory()->create();
-    $with = Import::factory()->completed()->create(['storage_location_id' => $location->id]);
-    $without = Import::factory()->completed()->create(['storage_location_id' => null]);
+test('the list shows the spot or a placeholder', function () {
+    $spot = Spot::factory()->create();
+    $with = Import::factory()->completed()->create(['spot_id' => $spot->id]);
+    $without = Import::factory()->completed()->create(['spot_id' => null]);
 
     Livewire::test(ListImports::class)
         ->assertCanSeeTableRecords([$with, $without])
-        ->assertSee("{$location->code} · {$location->name}")
+        ->assertSee("{$spot->code} · {$spot->name}")
         ->assertSee('—');
 });

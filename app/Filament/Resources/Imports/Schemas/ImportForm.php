@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Imports\Schemas;
 
-use App\Filament\Resources\StorageLocations\Schemas\StorageLocationSelect;
+use App\Filament\Resources\Spots\Schemas\SpotSelect;
 use Filament\Forms\Components\FileUpload;
 use Filament\Schemas\Schema;
 
@@ -12,8 +12,8 @@ class ImportForm
     {
         return $schema
             ->components([
-                StorageLocationSelect::make()
-                    ->default(fn (): ?int => auth()->user()?->last_storage_location_id),
+                SpotSelect::make()
+                    ->default(fn (): ?int => auth()->user()?->last_spot_id),
                 FileUpload::make('photos')
                     ->label('Fotos')
                     ->disk('local')

@@ -2,7 +2,7 @@
 
 use App\Models\Import;
 use App\Models\Item;
-use App\Models\StorageLocation;
+use App\Models\Spot;
 use App\Models\User;
 use Filament\Facades\Filament;
 
@@ -26,14 +26,14 @@ test('record pages answer 404 for a key that is no valid key', function (string 
 })->with([
     '/gegenstaende/create',
     '/gegenstaende/abc',
-    '/lagerorte/abc',
-    '/lagerorte/abc/edit',
+    '/spots/abc',
+    '/spots/abc/edit',
     '/importe/abc',
-    '/lagerorte/99999999999999999999',
-    '/lagerorte/1',
-    '/lagerorte/ABC0',
-    '/lagerorte/ABCDE',
-    '/lagerorte/ABC%00',
+    '/spots/99999999999999999999',
+    '/spots/1',
+    '/spots/ABC0',
+    '/spots/ABCDE',
+    '/spots/ABC%00',
     '/gegenstaende/1',
     '/importe/1',
     '/gegenstaende/019a0000-0000-7000-8000-000000000000',
@@ -47,7 +47,7 @@ test('record pages still open for an existing record', function (string $prefix,
     $this->get("{$prefix}/{$record->getRouteKey()}")->assertOk();
 })->with([
     ['/gegenstaende', Item::class],
-    ['/lagerorte', StorageLocation::class],
+    ['/spots', Spot::class],
     ['/importe', Import::class],
 ]);
 

@@ -3,7 +3,7 @@
 use App\Enums\ImportStatus;
 use App\Models\Import;
 use App\Models\Item;
-use App\Models\StorageLocation;
+use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Queue;
@@ -67,35 +67,35 @@ test('deleting an import quietly keeps its photo files', function () {
 
 test('converting creates the item, removes the import and keeps the files', function () {
     Storage::disk('local')->put('imports/x.jpg', 'x');
-    $location = StorageLocation::factory()->create();
+    $spot = Spot::factory()->create();
     $import = Import::factory()->completed()->create(['photos' => ['imports/x.jpg']]);
 
-    $item = $import->convertToItem('Pi-Gehäuse', 'Schwarz', $location->id);
+    $item = $import->convertToItem('Pi-Gehäuse', 'Schwarz', $spot->id);
 
     expect($item)->title->toBe('Pi-Gehäuse')->description->toBe('Schwarz')
-        ->photos->toBe(['imports/x.jpg'])->storage_location_id->toBe($location->id)
+        ->photos->toBe(['imports/x.jpg'])->spot_id->toBe($spot->id)
         ->and(Import::count())->toBe(0);
     Storage::disk('local')->assertExists('imports/x.jpg');
 });
 
 test('conversion takes over the search terms', function () {
-    $location = StorageLocation::factory()->create();
+    $spot = Spot::factory()->create();
     $import = Import::factory()->completed()->create();
 
-    $item = $import->convertToItem('Tacker', null, $location->id, ['Hefter', 'Büro']);
+    $item = $import->convertToItem('Tacker', null, $spot->id, ['Hefter', 'Büro']);
 
     expect($item->fresh()->search_terms)->toBe(['Hefter', 'Büro']);
 });
 
 test('an import that was converted already cannot be converted again', function () {
     Storage::disk('local')->put('imports/x.jpg', 'x');
-    $location = StorageLocation::factory()->create();
+    $spot = Spot::factory()->create();
     $import = Import::factory()->completed()->create(['photos' => ['imports/x.jpg']]);
     $stale = Import::find($import->id);
 
-    $import->convertToItem('Erster', null, $location->id);
+    $import->convertToItem('Erster', null, $spot->id);
 
-    expect(fn () => $stale->convertToItem('Zweiter', null, $location->id))
+    expect(fn () => $stale->convertToItem('Zweiter', null, $spot->id))
         ->toThrow(ModelNotFoundException::class);
     expect(Item::count())->toBe(1);
     Storage::disk('local')->assertExists('imports/x.jpg');

@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Filament\Resources\StorageLocations\Schemas;
+namespace App\Filament\Resources\Spots\Schemas;
 
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
-class StorageLocationInfolist
+class SpotInfolist
 {
     public static function configure(Schema $schema): Schema
     {

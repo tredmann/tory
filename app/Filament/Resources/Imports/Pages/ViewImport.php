@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Imports\Pages;
 use App\Enums\ImportStatus;
 use App\Filament\Actions\RegenerateTextsAction;
 use App\Filament\Resources\Imports\ImportResource;
-use App\Filament\Resources\StorageLocations\Schemas\StorageLocationSelect;
+use App\Filament\Resources\Spots\Schemas\SpotSelect;
 use App\Jobs\ExtractImport;
 use App\Models\Import;
 use Filament\Actions\Action;
@@ -58,8 +58,8 @@ class ViewImport extends ViewRecord
                     'title' => $this->import()->title,
                     'description' => $this->import()->description,
                     'search_terms' => $this->import()->search_terms ?? [],
-                    'storage_location_id' => $this->import()->storage_location_id
-                        ?? auth()->user()?->last_storage_location_id,
+                    'spot_id' => $this->import()->spot_id
+                        ?? auth()->user()?->last_spot_id,
                 ])
                 ->schema([
                     TextInput::make('title')
@@ -71,14 +71,14 @@ class ViewImport extends ViewRecord
                     TagsInput::make('search_terms')
                         ->label('Suchbegriffe')
                         ->splitKeys(['Tab', ',']),
-                    StorageLocationSelect::make(),
+                    SpotSelect::make(),
                 ])
                 ->action(function (array $data): void {
-                    $locationId = (int) $data['storage_location_id'];
+                    $spotId = (int) $data['spot_id'];
 
-                    $this->import()->convertToItem($data['title'], $data['description'] ?? null, $locationId, $data['search_terms'] ?? []);
+                    $this->import()->convertToItem($data['title'], $data['description'] ?? null, $spotId, $data['search_terms'] ?? []);
 
-                    auth()->user()?->forceFill(['last_storage_location_id' => $locationId])->save();
+                    auth()->user()?->forceFill(['last_spot_id' => $spotId])->save();
 
                     Notification::make()
                         ->title('Gegenstand angelegt')

@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Item;
-use App\Models\StorageLocation;
+use App\Models\Spot;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,7 +19,7 @@ class ItemFactory extends Factory
     public function definition(): array
     {
         return [
-            'storage_location_id' => StorageLocation::factory(),
+            'spot_id' => Spot::factory(),
             'title' => fake()->words(3, true),
             'description' => fake()->sentence(),
             'photos' => ['imports/item.jpg'],

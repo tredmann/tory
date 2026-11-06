@@ -10,7 +10,7 @@ use App\Jobs\ExtractImport;
 use App\Models\AiProvider;
 use App\Models\Import;
 use App\Models\Item;
-use App\Models\StorageLocation;
+use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -143,20 +143,20 @@ test('multi-line descriptions keep their line breaks', function () {
         ->assertSeeHtml('white-space: pre-line');
 });
 
-test('the view page shows the storage location', function () {
-    $location = StorageLocation::factory()->create();
-    $import = Import::factory()->create(['storage_location_id' => $location->id]);
+test('the view page shows the spot', function () {
+    $spot = Spot::factory()->create();
+    $import = Import::factory()->create(['spot_id' => $spot->id]);
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
-        ->assertSee("{$location->code} · {$location->name}");
+        ->assertSee("{$spot->code} · {$spot->name}");
 });
 
-test('the view page renders an import without a storage location', function () {
-    $import = Import::factory()->completed()->create(['storage_location_id' => null]);
+test('the view page renders an import without a spot', function () {
+    $import = Import::factory()->completed()->create(['spot_id' => null]);
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
         ->assertOk()
-        ->assertSeeInOrder(['Lagerort', '—']);
+        ->assertSeeInOrder(['Lagerplatz', '—']);
 });
 
 test('convert and delete are offered only for completed and failed imports', function (string $state, bool $visible) {
@@ -169,15 +169,15 @@ test('convert and delete are offered only for completed and failed imports', fun
 })->with([['pending', false], ['running', false], ['completed', true], ['failed', true]]);
 
 test('convert is prefilled from the import', function () {
-    $location = StorageLocation::factory()->create();
-    $import = Import::factory()->completed()->create(['storage_location_id' => $location->id]);
+    $spot = Spot::factory()->create();
+    $import = Import::factory()->completed()->create(['spot_id' => $spot->id]);
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
         ->mountAction('convert')
         ->assertActionDataSet([
             'title' => 'Raspberry Pi 4',
             'description' => 'Grüne Platine mit vier USB-Anschlüssen.',
-            'storage_location_id' => $location->id,
+            'spot_id' => $spot->id,
         ]);
 });
 
@@ -190,8 +190,8 @@ test('convert prefills the search terms', function () {
 });
 
 test('convert stores the edited search terms', function () {
-    $location = StorageLocation::factory()->create();
-    $import = Import::factory()->completed()->create(['search_terms' => ['Tacker', 'Büro'], 'storage_location_id' => $location->id]);
+    $spot = Spot::factory()->create();
+    $import = Import::factory()->completed()->create(['search_terms' => ['Tacker', 'Büro'], 'spot_id' => $spot->id]);
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
         ->callAction('convert', data: ['search_terms' => ['Tacker']])
@@ -209,21 +209,21 @@ test('the view page shows search terms', function () {
         ->assertSee('Büro');
 });
 
-test('convert falls back to the last used location when the import has none', function () {
-    $location = StorageLocation::factory()->create();
+test('convert falls back to the last used spot when the import has none', function () {
+    $spot = Spot::factory()->create();
     $user = User::factory()->create();
-    $user->forceFill(['last_storage_location_id' => $location->id])->save();
+    $user->forceFill(['last_spot_id' => $spot->id])->save();
     $this->actingAs($user);
-    $import = Import::factory()->completed()->create(['storage_location_id' => null]);
+    $import = Import::factory()->completed()->create(['spot_id' => null]);
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
         ->mountAction('convert')
-        ->assertActionDataSet(['storage_location_id' => $location->id]);
+        ->assertActionDataSet(['spot_id' => $spot->id]);
 });
 
 test('convert with a corrected title creates the item and returns to the import list', function () {
-    $location = StorageLocation::factory()->create();
-    $import = Import::factory()->completed()->create(['storage_location_id' => $location->id]);
+    $spot = Spot::factory()->create();
+    $import = Import::factory()->completed()->create(['spot_id' => $spot->id]);
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
         ->callAction('convert', data: ['title' => 'Raspberry Pi 4 Model B'])
@@ -232,27 +232,27 @@ test('convert with a corrected title creates the item and returns to the import 
         ->assertRedirect(ImportResource::getUrl('index'));
 
     $item = Item::sole();
-    expect($item)->title->toBe('Raspberry Pi 4 Model B')->storage_location_id->toBe($location->id)
+    expect($item)->title->toBe('Raspberry Pi 4 Model B')->spot_id->toBe($spot->id)
         ->description->toBe('Grüne Platine mit vier USB-Anschlüssen.')
         ->and(Import::count())->toBe(0);
     Queue::assertPushed(EmbedItem::class, fn (EmbedItem $job) => $job->item->is($item));
 });
 
-test('convert remembers the chosen location for the user', function () {
-    $location = StorageLocation::factory()->create();
+test('convert remembers the chosen spot for the user', function () {
+    $spot = Spot::factory()->create();
     $user = User::factory()->create();
     $this->actingAs($user);
-    $import = Import::factory()->completed()->create(['storage_location_id' => null]);
+    $import = Import::factory()->completed()->create(['spot_id' => null]);
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
-        ->callAction('convert', data: ['storage_location_id' => $location->id]);
+        ->callAction('convert', data: ['spot_id' => $spot->id]);
 
-    expect($user->fresh()->last_storage_location_id)->toBe($location->id);
+    expect($user->fresh()->last_spot_id)->toBe($spot->id);
 });
 
 test('converting an import that was converted meanwhile answers 404 and creates nothing', function () {
-    $location = StorageLocation::factory()->create();
-    $import = Import::factory()->completed()->create(['storage_location_id' => $location->id]);
+    $spot = Spot::factory()->create();
+    $import = Import::factory()->completed()->create(['spot_id' => $spot->id]);
     $page = Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()]);
     Import::query()->whereKey($import->id)->delete();
 
@@ -262,23 +262,23 @@ test('converting an import that was converted meanwhile answers 404 and creates 
 });
 
 test('a failed import can be filled in by hand', function () {
-    $location = StorageLocation::factory()->create();
-    $import = Import::factory()->failed()->create(['storage_location_id' => null]);
+    $spot = Spot::factory()->create();
+    $import = Import::factory()->failed()->create(['spot_id' => null]);
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
-        ->callAction('convert', data: ['title' => 'Lötkolben', 'storage_location_id' => $location->id])
+        ->callAction('convert', data: ['title' => 'Lötkolben', 'spot_id' => $spot->id])
         ->assertHasNoActionErrors();
 
-    expect(Item::sole())->title->toBe('Lötkolben')->storage_location_id->toBe($location->id)
+    expect(Item::sole())->title->toBe('Lötkolben')->spot_id->toBe($spot->id)
         ->and(Import::count())->toBe(0);
 });
 
-test('convert requires title and location', function () {
+test('convert requires title and spot', function () {
     $import = Import::factory()->failed()->create();
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
-        ->callAction('convert', data: ['title' => '', 'storage_location_id' => null])
-        ->assertHasActionErrors(['title' => 'required', 'storage_location_id' => 'required']);
+        ->callAction('convert', data: ['title' => '', 'spot_id' => null])
+        ->assertHasActionErrors(['title' => 'required', 'spot_id' => 'required']);
 
     expect(Item::count())->toBe(0)->and(Import::count())->toBe(1);
 });

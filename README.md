@@ -13,12 +13,12 @@ Tory is a household inventory. Built so far (2026-11-04 to 2026-11-06):
 - **Stack and tooling.** Dockerised FrankenPHP app with queue worker and scheduler under supervisord, Postgres 18 with pgvector, Vite service, Pest/Pint/Larastan, Laravel Boost with the Filament skill, GitHub Actions test workflow.
 - **Panel.** Filament 5 is the whole app at `/`, with login, registration, password reset, email verification and profile. Every verified user sees everything; there is no policy layer yet.
 - **Photo imports.** "Importe" → "Erfassen" uploads 1–6 photos, stores them on the private disk and queues `ExtractImport`. The AI extractor (runs on the provider active on "Eigene KI", with `.env` as fallback) returns a German title and a search-friendly description. The import page polls until the job is done, shows the result or the error, and offers Retry and "Löschen".
-- **Storage locations.** "Lagerorte": every location has a permanent number (its id, shown as `Nr. 12 · Name`) and a page at `/lagerorte/{id}` that lists the items inside; that address is the future QR target.
-- **Items.** "Gegenstände": "Übernehmen" on a completed or failed import turns it into an item in a chosen storage location (the photo files stay where they are; ownership moves to the item). Items can be edited and deleted (photos included).
+- **Spots.** "Lagerplätze": every spot has a permanent random four-character code (shown as `4WWH · Name`) and a page at `/spots/{code}` that lists the items inside; that address is the future QR target.
+- **Items.** "Gegenstände": "Übernehmen" on a completed or failed import turns it into an item in a chosen spot (the photo files stay where they are; ownership moves to the item). Items can be edited and deleted (photos included).
 - **Eigene KI.** The panel entry "Eigene KI" (`/eigene-ki`) lists AI providers as cards (Ollama, Claude, OpenAI, Mistral). Create several, pick the model from a list fetched from the vendor or type it, test one with a bundled photo, and activate one with a click; the next import uses it. Nothing switches providers on its own. "Exportieren" downloads all providers as a JSON file **with the API keys in plain text**, and "Importieren" reads such a file on another installation: providers whose UUID already exists are skipped, new ones arrive inactive. Every verified user can export the keys, so decide about self-registration before making an installation public.
 - **Search.** The item list searches by keyword (title and description) and by meaning via embeddings (`bge-m3` on Ollama, 1024 dimensions, stored in pgvector). Run `ollama pull bge-m3` once to enable the semantic part; without it the search still works by keyword. `items:embed` catches up missing embeddings hourly.
 
-Next: print labels with QR codes for storage locations.
+Next: print labels with QR codes for spots.
 
 Design documents and plans for each feature are in `docs/superpowers/specs/` and `docs/superpowers/plans/`. Known small gaps are listed at the end of each plan's execution recap (Retry race under concurrent clicks, list table polling while idle, a handful of test-coverage gaps).
 

@@ -28,7 +28,7 @@ class Item extends Model
 
     /** @var list<string> */
     protected $fillable = [
-        'storage_location_id',
+        'spot_id',
         'title',
         'description',
         'photos',
@@ -71,10 +71,10 @@ class Item extends Model
     }
 
     /**
-     * @return BelongsTo<StorageLocation, $this>
+     * @return BelongsTo<Spot, $this>
      */
-    public function storageLocation(): BelongsTo
+    public function spot(): BelongsTo
     {
-        return $this->belongsTo(StorageLocation::class);
+        return $this->belongsTo(Spot::class);
     }
 }

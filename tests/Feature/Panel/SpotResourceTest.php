@@ -1,0 +1,129 @@
+<?php
+
+use App\Filament\Resources\Spots\Pages\CreateSpot;
+use App\Filament\Resources\Spots\Pages\EditSpot;
+use App\Filament\Resources\Spots\Pages\ListSpots;
+use App\Filament\Resources\Spots\Pages\ViewSpot;
+use App\Filament\Resources\Spots\RelationManagers\ItemsRelationManager;
+use App\Models\Item;
+use App\Models\Spot;
+use App\Models\User;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
+
+beforeEach(function () {
+    Storage::fake('local');
+    Queue::fake();
+    $this->actingAs(User::factory()->create());
+});
+
+test('the list shows spots by number with their item counts', function () {
+    [$first, $second] = Spot::factory()->count(2)->create();
+    Item::factory()->count(3)->create(['spot_id' => $second->id]);
+
+    Livewire::test(ListSpots::class)
+        ->assertCanSeeTableRecords([$first, $second], inOrder: true)
+        ->assertTableColumnStateSet('items_count', 0, $first)
+        ->assertTableColumnStateSet('items_count', 3, $second);
+});
+
+test('a spot is created with name and note', function () {
+    Livewire::test(CreateSpot::class)
+        ->fillForm(['name' => 'Elektronik-Kiste', 'note' => 'Keller, Regal links'])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Spot::sole())->name->toBe('Elektronik-Kiste')->note->toBe('Keller, Regal links');
+});
+
+test('the name is required', function () {
+    Livewire::test(CreateSpot::class)
+        ->fillForm(['name' => ''])
+        ->call('create')
+        ->assertHasFormErrors(['name' => 'required']);
+
+    expect(Spot::count())->toBe(0);
+});
+
+test('name and note can be edited', function () {
+    $spot = Spot::factory()->create();
+
+    Livewire::test(EditSpot::class, ['record' => $spot->getRouteKey()])
+        ->fillForm(['name' => 'Schrank', 'note' => 'Flur'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($spot->fresh())->name->toBe('Schrank')->note->toBe('Flur');
+});
+
+test('the list finds a spot by code and by name', function () {
+    $wanted = Spot::factory()->create(['code' => '7KQ3', 'name' => 'Schrank']);
+    $other = Spot::factory()->create(['code' => 'XY22', 'name' => 'Kiste']);
+
+    Livewire::test(ListSpots::class)
+        ->searchTable('7KQ3')
+        ->assertCanSeeTableRecords([$wanted])
+        ->assertCanNotSeeTableRecords([$other])
+        ->searchTable('Kiste')
+        ->assertCanSeeTableRecords([$other])
+        ->assertCanNotSeeTableRecords([$wanted]);
+});
+
+test('the view page shows code, name and note', function () {
+    $spot = Spot::factory()->create(['name' => 'Schrank', 'note' => 'Flur']);
+
+    Livewire::test(ViewSpot::class, ['record' => $spot->getRouteKey()])
+        ->assertSee($spot->code)->assertSee('Schrank')->assertSee('Flur');
+});
+
+test('a spot opens by its code in any case', function () {
+    $spot = Spot::factory()->create(['code' => '7KQ3']);
+
+    $this->get('/spots/7KQ3')->assertOk()->assertSee($spot->name);
+    $this->get('/spots/7kq3')->assertOk()->assertSee($spot->name);
+});
+
+test('an empty spot can be deleted', function () {
+    $spot = Spot::factory()->create();
+
+    Livewire::test(ViewSpot::class, ['record' => $spot->getRouteKey()])
+        ->callAction('delete');
+
+    expect(Spot::count())->toBe(0);
+});
+
+test('a spot holding items is not deleted and says why', function () {
+    $spot = Item::factory()->create()->spot;
+
+    Livewire::test(ViewSpot::class, ['record' => $spot->getRouteKey()])
+        ->callAction('delete')
+        ->assertNotified('Der Lagerplatz enthält noch Gegenstände und kann nicht gelöscht werden.');
+
+    expect($spot->fresh())->not->toBeNull();
+});
+
+test('a guest opening a spot is sent to login and back', function () {
+    auth()->logout();
+    $spot = Spot::factory()->create();
+
+    $this->get("/spots/{$spot->code}")->assertRedirect('/login');
+    expect(session('url.intended'))->toEndWith("/spots/{$spot->code}");
+});
+
+test('the edit page offers no delete action', function () {
+    $spot = Spot::factory()->create();
+
+    Livewire::test(EditSpot::class, ['record' => $spot->getRouteKey()])
+        ->assertActionDoesNotExist('delete');
+});
+
+test('the view page lists exactly the items inside the spot', function () {
+    $spot = Spot::factory()->create();
+    $inside = Item::factory()->count(2)->create(['spot_id' => $spot->id]);
+    $elsewhere = Item::factory()->create();
+
+    Livewire::test(ItemsRelationManager::class, ['ownerRecord' => $spot, 'pageClass' => ViewSpot::class])
+        ->assertCanSeeTableRecords($inside)
+        ->assertCanNotSeeTableRecords([$elsewhere]);
+});

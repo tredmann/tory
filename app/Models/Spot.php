@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
-use Database\Factories\StorageLocationFactory;
+use Database\Factories\SpotFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Random\Randomizer;
 
-class StorageLocation extends Model
+class Spot extends Model
 {
-    /** @use HasFactory<StorageLocationFactory> */
+    /** @use HasFactory<SpotFactory> */
     use HasFactory;
 
     /**
@@ -29,8 +29,8 @@ class StorageLocation extends Model
 
     protected static function booted(): void
     {
-        static::creating(function (StorageLocation $location): void {
-            $location->code ??= self::generateCode();
+        static::creating(function (Spot $spot): void {
+            $spot->code ??= self::generateCode();
         });
     }
 

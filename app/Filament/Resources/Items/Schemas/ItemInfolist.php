@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Items\Schemas;
 
-use App\Filament\Resources\StorageLocations\StorageLocationResource;
+use App\Filament\Resources\Spots\SpotResource;
 use App\Filament\Schemas\RegenerationEntries;
 use App\Models\Item;
 use Filament\Infolists\Components\ImageEntry;
@@ -35,9 +35,9 @@ class ItemInfolist
                             ->badge()
                             ->placeholder('—'),
                         ...RegenerationEntries::make(),
-                        TextEntry::make('storageLocation.label')
-                            ->label('Lagerort')
-                            ->url(fn (Item $record): string => StorageLocationResource::getUrl('view', ['record' => $record->storageLocation])),
+                        TextEntry::make('spot.label')
+                            ->label('Lagerplatz')
+                            ->url(fn (Item $record): string => SpotResource::getUrl('view', ['record' => $record->spot])),
                         TextEntry::make('created_at')
                             ->label('Angelegt')
                             ->dateTime(),

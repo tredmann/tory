@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Item;
-use App\Models\StorageLocation;
+use App\Models\Spot;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -11,14 +11,14 @@ beforeEach(function () {
     Queue::fake();
 });
 
-test('an item cannot exist without a storage location', function () {
-    expect(fn () => Item::factory()->create(['storage_location_id' => null]))->toThrow(QueryException::class);
+test('an item cannot exist without a spot', function () {
+    expect(fn () => Item::factory()->create(['spot_id' => null]))->toThrow(QueryException::class);
 });
 
-test('an item belongs to a storage location and casts its photos', function () {
+test('an item belongs to a spot and casts its photos', function () {
     $item = Item::factory()->create();
 
-    expect($item->fresh()->storageLocation)->toBeInstanceOf(StorageLocation::class)
+    expect($item->fresh()->spot)->toBeInstanceOf(Spot::class)
         ->and($item->fresh()->photos)->toBe(['imports/item.jpg']);
 });
 

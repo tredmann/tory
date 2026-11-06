@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\StorageLocations\RelationManagers;
+namespace App\Filament\Resources\Spots\RelationManagers;
 
 use App\Filament\Resources\Items\ItemResource;
 use App\Models\Item;

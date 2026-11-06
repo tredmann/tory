@@ -26,8 +26,8 @@ class ImportInfolist
                             ->disk('local')
                             ->visibility('private')
                             ->stacked(),
-                        TextEntry::make('storageLocation.label')
-                            ->label('Lagerort')
+                        TextEntry::make('spot.label')
+                            ->label('Lagerplatz')
                             ->placeholder('—'),
                         TextEntry::make('status')
                             ->label('Status')

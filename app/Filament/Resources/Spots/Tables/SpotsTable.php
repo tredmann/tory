@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Filament\Resources\StorageLocations\Tables;
+namespace App\Filament\Resources\Spots\Tables;
 
-use App\Filament\Resources\StorageLocations\StorageLocationResource;
-use App\Models\StorageLocation;
+use App\Filament\Resources\Spots\SpotResource;
+use App\Models\Spot;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class StorageLocationsTable
+class SpotsTable
 {
     public static function configure(Table $table): Table
     {
@@ -28,6 +28,6 @@ class StorageLocationsTable
                     ->counts('items'),
             ])
             ->defaultSort('id')
-            ->recordUrl(fn (StorageLocation $record): string => StorageLocationResource::getUrl('view', ['record' => $record]));
+            ->recordUrl(fn (Spot $record): string => SpotResource::getUrl('view', ['record' => $record]));
     }
 }

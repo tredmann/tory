@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Filament\Resources\StorageLocations\Schemas;
+namespace App\Filament\Resources\Spots\Schemas;
 
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 
-class StorageLocationForm
+class SpotForm
 {
     public static function configure(Schema $schema): Schema
     {

@@ -3,7 +3,7 @@
 use App\Models\AiProvider;
 use App\Models\Import;
 use App\Models\Item;
-use App\Models\StorageLocation;
+use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -20,8 +20,8 @@ test('new records get a uuid as primary key', function (string $model) {
     User::class,
 ]);
 
-test('storage locations keep their internal numeric key', function () {
-    expect(StorageLocation::factory()->create()->getKey())->toBeInt();
+test('spots keep their internal numeric key', function () {
+    expect(Spot::factory()->create()->getKey())->toBeInt();
 });
 
 test('sessions can reference a user by uuid', function () {

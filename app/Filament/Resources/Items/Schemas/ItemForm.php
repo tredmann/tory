@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Items\Schemas;
 
-use App\Filament\Resources\StorageLocations\Schemas\StorageLocationSelect;
+use App\Filament\Resources\Spots\Schemas\SpotSelect;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -24,7 +24,7 @@ class ItemForm
                 TagsInput::make('search_terms')
                     ->label('Suchbegriffe')
                     ->splitKeys(['Tab', ',']),
-                StorageLocationSelect::make(),
+                SpotSelect::make(),
             ]);
     }
 }

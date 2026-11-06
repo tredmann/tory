@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
-use App\Models\StorageLocation;
+use App\Models\Spot;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<StorageLocation>
+ * @extends Factory<Spot>
  */
-class StorageLocationFactory extends Factory
+class SpotFactory extends Factory
 {
     /**
      * Define the model's default state.
