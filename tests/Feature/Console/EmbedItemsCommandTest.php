@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\EmbedItems;
 use App\Models\Item;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Queue;
@@ -47,4 +48,17 @@ test('items:embed carries on after one item fails', function () {
 
 test('items:embed is scheduled hourly', function () {
     $this->artisan('schedule:list')->expectsOutputToContain('0 * * * *  php artisan items:embed');
+});
+
+test('items:embed covers a backlog larger than one page', function () {
+    EmbedItems::$pageSize = 2;
+    Item::factory()->count(5)->create();
+
+    try {
+        $this->artisan('items:embed')->assertSuccessful();
+    } finally {
+        EmbedItems::$pageSize = 500;
+    }
+
+    expect(Item::whereNull('embedding')->count())->toBe(0);
 });

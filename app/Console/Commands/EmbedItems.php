@@ -13,14 +13,19 @@ use Throwable;
 #[Description('Berechnet fehlende Embeddings für Gegenstände')]
 class EmbedItems extends Command
 {
+    /**
+     * Number of items loaded per page; paging is by id, so filling the
+     * embedding column does not shift later pages.
+     */
+    public static int $pageSize = 500;
+
     public function handle(ItemEmbedder $embedder): int
     {
         $embedded = 0;
 
         Item::query()
             ->when(! $this->option('all'), fn ($query) => $query->whereNull('embedding'))
-            ->orderBy('id')
-            ->each(function (Item $item) use ($embedder, &$embedded): void {
+            ->eachById(function (Item $item) use ($embedder, &$embedded): void {
                 try {
                     $vector = $embedder->embed($embedder->textFor($item));
 
@@ -31,7 +36,7 @@ class EmbedItems extends Command
 
                     $this->warn("Gegenstand {$item->getKey()} konnte nicht eingebettet werden: {$e->getMessage()}");
                 }
-            });
+            }, self::$pageSize);
 
         $this->info("{$embedded} Gegenstände eingebettet.");
 
