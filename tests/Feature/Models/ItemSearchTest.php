@@ -113,6 +113,7 @@ test('a blank term returns everything and embeds nothing', function () {
     itemWith(['title' => 'A']);
     itemWith(['title' => 'B']);
 
-    expect(Item::query()->search('   ')->count())->toBe(2);
+    expect(Item::query()->search('   ')->count())->toBe(2)
+        ->and(Item::query()->search("\u{00A0}\u{00A0}")->count())->toBe(2);
     Embeddings::assertNothingGenerated();
 });

@@ -82,11 +82,11 @@ class Item extends Model
     {
         $term = trim($term);
 
-        if ($term === '') {
+        $keyword = $term === '' ? null : self::keywordCondition($term);
+
+        if ($keyword === null) {
             return;
         }
-
-        $keyword = self::keywordCondition($term);
 
         try {
             $vector = app(ItemEmbedder::class)->embed($term, timeout: 3);
@@ -114,11 +114,16 @@ class Item extends Model
      * whitespace-separated word must occur in title or description, with
      * `\`, `%` and `_` escaped. Used for both filtering and ranking.
      *
-     * @return array{sql: literal-string, bindings: list<string>}
+     * @return array{sql: literal-string, bindings: list<string>}|null null when the term has no words
      */
-    private static function keywordCondition(string $term): array
+    private static function keywordCondition(string $term): ?array
     {
         $words = preg_split('/\s+/u', $term, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if ($words === []) {
+            return null;
+        }
+
         /** @var list<literal-string> $sql */
         $sql = [];
         $bindings = [];
