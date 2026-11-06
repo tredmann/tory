@@ -138,9 +138,9 @@ test('the view page shows the storage location', function () {
 });
 
 test('the view page renders an import without a storage location', function () {
-    $import = Import::factory()->create(['storage_location_id' => null]);
+    $import = Import::factory()->completed()->create(['storage_location_id' => null]);
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
         ->assertOk()
-        ->assertSee('Lagerort');
+        ->assertSeeInOrder(['Lagerort', '—']);
 });

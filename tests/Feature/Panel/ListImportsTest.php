@@ -33,10 +33,11 @@ test('the list offers the Erfassen action', function () {
 
 test('the list shows the storage location or a placeholder', function () {
     $location = StorageLocation::factory()->create();
-    $with = Import::factory()->create(['storage_location_id' => $location->id]);
-    $without = Import::factory()->create(['storage_location_id' => null]);
+    $with = Import::factory()->completed()->create(['storage_location_id' => $location->id]);
+    $without = Import::factory()->completed()->create(['storage_location_id' => null]);
 
     Livewire::test(ListImports::class)
         ->assertCanSeeTableRecords([$with, $without])
-        ->assertSee("Nr. {$location->id} · {$location->name}");
+        ->assertSee("Nr. {$location->id} · {$location->name}")
+        ->assertSee('—');
 });
