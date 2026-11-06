@@ -1,12 +1,15 @@
 <?php
 
 use App\Ai\Agents\InventoryExtractor;
+use App\Ai\ProviderFailure;
 use App\Enums\AiVendor;
 use App\Enums\ImportStatus;
+use App\Enums\ProviderFailureReason;
 use App\Jobs\ExtractImport;
 use App\Models\AiProvider;
 use App\Models\Import;
 use Illuminate\Support\Facades\Exceptions;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -131,4 +134,79 @@ test('falls back to the inventory config without an active provider', function (
     (new ExtractImport(Import::factory()->create()))->handle();
 
     InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->provider->driver() === 'ollama');
+});
+
+test('stores reason and provider name for a fixable failure', function () {
+    Exceptions::fake();
+    Http::fake(['*' => Http::response([], 401)]);
+    AiProvider::factory()->active()->create(['name' => 'Claude schnell']);
+    $import = Import::factory()->create();
+    $job = new ExtractImport($import);
+
+    try {
+        $job->handle();
+    } catch (Throwable $e) {
+        expect($e)->toBeInstanceOf(ProviderFailure::class);
+        (new ExtractImport($import))->failed($e);
+    }
+
+    expect($import->fresh())
+        ->status->toBe(ImportStatus::Failed)
+        ->failure_reason->toBe(ProviderFailureReason::KeyRejected)
+        ->failure_provider->toBe('Claude schnell');
+});
+
+test('a vendor error echoing the key does not leak it', function () {
+    Exceptions::fake();
+    Http::fake(['*' => Http::response(['error' => ['message' => 'bad key sk-secret-3fa9']], 401)]);
+    AiProvider::factory()->active()->create(['api_key' => 'sk-secret-3fa9']);
+    $job = new ExtractImport($import = Import::factory()->create());
+
+    try {
+        $job->handle();
+    } catch (Throwable $e) {
+        $job->failed($e);
+    }
+
+    expect($import->fresh()->error)->not->toContain('sk-secret');
+    Exceptions::assertReported(fn (ProviderFailure $e) => ! str_contains($e->getMessage(), 'sk-secret') && $e->getPrevious() === null);
+});
+
+test('a failure does not change the active provider', function () {
+    Exceptions::fake();
+    Http::fake(['*' => Http::response([], 401)]);
+    $active = AiProvider::factory()->active()->create();
+    $other = AiProvider::factory()->create();
+
+    try {
+        (new ExtractImport(Import::factory()->create()))->handle();
+    } catch (Throwable) {
+    }
+
+    expect($active->fresh()->is_active)->toBeTrue()->and($other->fresh()->is_active)->toBeFalse();
+});
+
+test('without an active provider a failure stays unclassified', function () {
+    Exceptions::fake();
+    InventoryExtractor::fake(fn () => throw new RuntimeException('Connection refused'));
+    $import = Import::factory()->create();
+    $job = new ExtractImport($import);
+
+    try {
+        $job->handle();
+    } catch (Throwable $e) {
+        expect($e)->not->toBeInstanceOf(ProviderFailure::class);
+        $job->failed($e);
+    }
+
+    expect($import->fresh())->failure_reason->toBeNull()->failure_provider->toBeNull()->error->toBe('Connection refused');
+});
+
+test('a success clears earlier failure details', function () {
+    InventoryExtractor::fake([['title' => 'A', 'description' => 'B']]);
+    $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::KeyRejected, 'Claude')->create();
+
+    (new ExtractImport($import))->handle();
+
+    expect($import->fresh())->failure_reason->toBeNull()->failure_provider->toBeNull();
 });

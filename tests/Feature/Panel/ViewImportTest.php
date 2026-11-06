@@ -1,10 +1,13 @@
 <?php
 
 use App\Enums\ImportStatus;
+use App\Enums\ProviderFailureReason;
+use App\Filament\Resources\AiProviders\AiProviderResource;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Resources\Imports\Pages\ViewImport;
 use App\Jobs\EmbedItem;
 use App\Jobs\ExtractImport;
+use App\Models\AiProvider;
 use App\Models\Import;
 use App\Models\Item;
 use App\Models\StorageLocation;
@@ -254,4 +257,53 @@ test('deleting an import removes the row and its photo files', function () {
 
     expect(Import::count())->toBe(0);
     Storage::disk('local')->assertMissing('imports/y.jpg');
+});
+
+test('a fixable failure names the provider and links to the settings with debug off', function () {
+    config(['app.debug' => false]);
+    $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::KeyRejected, 'Claude')->create();
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertSee('Claude hat den API-Key abgelehnt.')
+        ->assertSee('Provider prüfen')
+        ->assertSeeHtml(AiProviderResource::getUrl('index'))
+        ->assertDontSee('Connection refused')
+        ->assertDontSee('Die Analyse ist fehlgeschlagen');
+});
+
+test('other failures keep the general message with debug off', function () {
+    config(['app.debug' => false]);
+    $import = Import::factory()->failed()->create();
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertSee('Die Analyse ist fehlgeschlagen. Bitte erneut versuchen.')
+        ->assertDontSee('Provider prüfen');
+});
+
+test('debug mode also shows the raw error of a fixable failure', function () {
+    config(['app.debug' => true]);
+    $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::Unreachable, 'Ollama')->create();
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertSee('Ollama ist nicht erreichbar.')
+        ->assertSee('Connection refused');
+});
+
+test('the failure sentence survives the provider being renamed or deleted', function () {
+    config(['app.debug' => false]);
+    expect(AiProvider::count())->toBe(0);
+    $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::UnknownModel, 'Gelöschter Provider')->create();
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertSee('Gelöschter Provider kennt das eingestellte Modell nicht.')
+        ->assertSeeHtml(AiProviderResource::getUrl('index'));
+});
+
+test('retry clears the failure details and runs on the provider active now', function () {
+    $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::KeyRejected, 'Claude')->create();
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])->callAction('retry');
+
+    expect($import->fresh())->failure_reason->toBeNull()->failure_provider->toBeNull();
+    Queue::assertPushed(ExtractImport::class);
 });

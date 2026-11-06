@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Ai\Agents\InventoryExtractor;
+use App\Ai\ProviderFailure;
 use App\Enums\ImportStatus;
 use App\Models\AiProvider;
 use App\Models\Import;
@@ -28,6 +29,8 @@ class ExtractImport implements ShouldQueue
 
     public function handle(): void
     {
+        $aiProvider = null;
+
         try {
             $this->import->update(['status' => ImportStatus::Running]);
 
@@ -42,15 +45,23 @@ class ExtractImport implements ShouldQueue
                 return Image::fromStorage($path, 'local');
             }, $photos);
 
-            $result = InventoryExtractor::make(aiProvider: AiProvider::active())->extract($attachments);
+            $aiProvider = AiProvider::active();
+
+            $result = InventoryExtractor::make(aiProvider: $aiProvider)->extract($attachments);
 
             $this->import->update([
                 'title' => $result['title'],
                 'description' => $result['description'],
                 'error' => null,
+                'failure_reason' => null,
+                'failure_provider' => null,
                 'status' => ImportStatus::Completed,
             ]);
         } catch (Throwable $e) {
+            if ($aiProvider !== null) {
+                $e = ProviderFailure::from($e, $aiProvider);
+            }
+
             report($e);
 
             throw $e;
@@ -64,6 +75,8 @@ class ExtractImport implements ShouldQueue
             'title' => null,
             'description' => null,
             'error' => $exception?->getMessage() ?: 'Der Auftrag wurde abgebrochen.',
+            'failure_reason' => $exception instanceof ProviderFailure ? $exception->reason : null,
+            'failure_provider' => $exception instanceof ProviderFailure && $exception->reason !== null ? $exception->providerName : null,
         ]);
     }
 }

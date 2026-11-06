@@ -34,6 +34,8 @@ class ViewImport extends ViewRecord
                     $import->update([
                         'status' => ImportStatus::Pending,
                         'error' => null,
+                        'failure_reason' => null,
+                        'failure_provider' => null,
                         'title' => null,
                         'description' => null,
                     ]);

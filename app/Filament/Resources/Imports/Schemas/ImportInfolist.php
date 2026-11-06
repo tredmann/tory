@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Imports\Schemas;
 
 use App\Enums\ImportStatus;
+use App\Filament\Resources\AiProviders\AiProviderResource;
 use App\Models\Import;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -36,10 +37,17 @@ class ImportInfolist
                             ->label('Beschreibung')
                             ->extraAttributes(['style' => 'white-space: pre-line'])
                             ->visible(fn (Import $record): bool => filled($record->description)),
+                        TextEntry::make('failure_message')
+                            ->label('Fehler')
+                            ->color('danger')
+                            ->url(AiProviderResource::getUrl('index'))
+                            ->visible(fn (Import $record): bool => $record->status === ImportStatus::Failed && $record->failure_reason !== null)
+                            ->state(fn (Import $record): string => $record->failureMessage().' Provider prüfen'),
                         TextEntry::make('error')
                             ->label('Fehler')
                             ->color('danger')
-                            ->visible(fn (Import $record): bool => $record->status === ImportStatus::Failed)
+                            ->visible(fn (Import $record): bool => $record->status === ImportStatus::Failed
+                                && (app()->hasDebugModeEnabled() || $record->failure_reason === null))
                             ->state(fn (Import $record): ?string => app()->hasDebugModeEnabled()
                                 ? $record->error
                                 : 'Die Analyse ist fehlgeschlagen. Bitte erneut versuchen.'),

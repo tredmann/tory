@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ImportStatus;
+use App\Enums\ProviderFailureReason;
 use Database\Factories\ImportFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +26,8 @@ class Import extends Model
         'title',
         'description',
         'error',
+        'failure_reason',
+        'failure_provider',
     ];
 
     protected static function booted(): void
@@ -35,14 +38,24 @@ class Import extends Model
     }
 
     /**
-     * @return array{status: 'App\\Enums\\ImportStatus', photos: 'array'}
+     * @return array{status: 'App\\Enums\\ImportStatus', photos: 'array', failure_reason: 'App\\Enums\\ProviderFailureReason'}
      */
     protected function casts(): array
     {
         return [
             'status' => ImportStatus::class,
             'photos' => 'array',
+            'failure_reason' => ProviderFailureReason::class,
         ];
+    }
+
+    /**
+     * The fixed sentence for a failure the user can fix on "Eigene KI". It
+     * uses the stored provider name, so it survives renaming or deleting.
+     */
+    public function failureMessage(): ?string
+    {
+        return $this->failure_reason?->message($this->failure_provider ?? 'Der KI-Provider');
     }
 
     /**

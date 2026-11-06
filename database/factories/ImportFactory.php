@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\ImportStatus;
+use App\Enums\ProviderFailureReason;
 use App\Models\Import;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -50,6 +51,14 @@ class ImportFactory extends Factory
         return $this->state([
             'status' => ImportStatus::Failed,
             'error' => 'Connection refused',
+        ]);
+    }
+
+    public function providerFailure(ProviderFailureReason $reason, string $providerName): static
+    {
+        return $this->state([
+            'failure_reason' => $reason,
+            'failure_provider' => $providerName,
         ]);
     }
 }
