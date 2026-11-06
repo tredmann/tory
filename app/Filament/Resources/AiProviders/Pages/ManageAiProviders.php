@@ -103,8 +103,11 @@ class ManageAiProviders extends ManageRecords
 
     public function getSubheading(): string|Htmlable|null
     {
-        return AiProvider::active() === null
-            ? 'Aktuell gilt die Serverkonfiguration (.env).'
-            : null;
+        return match ([AiProvider::active() === null, AiProvider::activeForSearch() === null]) {
+            [true, true] => 'Aktuell gilt die Serverkonfiguration (.env).',
+            [true, false] => 'Für die Bilderkennung gilt die Serverkonfiguration (.env).',
+            [false, true] => 'Für die Suche gilt die Serverkonfiguration (.env).',
+            default => null,
+        };
     }
 }

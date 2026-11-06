@@ -5,6 +5,8 @@ namespace App\Filament\Resources\AiProviders\Schemas;
 use App\Ai\ProviderModels;
 use App\Enums\AiVendor;
 use App\Models\AiProvider;
+use App\Models\Item;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Utilities\Get;
@@ -13,6 +15,8 @@ use Filament\Schemas\Schema;
 class AiProviderForm
 {
     public const DEFAULT_OLLAMA_URL = 'http://host.docker.internal:11434';
+
+    public const DEFAULT_MIN_SIMILARITY = 0.5;
 
     public static function configure(Schema $schema): Schema
     {
@@ -50,14 +54,77 @@ class AiProviderForm
                 ->dehydrateStateUsing(fn (?string $state): string => rtrim(trim((string) $state), '/'))
                 ->live(onBlur: true),
             TextInput::make('model')
-                ->label('Modell')
-                ->required()
+                ->label('Modell für Bilderkennung')
+                ->required(fn (Get $get, ?AiProvider $record): bool => ! (self::vendor($get)?->supportsEmbeddings() ?? true)
+                    || self::cleaned($get('embedding_model')) === null
+                    || $record?->is_active === true)
                 ->maxLength(255)
                 ->datalist(fn (Get $get, ?AiProvider $record): array => self::models($get, $record) ?? [])
-                ->helperText(fn (Get $get, ?AiProvider $record): ?string => self::models($get, $record) === null
-                    ? 'Modelle konnten nicht geladen werden. Du kannst den Namen auch eintippen.'
-                    : null),
+                ->helperText(fn (Get $get, ?AiProvider $record): ?string => self::modelsHint($get, $record))
+                ->dehydrateStateUsing(fn (?string $state): ?string => self::cleaned($state))
+                ->live(onBlur: true),
+            TextInput::make('embedding_model')
+                ->label('Embedding-Modell')
+                ->visible(fn (Get $get): bool => self::vendor($get)?->supportsEmbeddings() ?? false)
+                ->required(fn (Get $get, ?AiProvider $record): bool => self::cleaned($get('model')) === null
+                    || $record?->is_active_for_search === true)
+                ->maxLength(255)
+                ->datalist(fn (Get $get, ?AiProvider $record): array => self::models($get, $record) ?? [])
+                ->helperText(fn (Get $get, ?AiProvider $record): ?string => self::modelsHint($get, $record))
+                ->dehydrateStateUsing(fn (?string $state): ?string => self::cleaned($state))
+                ->live(onBlur: true),
+            TextInput::make('search_min_similarity')
+                ->label('Mindest-Ähnlichkeit')
+                ->numeric()
+                ->minValue(0)
+                ->maxValue(1)
+                ->step(0.01)
+                ->default(self::DEFAULT_MIN_SIMILARITY)
+                ->visible(fn (Get $get): bool => (self::vendor($get)?->supportsEmbeddings() ?? false)
+                    && self::cleaned($get('embedding_model')) !== null)
+                ->required()
+                ->helperText('Ähnlichkeitswerte unterscheiden sich zwischen Modellen. Passe den Wert an, wenn die Suche Unpassendes zeigt oder Passendes fehlt.'),
+            Checkbox::make('confirm_search_switch')
+                ->label(fn (Get $get, ?AiProvider $record): string => self::switchNotice(
+                    (string) $record?->embedding_model,
+                    (string) self::cleaned($get('embedding_model')),
+                ))
+                ->dehydrated(false)
+                ->accepted()
+                ->visible(function (Get $get, ?AiProvider $record): bool {
+                    $embeddingModel = self::cleaned($get('embedding_model'));
+
+                    return $record?->is_active_for_search === true
+                        && $embeddingModel !== null
+                        && $embeddingModel !== $record->embedding_model;
+                }),
         ]);
+    }
+
+    /**
+     * What a switch of the search provider means, for the activation dialog
+     * and the confirmation checkbox of the edit dialog.
+     */
+    public static function switchNotice(string $oldModel, string $newModel): string
+    {
+        $itemCount = Item::query()->count();
+        $items = $itemCount === 1 ? '1 Gegenstand wird' : "{$itemCount} Gegenstände werden";
+
+        return "Die Suche wechselt von {$oldModel} zu {$newModel}. {$items} neu berechnet, bis zum Ende bleibt die semantische Suche unvollständig. Bei einem kostenpflichtigen Anbieter entstehen dafür Kosten.";
+    }
+
+    private static function modelsHint(Get $get, ?AiProvider $record): ?string
+    {
+        return self::models($get, $record) === null
+            ? 'Modelle konnten nicht geladen werden. Du kannst den Namen auch eintippen.'
+            : null;
+    }
+
+    private static function cleaned(mixed $state): ?string
+    {
+        $text = trim((string) $state);
+
+        return $text === '' ? null : $text;
     }
 
     /**

@@ -3,8 +3,11 @@
 namespace App\Filament\Resources\AiProviders\Tables;
 
 use App\Ai\ProviderTester;
+use App\Ai\SearchProviderSwitch;
 use App\Enums\AiVendor;
+use App\Filament\Resources\AiProviders\Schemas\AiProviderForm;
 use App\Models\AiProvider;
+use App\Models\Item;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -13,6 +16,7 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 
 class AiProvidersTable
 {
@@ -24,7 +28,10 @@ class AiProvidersTable
                     TextColumn::make('name')
                         ->weight(FontWeight::Bold),
                     TextColumn::make('vendor'),
-                    TextColumn::make('model'),
+                    TextColumn::make('model')
+                        ->prefix('Bilderkennung: '),
+                    TextColumn::make('embedding_model')
+                        ->prefix('Embedding: '),
                     TextColumn::make('connection')
                         ->state(fn (AiProvider $record): string => match (true) {
                             $record->vendor === AiVendor::Ollama => (string) $record->url,
@@ -36,21 +43,59 @@ class AiProvidersTable
                         ->state(fn (AiProvider $record): ?string => $record->is_active ? 'Aktiv' : null)
                         ->badge()
                         ->color('success'),
+                    TextColumn::make('is_active_for_search')
+                        ->state(fn (AiProvider $record): ?string => $record->is_active_for_search ? 'Suche aktiv' : null)
+                        ->badge()
+                        ->color('success'),
+                    TextColumn::make('search_status')
+                        ->state(fn (AiProvider $record): ?string => $record->is_active_for_search ? self::searchProgress() : null),
+                    TextColumn::make('search_failure')
+                        ->state(fn (AiProvider $record): ?string => $record->is_active_for_search && filled($record->search_failure)
+                            ? "{$record->search_failure} Es wird stündlich erneut versucht."
+                            : null)
+                        ->color('danger'),
                 ]),
             ])
             ->contentGrid(['md' => 2, 'xl' => 3])
             ->paginated(false)
             ->defaultSort('name')
-            ->recordClasses(fn (AiProvider $record): ?string => $record->is_active ? 'tory-active-provider' : null)
+            ->poll(fn (): ?string => AiProvider::activeForSearch() !== null && Item::query()->whereNull('embedding')->exists() ? '5s' : null)
+            ->recordClasses(fn (AiProvider $record): ?string => $record->is_active || $record->is_active_for_search ? 'tory-active-provider' : null)
             ->recordActions([
                 Action::make('activate')
                     ->label('Aktivieren')
-                    ->hidden(fn (AiProvider $record): bool => $record->is_active)
+                    ->hidden(fn (AiProvider $record): bool => $record->is_active || blank($record->model))
                     ->action(function (AiProvider $record): void {
                         $record->activate();
 
                         Notification::make()
                             ->title('Provider aktiviert')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('activateForSearch')
+                    ->label('Für Suche aktivieren')
+                    ->hidden(fn (AiProvider $record): bool => $record->is_active_for_search || blank($record->embedding_model))
+                    ->requiresConfirmation()
+                    ->modalHeading('Für Suche aktivieren')
+                    ->modalDescription(fn (AiProvider $record): string => AiProviderForm::switchNotice(
+                        AiProvider::activeForSearch()->embedding_model ?? 'Serverkonfiguration (.env)',
+                        (string) $record->embedding_model,
+                    ))
+                    ->modalSubmitActionLabel('Aktivieren und neu berechnen')
+                    ->mountUsing(function (Action $action, AiProvider $record, SearchProviderSwitch $switch): void {
+                        $reason = $switch->probe($record, (string) $record->embedding_model);
+
+                        if ($reason !== null) {
+                            self::notifyProbeFailure($reason);
+                            $action->cancel();
+                        }
+                    })
+                    ->action(function (AiProvider $record, SearchProviderSwitch $switch): void {
+                        $switch->switchTo($record, (string) $record->embedding_model);
+
+                        Notification::make()
+                            ->title('Suche wird neu aufgebaut')
                             ->success()
                             ->send();
                     }),
@@ -83,11 +128,63 @@ class AiProvidersTable
                         'vendor' => $record->vendor,
                         'url' => $record->url,
                         'model' => $record->model,
-                    ]),
+                        'embedding_model' => $record->embedding_model,
+                        'search_min_similarity' => $record->search_min_similarity ?? AiProviderForm::DEFAULT_MIN_SIMILARITY,
+                    ])
+                    ->using(self::saveProvider(...)),
                 DeleteAction::make()
                     ->label('Löschen')
-                    ->disabled(fn (AiProvider $record): bool => $record->is_active)
-                    ->tooltip(fn (AiProvider $record): ?string => $record->is_active ? 'Erst einen anderen Provider aktivieren' : null),
+                    ->disabled(fn (AiProvider $record): bool => $record->is_active || $record->is_active_for_search)
+                    ->tooltip(fn (AiProvider $record): ?string => $record->is_active || $record->is_active_for_search ? 'Erst einen anderen Provider aktivieren' : null),
             ]);
+    }
+
+    /**
+     * A changed embedding model on the provider active for search is a switch:
+     * it is probed with the submitted values, so a typed key counts, and either
+     * everything is saved together with the switch or nothing is.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private static function saveProvider(array $data, AiProvider $record, Action $action, SearchProviderSwitch $switch): void
+    {
+        $embeddingModel = $data['embedding_model'] ?? null;
+
+        if (! $record->is_active_for_search || ! is_string($embeddingModel) || $embeddingModel === $record->embedding_model) {
+            $record->update($data);
+
+            return;
+        }
+
+        $record->fill($data);
+        $reason = $switch->probe($record, $embeddingModel);
+
+        if ($reason !== null) {
+            $record->refresh();
+            self::notifyProbeFailure($reason);
+            $action->halt();
+        }
+
+        DB::transaction(function () use ($record, $switch, $embeddingModel): void {
+            $record->save();
+            $switch->switchTo($record, $embeddingModel);
+        });
+    }
+
+    private static function notifyProbeFailure(string $reason): void
+    {
+        Notification::make()
+            ->title('Test fehlgeschlagen')
+            ->body($reason)
+            ->danger()
+            ->send();
+    }
+
+    private static function searchProgress(): ?string
+    {
+        $total = Item::query()->count();
+        $done = Item::query()->whereNotNull('embedding')->count();
+
+        return $done < $total ? "Suche wird neu aufgebaut: {$done} von {$total}" : null;
     }
 }
