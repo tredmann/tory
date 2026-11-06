@@ -53,6 +53,14 @@
                 >✕</button>
 
                 <button
+                    x-show="tile.uploading"
+                    type="button"
+                    class="tory-photo-remove"
+                    aria-label="Hochladen abbrechen"
+                    x-on:click="cancel(tile)"
+                >✕</button>
+
+                <button
                     x-show="tile.marked"
                     type="button"
                     class="tory-photo-undo"

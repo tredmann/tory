@@ -62,16 +62,30 @@ const revokePreview = (tile) => {
 const changeUploadCount = (change) =>
     window.Alpine.store('toryPhotoUploads', window.Alpine.store('toryPhotoUploads') + change);
 
+// A finish request already under way can still store a cancelled upload on the server, so its key stays marked.
+const abandonedUploads = new Set();
+
 const itemPhotos = ({ statePath, photos }) => {
     // Uploads run one after the other: the server keeps new photos in the order they finish.
     let queue = Promise.resolve();
-    let unfinished = 0;
+    let wire;
     let destroyed = false;
 
     return {
         tiles: storedTiles(photos),
         overview: photos[0]?.path ?? null,
         message: null,
+
+        /**
+         * A new instance shows no marks and no uploads, so the server must hold none either:
+         * the page restarts this component whenever the stored list changed, even from another tab.
+         */
+        init() {
+            wire = this.$wire;
+            wire.$set(`${statePath}.overview`, this.overview, false);
+            wire.$set(`${statePath}.removed`, [...abandonedUploads], false);
+            wire.$set(`${statePath}.uploads`, [], false);
+        },
 
         get canAdd() {
             return this.photoCount < MAX_PHOTOS;
@@ -141,7 +155,6 @@ const itemPhotos = ({ statePath, photos }) => {
                 const tile = this.addTile(file);
 
                 if (tile.uploading) {
-                    unfinished++;
                     changeUploadCount(1);
                     queue = queue.then(() => this.upload(tile, file));
                 }
@@ -165,7 +178,7 @@ const itemPhotos = ({ statePath, photos }) => {
         },
 
         async upload(tile, file) {
-            if (destroyed) {
+            if (!tile.uploading) {
                 return;
             }
 
@@ -179,56 +192,79 @@ const itemPhotos = ({ statePath, photos }) => {
                 return;
             }
 
-            if (destroyed) {
+            if (!tile.uploading) {
                 return;
             }
 
             await new Promise((resolve) => {
-                this.$wire.$upload(
+                wire.$upload(
                     `${statePath}.uploads.${tile.id}`,
                     fitted,
                     () => {
-                        tile.uploading = false;
-
-                        if (!destroyed && this.overview === null) {
+                        if (this.finishUpload(tile) && this.overview === null) {
                             this.overview = tile.id;
                             this.syncMarks();
                         }
 
-                        this.finishUpload();
                         resolve();
                     },
                     () => {
                         this.rejectTile(tile, 'Hochladen fehlgeschlagen.');
                         resolve();
                     },
+                    () => {},
+                    resolve,
                 );
             });
         },
 
-        rejectTile(tile, message) {
-            revokePreview(tile);
-            tile.url = null;
-            tile.uploading = false;
-            tile.message = message;
-            this.finishUpload();
-        },
-
-        finishUpload() {
-            if (destroyed) {
+        /**
+         * Works without the server, whose answer may never come: this is the way out of an upload
+         * whose request died. A tile that is queued or being shrunk has no Livewire upload yet.
+         */
+        cancel(tile) {
+            if (!this.finishUpload(tile)) {
                 return;
             }
 
-            unfinished--;
+            abandonedUploads.add(tile.id);
+            revokePreview(tile);
+            this.tiles = this.tiles.filter((other) => other.id !== tile.id);
+            wire.$cancelUpload(`${statePath}.uploads.${tile.id}`);
+
+            if (!destroyed) {
+                this.syncMarks();
+            }
+        },
+
+        rejectTile(tile, message) {
+            if (!this.finishUpload(tile)) {
+                return;
+            }
+
+            revokePreview(tile);
+            tile.url = null;
+            tile.message = message;
+        },
+
+        /** Returns false when the upload has already ended, so the counter drops exactly once. */
+        finishUpload(tile) {
+            if (!tile.uploading) {
+                return false;
+            }
+
+            tile.uploading = false;
             changeUploadCount(-1);
+
+            return true;
         },
 
         /** Deferred on purpose: the marks travel with the next request, which is the save at the latest. */
         syncMarks() {
-            this.$wire.$set(`${statePath}.overview`, this.overview, false);
-            this.$wire.$set(
+            wire.$set(`${statePath}.overview`, this.overview, false);
+            wire.$set(
                 `${statePath}.removed`,
-                this.tiles.filter((tile) => tile.marked).map((tile) => tile.id),
+                [...this.tiles.filter((tile) => tile.marked).map((tile) => tile.id), ...abandonedUploads],
                 false,
             );
         },
@@ -239,12 +275,13 @@ const itemPhotos = ({ statePath, photos }) => {
             this.tiles = storedTiles(photos);
             this.overview = photos[0]?.path ?? null;
             this.message = null;
+            this.syncMarks();
         },
 
         destroy() {
             destroyed = true;
+            this.tiles.filter((tile) => tile.uploading).forEach((tile) => this.cancel(tile));
             this.tiles.forEach(revokePreview);
-            changeUploadCount(-unfinished);
         },
     };
 };

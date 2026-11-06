@@ -199,6 +199,7 @@ test('the photos field renders real buttons and the add tile', function () {
         ->assertSeeHtml('wire:ignore')
         ->assertSee('Foto hinzufügen')
         ->assertSee('Foto entfernen')
+        ->assertSee('Hochladen abbrechen')
         ->assertSeeHtml('toryPhotoUploads');
 });
 
@@ -387,6 +388,26 @@ test('a photo uploaded through the Livewire upload lands under its key and is sa
 
     expect($item->fresh()->photos)->toHaveCount(2)
         ->and($item->fresh()->photos[0])->toBe('imports/a.jpg');
+});
+
+test('edits cleared by a restarted field neither delete a photo nor add an upload', function () {
+    Storage::disk('local')->put('imports/a.jpg', 'a');
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    $page = Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.removed', ['imports/a.jpg'])
+        ->set('data.photo_edits.uploads.k', UploadedFile::fake()->image('hidden.jpg'));
+
+    $item->fresh()->update(['photos' => ['imports/a.jpg', 'imports/other-tab.jpg']]);
+
+    $page->set('data.photo_edits.overview', 'imports/a.jpg')
+        ->set('data.photo_edits.removed', [])
+        ->set('data.photo_edits.uploads', [])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/other-tab.jpg'])
+        ->and(Storage::disk('local')->exists('imports/a.jpg'))->toBeTrue();
 });
 
 test('a new photo marked for removal is not stored and does not block the save', function () {
