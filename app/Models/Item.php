@@ -86,22 +86,14 @@ class Item extends Model
             return;
         }
 
-        $patterns = self::keywordPatterns($term);
-
-        $keywordCondition = function (Builder $group) use ($patterns): void {
-            foreach ($patterns as $pattern) {
-                $group->where(function (Builder $word) use ($pattern): void {
-                    $word->whereLike('title', $pattern)->orWhereLike('description', $pattern);
-                });
-            }
-        };
+        $keyword = self::keywordCondition($term);
 
         try {
             $vector = app(ItemEmbedder::class)->embed($term, timeout: 3);
         } catch (Throwable $exception) {
             report($exception);
 
-            $query->where($keywordCondition);
+            $query->whereRaw($keyword['sql'], $keyword['bindings']);
 
             return;
         }
@@ -109,29 +101,34 @@ class Item extends Model
         $maxDistance = 1 - (float) config('ai.inventory.search_min_similarity');
 
         $query
-            ->where(function (Builder $group) use ($keywordCondition, $vector, $maxDistance): void {
-                $group->where($keywordCondition)
+            ->where(function (Builder $group) use ($keyword, $vector, $maxDistance): void {
+                $group->whereRaw($keyword['sql'], $keyword['bindings'])
                     ->whereVectorDistanceLessThan('embedding', $vector, $maxDistance, 'or');
             })
-            ->orderByRaw(
-                'case when '.implode(' and ', array_fill(0, count($patterns), "(title ilike ? or coalesce(description, '') ilike ?)")).' then 0 else 1 end',
-                array_merge(...array_map(fn (string $pattern): array => [$pattern, $pattern], $patterns)),
-            )
+            ->orderByRaw("case when {$keyword['sql']} then 0 else 1 end", $keyword['bindings'])
             ->orderByVectorDistance('embedding', $vector);
     }
 
     /**
-     * One LIKE pattern per whitespace-separated word, with `\`, `%` and `_` escaped.
+     * The keyword condition as one SQL fragment with bound patterns: every
+     * whitespace-separated word must occur in title or description, with
+     * `\`, `%` and `_` escaped. Used for both filtering and ranking.
      *
-     * @return list<string>
+     * @return array{sql: literal-string, bindings: list<string>}
      */
-    private static function keywordPatterns(string $term): array
+    private static function keywordCondition(string $term): array
     {
         $words = preg_split('/\s+/u', $term, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        /** @var list<literal-string> $sql */
+        $sql = [];
+        $bindings = [];
 
-        return array_map(
-            fn (string $word): string => '%'.addcslashes($word, '\\%_').'%',
-            $words,
-        );
+        foreach ($words as $word) {
+            $pattern = '%'.addcslashes($word, '\\%_').'%';
+            $sql[] = "(title ilike ? or coalesce(description, '') ilike ?)";
+            array_push($bindings, $pattern, $pattern);
+        }
+
+        return ['sql' => '('.implode(' and ', $sql).')', 'bindings' => $bindings];
     }
 }
