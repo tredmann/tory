@@ -61,7 +61,9 @@ class AiProvidersTable
 
                         if ($reason === null) {
                             Notification::make()
-                                ->title("{$record->name} hat das Testbild beantwortet.")
+                                ->title(filled($record->embedding_model)
+                                    ? "{$record->name} hat den Test bestanden."
+                                    : "{$record->name} hat das Testbild beantwortet.")
                                 ->success()
                                 ->send();
 

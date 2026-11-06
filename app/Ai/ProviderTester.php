@@ -18,10 +18,31 @@ final class ProviderTester
      */
     public const TIMEOUT_SECONDS = 120;
 
+    public function __construct(private readonly SearchProviderSwitch $searchSwitch) {}
+
     /**
-     * Returns null on success, otherwise a German reason.
+     * Tests each configured role. Returns null on success, otherwise a German
+     * reason; when both roles are configured and one fails, both are named.
      */
     public function run(AiProvider $provider): ?string
+    {
+        $extraction = filled($provider->model) ? $this->extractionReason($provider) : false;
+        $embedding = filled($provider->embedding_model)
+            ? $this->searchSwitch->probe($provider, $provider->embedding_model)
+            : false;
+
+        if ($extraction === false || $embedding === false) {
+            return $extraction === false ? ($embedding ?: null) : $extraction;
+        }
+
+        if ($extraction === null && $embedding === null) {
+            return null;
+        }
+
+        return 'Bilderkennung: '.($extraction ?? 'ok.').' Embedding: '.($embedding ?? 'ok.');
+    }
+
+    private function extractionReason(AiProvider $provider): ?string
     {
         try {
             InventoryExtractor::make(aiProvider: $provider)->extract(

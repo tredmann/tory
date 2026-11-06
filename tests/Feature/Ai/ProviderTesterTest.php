@@ -7,6 +7,7 @@ use App\Models\AiProvider;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
+use Laravel\Ai\Embeddings;
 
 test('succeeds on a complete structured answer with one image and the test timeout', function () {
     InventoryExtractor::fake([['title' => 'Rotes Quadrat', 'description' => 'Rot.']]);
@@ -47,4 +48,41 @@ test('an unreadable key reports the reason instead of throwing', function () {
 
     expect(app(ProviderTester::class)->run($provider->fresh()))
         ->toBe('Der gespeicherte API-Key von Claude ist nicht mehr lesbar.');
+});
+
+test('only an embedding model runs only the probe', function () {
+    InventoryExtractor::fake();
+    $provider = AiProvider::factory()->embedding()->create(['model' => null]);
+
+    expect(app(ProviderTester::class)->run($provider))->toBeNull();
+
+    InventoryExtractor::assertNeverPrompted();
+    Embeddings::assertGenerated(fn () => true);
+});
+
+test('only a model for object recognition does not embed', function () {
+    InventoryExtractor::fake([['title' => 'Rotes Quadrat', 'description' => 'Rot.']]);
+    $provider = AiProvider::factory()->create(['model' => 'gpt-x', 'embedding_model' => null]);
+
+    expect(app(ProviderTester::class)->run($provider))->toBeNull();
+
+    Embeddings::assertNothingGenerated();
+});
+
+test('both configured and the embedding fails names both', function () {
+    InventoryExtractor::fake([['title' => 'Rotes Quadrat', 'description' => 'Rot.']]);
+    Embeddings::fake([[array_fill(0, 768, 0.1)]]);
+    $provider = AiProvider::factory()->embedding()->create(['name' => 'OpenAI', 'model' => 'gpt-x']);
+
+    expect(app(ProviderTester::class)->run($provider))
+        ->toBe('Bilderkennung: ok. Embedding: Das Embedding-Modell von OpenAI liefert 768 statt 1024 Dimensionen.');
+});
+
+test('both configured and the extraction fails names both', function () {
+    Http::fake(['*' => Http::response([], 401)]);
+    $provider = AiProvider::factory()->embedding()->create(['name' => 'Claude', 'model' => 'gpt-x']);
+
+    expect(app(ProviderTester::class)->run($provider))
+        ->toStartWith('Bilderkennung: ')
+        ->toEndWith('Embedding: ok.');
 });
