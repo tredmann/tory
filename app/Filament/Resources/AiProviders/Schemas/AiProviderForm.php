@@ -16,8 +16,6 @@ class AiProviderForm
 {
     public const DEFAULT_OLLAMA_URL = 'http://host.docker.internal:11434';
 
-    public const DEFAULT_MIN_SIMILARITY = 0.5;
-
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
@@ -38,7 +36,7 @@ class AiProviderForm
                 ->password()
                 ->revealable(false)
                 ->autocomplete(false)
-                ->visible(fn (Get $get): bool => self::vendor($get)?->requiresKey() ?? false)
+                ->visible(fn (Get $get, ?AiProvider $record): bool => self::vendor($get, $record)?->requiresKey() ?? false)
                 ->required(fn (string $operation): bool => $operation === 'create')
                 ->placeholder(fn (?AiProvider $record): ?string => $record?->key_hint !== null ? '••••'.$record->key_hint : null)
                 ->helperText(fn (string $operation): ?string => $operation === 'edit' ? 'Leer lassen, um den gespeicherten Key zu behalten.' : null)
@@ -49,13 +47,13 @@ class AiProviderForm
                 ->label('Adresse')
                 ->url()
                 ->default(self::DEFAULT_OLLAMA_URL)
-                ->visible(fn (Get $get): bool => self::vendor($get) === AiVendor::Ollama)
+                ->visible(fn (Get $get, ?AiProvider $record): bool => self::vendor($get, $record) === AiVendor::Ollama)
                 ->required()
                 ->dehydrateStateUsing(fn (?string $state): string => rtrim(trim((string) $state), '/'))
                 ->live(onBlur: true),
             TextInput::make('model')
                 ->label('Modell für Bilderkennung')
-                ->required(fn (Get $get, ?AiProvider $record): bool => ! (self::vendor($get)?->supportsEmbeddings() ?? true)
+                ->required(fn (Get $get, ?AiProvider $record): bool => ! (self::vendor($get, $record)?->supportsEmbeddings() ?? true)
                     || self::cleaned($get('embedding_model')) === null
                     || $record?->is_active === true)
                 ->maxLength(255)
@@ -65,7 +63,7 @@ class AiProviderForm
                 ->live(onBlur: true),
             TextInput::make('embedding_model')
                 ->label('Embedding-Modell')
-                ->visible(fn (Get $get): bool => self::vendor($get)?->supportsEmbeddings() ?? false)
+                ->visible(fn (Get $get, ?AiProvider $record): bool => self::vendor($get, $record)?->supportsEmbeddings() ?? false)
                 ->required(fn (Get $get, ?AiProvider $record): bool => self::cleaned($get('model')) === null
                     || $record?->is_active_for_search === true)
                 ->maxLength(255)
@@ -79,8 +77,8 @@ class AiProviderForm
                 ->minValue(0)
                 ->maxValue(1)
                 ->step(0.01)
-                ->default(self::DEFAULT_MIN_SIMILARITY)
-                ->visible(fn (Get $get): bool => (self::vendor($get)?->supportsEmbeddings() ?? false)
+                ->default(AiProvider::DEFAULT_SEARCH_MIN_SIMILARITY)
+                ->visible(fn (Get $get, ?AiProvider $record): bool => (self::vendor($get, $record)?->supportsEmbeddings() ?? false)
                     && self::cleaned($get('embedding_model')) !== null)
                 ->required()
                 ->helperText('Ähnlichkeitswerte unterscheiden sich zwischen Modellen. Passe den Wert an, wenn die Suche Unpassendes zeigt oder Passendes fehlt.'),
@@ -132,7 +130,7 @@ class AiProviderForm
      */
     private static function models(Get $get, ?AiProvider $record): ?array
     {
-        $vendor = self::vendor($get) ?? $record?->vendor;
+        $vendor = self::vendor($get, $record);
 
         if ($vendor === null) {
             return [];
@@ -145,9 +143,9 @@ class AiProviderForm
         return ProviderModels::for($vendor, $key, is_string($url) ? $url : $record?->url);
     }
 
-    private static function vendor(Get $get): ?AiVendor
+    private static function vendor(Get $get, ?AiProvider $record): ?AiVendor
     {
-        $vendor = $get('vendor');
+        $vendor = $record !== null ? $record->vendor : $get('vendor');
 
         return $vendor instanceof AiVendor ? $vendor : AiVendor::tryFrom((string) $vendor);
     }

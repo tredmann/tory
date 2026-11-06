@@ -16,6 +16,8 @@ use Laravel\Ai\Providers\Provider;
 /**
  * @property string $id
  * @property AiVendor $vendor
+ * @property string|null $model
+ * @property string|null $embedding_model
  */
 class AiProvider extends Model
 {
@@ -23,6 +25,8 @@ class AiProvider extends Model
     use HasFactory;
 
     use HasUuids;
+
+    public const float DEFAULT_SEARCH_MIN_SIMILARITY = 0.5;
 
     /** @var list<string> */
     protected $fillable = [

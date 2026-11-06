@@ -5,6 +5,7 @@ use App\Ai\SearchProviderSwitch;
 use App\Jobs\ReembedItems;
 use App\Models\AiProvider;
 use App\Models\Item;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Embeddings;
@@ -70,4 +71,36 @@ test('the probe falls back to a generic message for an unclassified failure', fu
 
     expect(app(SearchProviderSwitch::class)->probe($provider, 'x'))
         ->toBe(ProviderFailure::GENERIC_EMBEDDING_MESSAGE);
+});
+
+test('switching gives a missing threshold the default and keeps an existing one', function () {
+    Queue::fake();
+    $without = AiProvider::factory()->embedding()->create();
+    $with = AiProvider::factory()->embedding()->create(['search_min_similarity' => 0.7]);
+    DB::table('ai_providers')->where('id', $without->id)->update(['search_min_similarity' => null]);
+    $without->refresh();
+
+    app(SearchProviderSwitch::class)->switchTo($without, 'm');
+
+    expect($without->fresh()->search_min_similarity)->toBe(AiProvider::DEFAULT_SEARCH_MIN_SIMILARITY)
+        ->and($without->search_min_similarity)->toBe(AiProvider::DEFAULT_SEARCH_MIN_SIMILARITY);
+
+    app(SearchProviderSwitch::class)->switchTo($with, 'm');
+
+    expect($with->fresh()->search_min_similarity)->toBe(0.7);
+});
+
+test('switching to a deleted provider throws and changes nothing', function () {
+    Queue::fake();
+    $old = AiProvider::factory()->activeForSearch()->create();
+    $gone = AiProvider::factory()->embedding()->create();
+    $item = Item::factory()->create();
+    $item->forceFill(['embedding' => array_fill(0, 1024, 0.1)])->saveQuietly();
+    DB::table('ai_providers')->where('id', $gone->id)->delete();
+
+    expect(fn () => app(SearchProviderSwitch::class)->switchTo($gone, 'm'))->toThrow(ModelNotFoundException::class);
+
+    expect($old->fresh()->is_active_for_search)->toBeTrue()
+        ->and($item->fresh()->embedding)->not->toBeNull();
+    Queue::assertNotPushed(ReembedItems::class);
 });

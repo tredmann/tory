@@ -141,6 +141,16 @@ test('the vendor cannot be changed on edit', function () {
     expect($provider->refresh()->vendor)->toBe(AiVendor::Anthropic);
 });
 
+test('a crafted vendor cannot give a Claude provider an embedding model', function () {
+    $provider = AiProvider::factory()->create();
+
+    Livewire::test(ManageAiProviders::class)
+        ->callAction(TestAction::make('edit')->table($provider), data: ['vendor' => AiVendor::OpenAi->value, 'model' => 'x', 'embedding_model' => 'evil'])
+        ->assertHasNoFormErrors();
+
+    expect($provider->refresh()->embedding_model)->toBeNull();
+});
+
 test('the key is not in the page or the edit form state', function () {
     $provider = AiProvider::factory()->create(['api_key' => 'sk-secret-3fa9']);
 
@@ -481,7 +491,7 @@ test('the activation dialog names the env fallback when no provider is active fo
 
     Livewire::test(ManageAiProviders::class)
         ->mountAction(TestAction::make('activateForSearch')->table($new))
-        ->assertMountedActionModalSee(['Serverkonfiguration (.env)', 'neues-modell']);
+        ->assertMountedActionModalSee([config('ai.inventory.embedding_model').' (.env)', 'neues-modell']);
 });
 
 test('activate for search is hidden without an embedding model and for the active one', function () {

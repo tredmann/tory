@@ -10,7 +10,7 @@ use RuntimeException;
 use Throwable;
 
 /**
- * A failed extraction on a configured provider. The message is scrubbed and
+ * A failed call (extraction or embedding) on a configured provider. The message is scrubbed and
  * the original exception is not kept as previous, because its message and
  * trace may echo the API key. A request exception's own message is cut to
  * 120 characters, which can split a key, so its full body is scrubbed first.

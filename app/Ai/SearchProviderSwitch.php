@@ -4,8 +4,8 @@ namespace App\Ai;
 
 use App\Jobs\ReembedItems;
 use App\Models\AiProvider;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 /**
  * Tries an embedding model of a provider and switches search over to it.
@@ -37,10 +37,6 @@ final class SearchProviderSwitch
             report($failure);
 
             return $failure->userMessage() ?? ProviderFailure::GENERIC_EMBEDDING_MESSAGE;
-        } catch (Throwable $e) {
-            report($e);
-
-            return ProviderFailure::GENERIC_EMBEDDING_MESSAGE;
         }
     }
 
@@ -57,11 +53,17 @@ final class SearchProviderSwitch
         DB::transaction(function () use ($provider, $model): void {
             AiProvider::query()->lockForUpdate()->get(['id']);
             AiProvider::query()->where('is_active_for_search', true)->update(['is_active_for_search' => false]);
-            AiProvider::query()->whereKey($provider->getKey())->update([
+            $updated = AiProvider::query()->whereKey($provider->getKey())->update([
                 'is_active_for_search' => true,
                 'embedding_model' => $model,
                 'search_failure' => null,
+                'search_min_similarity' => DB::raw('coalesce(search_min_similarity, '.AiProvider::DEFAULT_SEARCH_MIN_SIMILARITY.')'),
             ]);
+
+            if ($updated === 0) {
+                throw new ModelNotFoundException;
+            }
+
             DB::table('items')->update(['embedding' => null]);
 
             ReembedItems::dispatch()->afterCommit();
@@ -70,6 +72,7 @@ final class SearchProviderSwitch
         $provider->is_active_for_search = true;
         $provider->embedding_model = $model;
         $provider->search_failure = null;
-        $provider->syncOriginalAttributes(['is_active_for_search', 'embedding_model', 'search_failure']);
+        $provider->search_min_similarity ??= AiProvider::DEFAULT_SEARCH_MIN_SIMILARITY;
+        $provider->syncOriginalAttributes(['is_active_for_search', 'embedding_model', 'search_failure', 'search_min_similarity']);
     }
 }

@@ -1,6 +1,8 @@
 <?php
 
 use App\Ai\EmbeddingRunner;
+use App\Ai\ProviderFailure;
+use App\Enums\ProviderFailureReason;
 use App\Jobs\EmbedItem;
 use App\Jobs\ReembedItems;
 use App\Models\AiProvider;
@@ -182,4 +184,28 @@ test('it continues with the newest target after a switch', function () {
     runReembed();
 
     expect($models)->toBe(['text-embedding-3-small', 'neues-modell']);
+});
+
+test('failed() stores only the generic text for a raw exception', function () {
+    $provider = AiProvider::factory()->activeForSearch()->create();
+
+    (new ReembedItems)->failed(new RuntimeException('boom sk-secret-9999'));
+
+    expect($provider->fresh()->search_failure)->toBe(ProviderFailure::GENERIC_EMBEDDING_MESSAGE);
+});
+
+test('failed() stores the message of a provider failure with a reason', function () {
+    $provider = AiProvider::factory()->activeForSearch()->create(['name' => 'OpenAI']);
+
+    (new ReembedItems)->failed(new ProviderFailure('x sk-secret-9999', ProviderFailureReason::KeyRejected, 'OpenAI'));
+
+    expect($provider->fresh()->search_failure)->toBe('OpenAI hat den API-Key abgelehnt.');
+});
+
+test('failed() writes nothing and does not throw without a provider active for search', function () {
+    $provider = AiProvider::factory()->embedding()->create();
+
+    (new ReembedItems)->failed(null);
+
+    expect($provider->fresh()->search_failure)->toBeNull();
 });

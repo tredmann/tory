@@ -79,7 +79,7 @@ class AiProvidersTable
                     ->requiresConfirmation()
                     ->modalHeading('Für Suche aktivieren')
                     ->modalDescription(fn (AiProvider $record): string => AiProviderForm::switchNotice(
-                        AiProvider::activeForSearch()->embedding_model ?? 'Serverkonfiguration (.env)',
+                        AiProvider::activeForSearch()->embedding_model ?? config('ai.inventory.embedding_model').' (.env)',
                         (string) $record->embedding_model,
                     ))
                     ->modalSubmitActionLabel('Aktivieren und neu berechnen')
@@ -144,7 +144,7 @@ class AiProvidersTable
                         'url' => $record->url,
                         'model' => $record->model,
                         'embedding_model' => $record->embedding_model,
-                        'search_min_similarity' => $record->search_min_similarity ?? AiProviderForm::DEFAULT_MIN_SIMILARITY,
+                        'search_min_similarity' => $record->search_min_similarity ?? AiProvider::DEFAULT_SEARCH_MIN_SIMILARITY,
                     ])
                     ->using(self::saveProvider(...)),
                 DeleteAction::make()
