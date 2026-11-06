@@ -30,6 +30,8 @@ class ImportResource extends Resource
 
     protected static ?string $navigationLabel = 'Importe';
 
+    protected static ?int $navigationSort = 3;
+
     public static function canEdit(Model $record): bool
     {
         return false;

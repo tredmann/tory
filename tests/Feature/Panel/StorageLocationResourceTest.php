@@ -4,6 +4,7 @@ use App\Filament\Resources\StorageLocations\Pages\CreateStorageLocation;
 use App\Filament\Resources\StorageLocations\Pages\EditStorageLocation;
 use App\Filament\Resources\StorageLocations\Pages\ListStorageLocations;
 use App\Filament\Resources\StorageLocations\Pages\ViewStorageLocation;
+use App\Filament\Resources\StorageLocations\RelationManagers\ItemsRelationManager;
 use App\Models\Item;
 use App\Models\StorageLocation;
 use App\Models\User;
@@ -95,4 +96,14 @@ test('the edit page offers no delete action', function () {
 
     Livewire::test(EditStorageLocation::class, ['record' => $location->getRouteKey()])
         ->assertActionDoesNotExist('delete');
+});
+
+test('the view page lists exactly the items inside the location', function () {
+    $location = StorageLocation::factory()->create();
+    $inside = Item::factory()->count(2)->create(['storage_location_id' => $location->id]);
+    $elsewhere = Item::factory()->create();
+
+    Livewire::test(ItemsRelationManager::class, ['ownerRecord' => $location, 'pageClass' => ViewStorageLocation::class])
+        ->assertCanSeeTableRecords($inside)
+        ->assertCanNotSeeTableRecords([$elsewhere]);
 });

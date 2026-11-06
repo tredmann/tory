@@ -6,6 +6,7 @@ use App\Filament\Resources\StorageLocations\Pages\CreateStorageLocation;
 use App\Filament\Resources\StorageLocations\Pages\EditStorageLocation;
 use App\Filament\Resources\StorageLocations\Pages\ListStorageLocations;
 use App\Filament\Resources\StorageLocations\Pages\ViewStorageLocation;
+use App\Filament\Resources\StorageLocations\RelationManagers\ItemsRelationManager;
 use App\Filament\Resources\StorageLocations\Schemas\StorageLocationForm;
 use App\Filament\Resources\StorageLocations\Schemas\StorageLocationInfolist;
 use App\Filament\Resources\StorageLocations\Tables\StorageLocationsTable;
@@ -52,7 +53,7 @@ class StorageLocationResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            ItemsRelationManager::class,
         ];
     }
 
