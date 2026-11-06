@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
+ * @property int|null $last_storage_location_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */

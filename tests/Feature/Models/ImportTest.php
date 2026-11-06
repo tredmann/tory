@@ -3,6 +3,13 @@
 use App\Enums\ImportStatus;
 use App\Models\Import;
 use App\Models\User;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
+
+beforeEach(function () {
+    Storage::fake('local');
+    Queue::fake();
+});
 
 test('status labels and colours', function () {
     expect(ImportStatus::Pending->getLabel())->toBe('Wartet')
@@ -37,4 +44,20 @@ test('factory states set the matching status', function () {
         ->and(Import::factory()->completed()->create())
         ->status->toBe(ImportStatus::Completed)
         ->title->toBe('Raspberry Pi 4');
+});
+
+test('deleting an import deletes its photo files', function () {
+    Storage::disk('local')->put('imports/x.jpg', 'x');
+    $import = Import::factory()->create(['photos' => ['imports/x.jpg']]);
+
+    $import->delete();
+
+    Storage::disk('local')->assertMissing('imports/x.jpg');
+});
+
+test('deleting an import quietly keeps its photo files', function () {
+    Storage::disk('local')->put('imports/x.jpg', 'x');
+    Import::factory()->create(['photos' => ['imports/x.jpg']])->deleteQuietly();
+
+    Storage::disk('local')->assertExists('imports/x.jpg');
 });

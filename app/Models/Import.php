@@ -7,6 +7,7 @@ use Database\Factories\ImportFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Import extends Model
 {
@@ -16,12 +17,20 @@ class Import extends Model
     /** @var list<string> */
     protected $fillable = [
         'user_id',
+        'storage_location_id',
         'status',
         'photos',
         'title',
         'description',
         'error',
     ];
+
+    protected static function booted(): void
+    {
+        static::deleted(function (Import $import): void {
+            Storage::disk('local')->delete($import->photos ?? []);
+        });
+    }
 
     /**
      * @return array{status: 'App\\Enums\\ImportStatus', photos: 'array'}
@@ -40,5 +49,13 @@ class Import extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<StorageLocation, $this>
+     */
+    public function storageLocation(): BelongsTo
+    {
+        return $this->belongsTo(StorageLocation::class);
     }
 }
