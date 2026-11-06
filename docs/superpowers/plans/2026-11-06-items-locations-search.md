@@ -794,3 +794,35 @@ Expected: all green.
 
 - [ ] **Step 4: Live check (needs the user).** Prerequisite: the user has run `ollama pull bge-m3`. With the user's go-ahead for converting real imports, walk through the spec's Acceptance list 1–7 against http://localhost:8000 and tune `INVENTORY_SEARCH_MIN_SIMILARITY` if unrelated items show up or related ones are missing. Report what was checked and what was not.
 - [ ] **Step 5: Commit** (`Document storage locations, items and search`).
+
+---
+
+## Execution recap (2026-11-06)
+
+Executed task by task with subagents on branch `items-locations-search`; every task had its own review, followed by one whole-branch review and one fix wave. Final state: 150 tests green, Pint and PHPStan clean.
+
+### Where execution departed from the plan
+
+- **Task 1:** the guard is `TestCase::guardTestingDatabase()`, called from `refreshApplication()`. An override of `beforeRefreshingDatabase()` is shadowed by the trait in Pest's test classes and never ran.
+- **Task 3:** the storage-location view page uses `label` as record title, so the heading reads "Nr. 12 · Name". The edit pages of storage locations and items have no Delete action; delete lives on the view pages only.
+- **Task 4 / Task 9:** a non-numeric record key answered 500 instead of 404 on every resource. Fixed for all three with the shared trait `ResolvesNumericRecordKeys`.
+- **Final review:** Filament's global search had been switched on by the record title attributes and failed with a SQL error; it is now disabled on the panel (it is a non-goal of the spec).
+- **Final review:** `Import::convertToItem()` deletes the import row first and throws when it is already gone, so two overlapping conversions cannot create two items sharing photo files. "Übernehmen" also stores the chosen location as the user's last-used one.
+- **Final review:** `items:embed` stops after three consecutive failures (the plan said a failure never stops the rest), so an unavailable provider does not flood the log every hour.
+- **Final review:** job and command share `ItemEmbedder::embedAndStore()`, which stores a vector only if the item's text is still the text that was embedded, without touching `updated_at`. The job's client timeout is 45 s, below its 60 s job timeout.
+
+### Live check
+
+- Done with the real model (`bge-m3` on Ollama, 1024 dimensions, about one second per cold query): the two items the user had converted before the model was pulled had no embedding (their `EmbedItem` jobs failed with "model not found" and sit in `failed_jobs`); `items:embed` filled both, leaving `updated_at` untouched. Keyword and semantic queries returned the expected items ("Einplatinencomputer" finds the Raspberry Pi board, "Stromversorgung" finds the power supply, "Gartenschlauch" and "Tintenpatronen" find nothing).
+- Not done: the browser walk-through of the spec's Acceptance list (upload with preselection, "Übernehmen" dialog, phone view of `/lagerorte/{id}` after login). These paths are covered by panel tests only.
+
+### Known gaps
+
+- **Similarity threshold is not tuned.** With two real items, related pairs score about 0.48–0.52 and unrelated ones up to 0.45 against the default of 0.5; "Ladegerät" misses the power supply at 0.478. Revisit `INVENTORY_SEARCH_MIN_SIMILARITY` (0.47 would have caught it) once more items exist.
+- A "Löschen" racing a concurrent "Übernehmen" on the same import can still remove the photo files of the new item.
+- While a search is active, sorting by "Angelegt" only breaks ties; every paginate or sort re-embeds the query (no caching).
+- The refusal test for the test-database guard calls the guard directly and does not prove it is wired into application boot (shown by hand with `DB_DATABASE=tory`).
+- Small duplication left in place: the photo-delete hook in `Item` and `Import`, the photo column and location link definitions in the item tables.
+- `EmbedItems::$pageSize` is a public static used as a test seam.
+- The CI workflow was changed for Postgres but has never run (no remote).
+- Commit trailers on this branch name two models (the controller's and the subagents').
