@@ -37,5 +37,5 @@ A word or phrase attached to an item or import so that it can be found by words 
 _Avoid_: Tag, keyword
 
 **Provider** ("Eigene KI"):
-An AI service configured in the app, with its vendor, model and credentials. At most one is active.
+An AI service configured in the app, with its vendor, model(s) and credentials. It can serve object recognition, search or both. At most one is active for each role, and they may differ.
 _Avoid_: Model, vendor (for the configured service)
