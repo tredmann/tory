@@ -1,9 +1,11 @@
 <?php
 
 use App\Enums\ImportStatus;
+use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Resources\Imports\Pages\ViewImport;
 use App\Jobs\ExtractImport;
 use App\Models\Import;
+use App\Models\Item;
 use App\Models\StorageLocation;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
@@ -143,4 +145,86 @@ test('the view page renders an import without a storage location', function () {
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
         ->assertOk()
         ->assertSeeInOrder(['Lagerort', '—']);
+});
+
+test('convert and delete are offered only for completed and failed imports', function (string $state, bool $visible) {
+    $import = Import::factory()->{$state}()->create();
+    $page = Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()]);
+
+    $visible
+        ? $page->assertActionVisible('convert')->assertActionVisible('delete')
+        : $page->assertActionHidden('convert')->assertActionHidden('delete');
+})->with([['pending', false], ['running', false], ['completed', true], ['failed', true]]);
+
+test('convert is prefilled from the import', function () {
+    $location = StorageLocation::factory()->create();
+    $import = Import::factory()->completed()->create(['storage_location_id' => $location->id]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->mountAction('convert')
+        ->assertActionDataSet([
+            'title' => 'Raspberry Pi 4',
+            'description' => 'Grüne Platine mit vier USB-Anschlüssen.',
+            'storage_location_id' => $location->id,
+        ]);
+});
+
+test('convert falls back to the last used location when the import has none', function () {
+    $location = StorageLocation::factory()->create();
+    $user = User::factory()->create();
+    $user->forceFill(['last_storage_location_id' => $location->id])->save();
+    $this->actingAs($user);
+    $import = Import::factory()->completed()->create(['storage_location_id' => null]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->mountAction('convert')
+        ->assertActionDataSet(['storage_location_id' => $location->id]);
+});
+
+test('convert with a corrected title creates the item and returns to the import list', function () {
+    $location = StorageLocation::factory()->create();
+    $import = Import::factory()->completed()->create(['storage_location_id' => $location->id]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->callAction('convert', data: ['title' => 'Raspberry Pi 4 Model B'])
+        ->assertHasNoActionErrors()
+        ->assertNotified('Gegenstand angelegt')
+        ->assertRedirect(ImportResource::getUrl('index'));
+
+    expect(Item::sole())->title->toBe('Raspberry Pi 4 Model B')->storage_location_id->toBe($location->id)
+        ->and(Import::count())->toBe(0);
+});
+
+test('a failed import can be filled in by hand', function () {
+    $location = StorageLocation::factory()->create();
+    $import = Import::factory()->failed()->create(['storage_location_id' => null]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->callAction('convert', data: ['title' => 'Lötkolben', 'storage_location_id' => $location->id])
+        ->assertHasNoActionErrors();
+
+    expect(Item::sole())->title->toBe('Lötkolben')->storage_location_id->toBe($location->id)
+        ->and(Import::count())->toBe(0);
+});
+
+test('convert requires title and location', function () {
+    $import = Import::factory()->failed()->create();
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->callAction('convert', data: ['title' => '', 'storage_location_id' => null])
+        ->assertHasActionErrors(['title' => 'required', 'storage_location_id' => 'required']);
+
+    expect(Item::count())->toBe(0)->and(Import::count())->toBe(1);
+});
+
+test('deleting an import removes the row and its photo files', function () {
+    Storage::disk('local')->put('imports/y.jpg', 'y');
+    $import = Import::factory()->completed()->create(['photos' => ['imports/y.jpg']]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->callAction('delete')
+        ->assertRedirect(ImportResource::getUrl('index'));
+
+    expect(Import::count())->toBe(0);
+    Storage::disk('local')->assertMissing('imports/y.jpg');
 });

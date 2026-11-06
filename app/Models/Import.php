@@ -7,6 +7,7 @@ use Database\Factories\ImportFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class Import extends Model
@@ -57,5 +58,27 @@ class Import extends Model
     public function storageLocation(): BelongsTo
     {
         return $this->belongsTo(StorageLocation::class);
+    }
+
+    /**
+     * Turns this import into an item that takes over its photos.
+     *
+     * The import row is removed with deleteQuietly() so the "deleted" event does not
+     * run and the photo files, which now belong to the item, stay on disk.
+     */
+    public function convertToItem(string $title, ?string $description, int $storageLocationId): Item
+    {
+        return DB::transaction(function () use ($title, $description, $storageLocationId): Item {
+            $item = Item::create([
+                'storage_location_id' => $storageLocationId,
+                'title' => $title,
+                'description' => $description,
+                'photos' => $this->photos,
+            ]);
+
+            $this->deleteQuietly();
+
+            return $item;
+        });
     }
 }

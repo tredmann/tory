@@ -2,6 +2,7 @@
 
 use App\Enums\ImportStatus;
 use App\Models\Import;
+use App\Models\StorageLocation;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -59,5 +60,18 @@ test('deleting an import quietly keeps its photo files', function () {
     Storage::disk('local')->put('imports/x.jpg', 'x');
     Import::factory()->create(['photos' => ['imports/x.jpg']])->deleteQuietly();
 
+    Storage::disk('local')->assertExists('imports/x.jpg');
+});
+
+test('converting creates the item, removes the import and keeps the files', function () {
+    Storage::disk('local')->put('imports/x.jpg', 'x');
+    $location = StorageLocation::factory()->create();
+    $import = Import::factory()->completed()->create(['photos' => ['imports/x.jpg']]);
+
+    $item = $import->convertToItem('Pi-Gehäuse', 'Schwarz', $location->id);
+
+    expect($item)->title->toBe('Pi-Gehäuse')->description->toBe('Schwarz')
+        ->photos->toBe(['imports/x.jpg'])->storage_location_id->toBe($location->id)
+        ->and(Import::count())->toBe(0);
     Storage::disk('local')->assertExists('imports/x.jpg');
 });
