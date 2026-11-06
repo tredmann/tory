@@ -89,3 +89,10 @@ test('a guest opening a location is sent to login and back', function () {
     $this->get("/lagerorte/{$location->id}")->assertRedirect('/login');
     expect(session('url.intended'))->toEndWith("/lagerorte/{$location->id}");
 });
+
+test('the edit page offers no delete action', function () {
+    $location = StorageLocation::factory()->create();
+
+    Livewire::test(EditStorageLocation::class, ['record' => $location->getRouteKey()])
+        ->assertActionDoesNotExist('delete');
+});
