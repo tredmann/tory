@@ -21,7 +21,7 @@ services:
         condition: service_healthy
 
   db:
-    image: postgres:18
+    image: pgvector/pgvector:pg18-trixie
     environment:
       POSTGRES_DB: tory
       POSTGRES_USER: tory
@@ -30,6 +30,7 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       # -h forces TCP: the image's init phase runs a socket-only temporary
       # server that would otherwise satisfy a socket-based pg_isready.

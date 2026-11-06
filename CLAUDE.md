@@ -8,14 +8,14 @@ Laravel 13 + Filament 5 inventory app running on FrankenPHP (PHP 8.5) with Postg
 
 ## Running the app
 
-- `docker compose up -d` starts three services: `app` (FrankenPHP + queue worker + scheduler under supervisord, http://localhost:8000), `db` (Postgres 18, port 5432), `vite` (Vite dev server, http://localhost:5173; idle until a custom Filament theme exists).
+- `docker compose up -d` starts three services: `app` (FrankenPHP + queue worker + scheduler under supervisord, http://localhost:8000), `db` (Postgres 18 with the `pgvector` extension, image `pgvector/pgvector:pg18-trixie`, port 5432), `vite` (Vite dev server, http://localhost:5173; idle until a custom Filament theme exists).
 - The project directory is bind-mounted into `app` and `vite` at `/app`. Edit files on the host; no rebuild needed.
 - The app entrypoint (`docker/entrypoint.sh`) creates `.env`, generates `APP_KEY`, runs `composer install` when `vendor/` is missing, and runs migrations when `AUTO_MIGRATE=true` (set in `compose.yaml`).
 - Rebuild the image after changing `docker/` (`docker compose build app && docker compose up -d app`); recreate the container after changing `compose.yaml` (`docker compose up -d app`). The `app` service has a 4-minute stop grace period so a running extraction job can finish; a hard kill leaves an import on "Läuft" until the queue's `retry_after` (300 s) fails it.
 
 ## Running commands
 
-Everything PHP runs inside the `app` container; everything npm runs inside the `vite` container. Never use host PHP/Composer/npm.
+Everything PHP runs inside the `app` container; everything npm runs inside the `vite` container. Never use host PHP/Composer/npm. Tests need the `tory_testing` database on the `db` service (see Testing conventions).
 
 ```sh
 docker compose exec app php artisan <command>
@@ -48,7 +48,7 @@ Generator quirk: `php artisan make:enum` writes to `app/`, not `app/Enums/`; mov
 
 ## Testing conventions
 
-- Pest with an in-memory SQLite database (`phpunit.xml`); `RefreshDatabase` is applied to every Feature test in `tests/Pest.php`.
+- Pest on the Postgres database `tory_testing` (`phpunit.xml`; created by `docker/postgres/init/` on a fresh volume, otherwise once with `docker compose exec db createdb -U tory tory_testing`). `TestCase::guardTestingDatabase()` runs on every app boot and refuses any other database, so the suite can never refresh `tory`. Postgres sequences are not reset between tests: never assert a literal id; `RefreshDatabase` is applied to every Feature test in `tests/Pest.php`.
 - Panel pages: `Livewire::test(PageClass::class, ['record' => $id])->fillForm([...])->call('create')`, `->callAction('retry')`, `->assertActionHidden(...)`, `->assertCanSeeTableRecords([...], inOrder: true)`. Use `Storage::fake('local')` for uploads and `Queue::fake()` unless the job itself is under test.
 - AI agents: `InventoryExtractor::fake([['title' => ..., 'description' => ...]])`, `fake(fn () => throw ...)`, `assertPrompted(fn ($prompt) => $prompt->attachments->count() === 2)`; `Exceptions::fake()` to assert `report()`. No automated test talks to Ollama; a live check is `Import::create([...]) + ExtractImport::dispatch()` in tinker with a JPEG under `storage/app/private/imports/`.
 - Write a failing test before production code. Run Pint and PHPStan before committing.
