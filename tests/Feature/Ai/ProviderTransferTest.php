@@ -3,8 +3,10 @@
 use App\Ai\ProviderImportResult;
 use App\Ai\ProviderTransfer;
 use App\Enums\AiVendor;
+use App\Jobs\ReembedItems;
 use App\Models\AiProvider;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 
 /**
@@ -193,10 +195,100 @@ test('an invalid file imports nothing and does not repeat its contents', functio
     'ollama with a bad address' => fn () => transferFile([transferEntry(['vendor' => 'ollama', 'url' => 'sk-file-key-1234'])]),
     'name too long' => fn () => transferFile([transferEntry(['name' => str_repeat('a', 256)])]),
     'model missing' => fn () => transferFile([transferEntry(['model' => ''])]),
+    'whitespace-only model and no embedding model' => fn () => transferFile([transferEntry(['model' => '   '])]),
+    'whitespace-only model and embedding model' => fn () => transferFile([transferEntry(['model' => '  ', 'embedding_model' => ' '])]),
+    'claude without model' => fn () => transferFile([transferEntry(['vendor' => 'anthropic', 'model' => null, 'embedding_model' => 'sk-file-key-1234'])]),
+    'threshold above one' => fn () => transferFile([transferEntry(['search_min_similarity' => 1.5])]),
+    'threshold below zero' => fn () => transferFile([transferEntry(['search_min_similarity' => -0.1])]),
     'key is not a string' => fn () => transferFile([transferEntry(['api_key' => ['sk-file-key-1234']])]),
 ]);
 
 test('the error for an invalid entry names its position', function () {
     expect(fn () => (new ProviderTransfer)->import(transferFile([transferEntry(), transferEntry(['model' => ''])])))
         ->toThrow(InvalidArgumentException::class, 'Eintrag 2');
+});
+
+test('export and import keep the embedding fields', function () {
+    $provider = AiProvider::factory()->embedding('bge-m3')->create(['search_min_similarity' => 0.42]);
+    $transfer = new ProviderTransfer;
+
+    $json = $transfer->export()->toJson();
+    DB::table('ai_providers')->delete();
+    $transfer->import($json);
+
+    $restored = AiProvider::query()->whereKey($provider->id)->firstOrFail();
+
+    expect($restored->embedding_model)->toBe('bge-m3')
+        ->and($restored->search_min_similarity)->toEqual(0.42)
+        ->and($restored->model)->toBe($provider->model);
+});
+
+test('neither active role is transferred', function () {
+    Queue::fake();
+    $provider = AiProvider::factory()->activeForSearch()->active()->create();
+    $transfer = new ProviderTransfer;
+
+    $json = $transfer->export()->toJson();
+    DB::table('ai_providers')->delete();
+    $transfer->import($json);
+
+    $restored = AiProvider::query()->whereKey($provider->id)->firstOrFail();
+
+    expect($restored->is_active)->toBeFalse()
+        ->and($restored->is_active_for_search)->toBeFalse()
+        ->and($restored->embedding_model)->not->toBeNull();
+    Queue::assertNotPushed(ReembedItems::class);
+});
+
+test('an old file without the new fields still imports', function () {
+    (new ProviderTransfer)->import(transferFile([transferEntry()]));
+
+    $provider = AiProvider::query()->firstOrFail();
+
+    expect($provider->embedding_model)->toBeNull()
+        ->and($provider->search_min_similarity)->toBeNull();
+});
+
+test('an entry with only an embedding model imports', function () {
+    (new ProviderTransfer)->import(transferFile([transferEntry(['model' => null, 'embedding_model' => ' bge-m3 '])]));
+
+    $provider = AiProvider::query()->firstOrFail();
+
+    expect($provider->model)->toBeNull()
+        ->and($provider->embedding_model)->toBe('bge-m3');
+});
+
+test('a whitespace-only model counts as absent when an embedding model exists', function () {
+    (new ProviderTransfer)->import(transferFile([transferEntry(['model' => '   ', 'embedding_model' => 'bge-m3'])]));
+
+    expect(AiProvider::query()->firstOrFail()->model)->toBeNull();
+});
+
+test('an entry without any model fails the whole import', function () {
+    expect(fn () => (new ProviderTransfer)->import(transferFile([
+        transferEntry(['name' => 'Gut']),
+        transferEntry(['model' => null, 'embedding_model' => null]),
+    ])))->toThrow(InvalidArgumentException::class, 'Eintrag 2');
+
+    expect(AiProvider::query()->count())->toBe(0);
+});
+
+test('claude entries need a model and drop an embedding model', function () {
+    (new ProviderTransfer)->import(transferFile([transferEntry([
+        'vendor' => 'anthropic',
+        'model' => 'claude-x',
+        'embedding_model' => 'bge-m3',
+        'search_min_similarity' => 0.6,
+    ])]));
+
+    $provider = AiProvider::query()->firstOrFail();
+
+    expect($provider->model)->toBe('claude-x')
+        ->and($provider->embedding_model)->toBeNull();
+});
+
+test('a threshold without an embedding model is stored as given', function () {
+    (new ProviderTransfer)->import(transferFile([transferEntry(['search_min_similarity' => 0.3])]));
+
+    expect(AiProvider::query()->firstOrFail()->search_min_similarity)->toEqual(0.3);
 });

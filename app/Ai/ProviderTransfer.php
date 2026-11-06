@@ -40,6 +40,8 @@ class ProviderTransfer
                 model: $provider->model,
                 apiKey: $provider->readableKey(),
                 url: $provider->url,
+                embeddingModel: $provider->embedding_model,
+                searchMinSimilarity: $provider->search_min_similarity,
             ))->all()),
             omitted: $providers->count() - $readable->count(),
         );
@@ -77,7 +79,9 @@ class ProviderTransfer
                     'vendor' => $entry->vendor,
                     'api_key' => $entry->vendor->requiresKey() ? trim($entry->apiKey ?? '') : null,
                     'url' => $entry->vendor === AiVendor::Ollama ? rtrim(trim($entry->url ?? ''), '/') : null,
-                    'model' => trim($entry->model),
+                    'model' => $this->blankToNull($entry->model),
+                    'embedding_model' => $this->blankToNull($entry->embeddingModel),
+                    'search_min_similarity' => $entry->searchMinSimilarity,
                 ]);
                 $provider->id = $uuid;
                 $provider->save();
@@ -112,7 +116,9 @@ class ProviderTransfer
             'providers.*.uuid' => ['required', 'string', 'uuid', 'distinct:ignore_case'],
             'providers.*.name' => ['required', 'string', 'max:'.self::MAX_NAME_LENGTH],
             'providers.*.vendor' => ['required', 'string', Rule::enum(AiVendor::class)],
-            'providers.*.model' => ['required', 'string', 'max:255'],
+            'providers.*.model' => ['required_without:providers.*.embedding_model', 'required_if:providers.*.vendor,'.AiVendor::Anthropic->value, 'nullable', 'string', 'max:255'],
+            'providers.*.embedding_model' => ['exclude_if:providers.*.vendor,'.AiVendor::Anthropic->value, 'nullable', 'string', 'max:255'],
+            'providers.*.search_min_similarity' => ['nullable', 'numeric', 'between:0,1'],
             'providers.*.api_key' => ['exclude_if:providers.*.vendor,'.AiVendor::Ollama->value, 'required', 'string'],
             'providers.*.url' => ['exclude_unless:providers.*.vendor,'.AiVendor::Ollama->value, 'required', 'string', 'url:http,https'],
         ]);
@@ -121,10 +127,17 @@ class ProviderTransfer
             throw new InvalidArgumentException($this->errorMessage((string) $validator->errors()->keys()[0]));
         }
 
-        /** @var array<int, array{uuid: string, name: string, vendor: string, model: string, api_key?: string, url?: string}> $entries */
+        /** @var array<int, array{uuid: string, name: string, vendor: string, model?: string|null, api_key?: string, url?: string, embedding_model?: string|null, search_min_similarity?: int|float|null}> $entries */
         $entries = $validator->validated()['providers'];
 
         return array_map(ProviderTransferEntry::fromValidated(...), array_values($entries));
+    }
+
+    private function blankToNull(?string $value): ?string
+    {
+        $trimmed = trim($value ?? '');
+
+        return $trimmed === '' ? null : $trimmed;
     }
 
     private function errorMessage(string $field): string
