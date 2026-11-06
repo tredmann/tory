@@ -284,7 +284,22 @@ test('claude entries need a model and drop an embedding model', function () {
     $provider = AiProvider::query()->firstOrFail();
 
     expect($provider->model)->toBe('claude-x')
-        ->and($provider->embedding_model)->toBeNull();
+        ->and($provider->embedding_model)->toBeNull()
+        ->and($provider->search_min_similarity)->toBeNull();
+});
+
+test('a provider without a chat model survives a round trip', function () {
+    $provider = AiProvider::factory()->embedding('bge-m3')->create(['model' => null]);
+    $transfer = new ProviderTransfer;
+
+    $json = $transfer->export()->toJson();
+    DB::table('ai_providers')->delete();
+    $transfer->import($json);
+
+    $restored = AiProvider::query()->whereKey($provider->id)->firstOrFail();
+
+    expect($restored->model)->toBeNull()
+        ->and($restored->embedding_model)->toBe('bge-m3');
 });
 
 test('a threshold without an embedding model is stored as given', function () {

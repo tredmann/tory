@@ -118,7 +118,7 @@ class ProviderTransfer
             'providers.*.vendor' => ['required', 'string', Rule::enum(AiVendor::class)],
             'providers.*.model' => ['required_without:providers.*.embedding_model', 'required_if:providers.*.vendor,'.AiVendor::Anthropic->value, 'nullable', 'string', 'max:255'],
             'providers.*.embedding_model' => ['exclude_if:providers.*.vendor,'.AiVendor::Anthropic->value, 'nullable', 'string', 'max:255'],
-            'providers.*.search_min_similarity' => ['nullable', 'numeric', 'between:0,1'],
+            'providers.*.search_min_similarity' => ['exclude_if:providers.*.vendor,'.AiVendor::Anthropic->value, 'nullable', 'numeric', 'between:0,1'],
             'providers.*.api_key' => ['exclude_if:providers.*.vendor,'.AiVendor::Ollama->value, 'required', 'string'],
             'providers.*.url' => ['exclude_unless:providers.*.vendor,'.AiVendor::Ollama->value, 'required', 'string', 'url:http,https'],
         ]);
