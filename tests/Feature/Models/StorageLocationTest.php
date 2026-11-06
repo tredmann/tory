@@ -5,11 +5,32 @@ use App\Models\Item;
 use App\Models\StorageLocation;
 use App\Models\User;
 use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 
-test('the label shows number and name', function () {
+test('a new location gets a four character code without ambiguous characters', function () {
+    $location = StorageLocation::create(['name' => 'Elektronik-Kiste']);
+
+    expect($location->code)->toMatch('/^[2-9A-HJ-NP-Z]{4}$/');
+});
+
+test('the code cannot be changed', function () {
+    $location = StorageLocation::factory()->create(['code' => '7KQ3']);
+
+    $location->update(['code' => 'AAAA', 'name' => 'Schrank']);
+
+    expect($location->fresh())->code->toBe('7KQ3')->name->toBe('Schrank');
+});
+
+test('two locations cannot share a code', function () {
+    StorageLocation::factory()->create(['code' => '7KQ3']);
+
+    expect(fn () => StorageLocation::factory()->create(['code' => '7KQ3']))->toThrow(UniqueConstraintViolationException::class);
+});
+
+test('the label shows code and name', function () {
     $location = StorageLocation::factory()->create(['name' => 'Elektronik-Kiste']);
 
-    expect($location->label)->toBe("Nr. {$location->id} · Elektronik-Kiste");
+    expect($location->label)->toBe("{$location->code} · Elektronik-Kiste");
 });
 
 test('a location holding items cannot be deleted', function () {

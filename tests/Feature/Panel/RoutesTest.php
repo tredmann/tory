@@ -19,7 +19,7 @@ test('filament assets are published', function () {
     expect(public_path('css/filament/filament/app.css'))->toBeFile();
 });
 
-test('record pages answer 404 for a key that is no valid id', function (string $path) {
+test('record pages answer 404 for a key that is no valid key', function (string $path) {
     $this->actingAs(User::factory()->create());
 
     $this->get($path)->assertNotFound();
@@ -30,13 +30,17 @@ test('record pages answer 404 for a key that is no valid id', function (string $
     '/lagerorte/abc/edit',
     '/importe/abc',
     '/lagerorte/99999999999999999999',
+    '/lagerorte/1',
+    '/lagerorte/ABC0',
+    '/lagerorte/ABCDE',
+    '/lagerorte/ABC%00',
 ]);
 
 test('record pages still open for an existing record', function (string $prefix, string $model) {
     $this->actingAs(User::factory()->create());
     $record = $model::factory()->create();
 
-    $this->get("{$prefix}/{$record->getKey()}")->assertOk();
+    $this->get("{$prefix}/{$record->getRouteKey()}")->assertOk();
 })->with([
     ['/gegenstaende', Item::class],
     ['/lagerorte', StorageLocation::class],

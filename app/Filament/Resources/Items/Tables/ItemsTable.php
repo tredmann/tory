@@ -35,7 +35,7 @@ class ItemsTable
                     ->label('Titel'),
                 TextColumn::make('storageLocation.label')
                     ->label('Lagerort')
-                    ->url(fn (Item $record): string => StorageLocationResource::getUrl('view', ['record' => $record->storage_location_id])),
+                    ->url(fn (Item $record): string => StorageLocationResource::getUrl('view', ['record' => $record->storageLocation])),
                 TextColumn::make('created_at')
                     ->label('Angelegt')
                     ->dateTime()

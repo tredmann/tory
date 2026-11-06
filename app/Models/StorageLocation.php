@@ -7,11 +7,19 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Random\Randomizer;
 
 class StorageLocation extends Model
 {
     /** @use HasFactory<StorageLocationFactory> */
     use HasFactory;
+
+    /**
+     * Digits and uppercase letters without the look-alikes 0, O, 1 and I.
+     */
+    public const string CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+    public const int CODE_LENGTH = 4;
 
     /** @var list<string> */
     protected $fillable = [
@@ -19,12 +27,35 @@ class StorageLocation extends Model
         'note',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (StorageLocation $location): void {
+            $location->code ??= self::generateCode();
+        });
+    }
+
+    public static function generateCode(): string
+    {
+        $randomizer = new Randomizer;
+
+        do {
+            $code = $randomizer->getBytesFromString(self::CODE_ALPHABET, self::CODE_LENGTH);
+        } while (self::query()->where('code', $code)->exists());
+
+        return $code;
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'code';
+    }
+
     /**
      * @return Attribute<non-falsy-string, never>
      */
     protected function label(): Attribute
     {
-        return Attribute::get(fn (): string => "Nr. {$this->id} · {$this->name}");
+        return Attribute::get(fn (): string => "{$this->code} · {$this->name}");
     }
 
     /**

@@ -13,10 +13,12 @@ class StorageLocationsTable
     {
         return $table
             ->columns([
-                TextColumn::make('id')
-                    ->label('Nr.'),
+                TextColumn::make('code')
+                    ->label('Code')
+                    ->searchable(),
                 TextColumn::make('name')
-                    ->label('Name'),
+                    ->label('Name')
+                    ->searchable(),
                 TextColumn::make('note')
                     ->label('Notiz')
                     ->limit(60)

@@ -38,6 +38,6 @@ test('the list shows the storage location or a placeholder', function () {
 
     Livewire::test(ListImports::class)
         ->assertCanSeeTableRecords([$with, $without])
-        ->assertSee("Nr. {$location->id} · {$location->name}")
+        ->assertSee("{$location->code} · {$location->name}")
         ->assertSee('—');
 });

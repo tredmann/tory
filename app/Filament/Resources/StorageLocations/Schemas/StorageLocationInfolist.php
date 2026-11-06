@@ -14,8 +14,8 @@ class StorageLocationInfolist
             ->components([
                 Section::make()
                     ->schema([
-                        TextEntry::make('id')
-                            ->label('Nr.'),
+                        TextEntry::make('code')
+                            ->label('Code'),
                         TextEntry::make('name')
                             ->label('Name'),
                         TextEntry::make('note')

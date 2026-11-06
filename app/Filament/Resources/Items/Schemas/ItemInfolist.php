@@ -30,7 +30,7 @@ class ItemInfolist
                             ->extraAttributes(['style' => 'white-space: pre-line']),
                         TextEntry::make('storageLocation.label')
                             ->label('Lagerort')
-                            ->url(fn (Item $record): string => StorageLocationResource::getUrl('view', ['record' => $record->storage_location_id])),
+                            ->url(fn (Item $record): string => StorageLocationResource::getUrl('view', ['record' => $record->storageLocation])),
                         TextEntry::make('created_at')
                             ->label('Angelegt')
                             ->dateTime(),

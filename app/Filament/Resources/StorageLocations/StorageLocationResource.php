@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\StorageLocations;
 
-use App\Filament\Resources\Concerns\ResolvesNumericRecordKeys;
 use App\Filament\Resources\StorageLocations\Pages\CreateStorageLocation;
 use App\Filament\Resources\StorageLocations\Pages\EditStorageLocation;
 use App\Filament\Resources\StorageLocations\Pages\ListStorageLocations;
@@ -13,15 +12,15 @@ use App\Filament\Resources\StorageLocations\Schemas\StorageLocationInfolist;
 use App\Filament\Resources\StorageLocations\Tables\StorageLocationsTable;
 use App\Models\StorageLocation;
 use BackedEnum;
+use Closure;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class StorageLocationResource extends Resource
 {
-    use ResolvesNumericRecordKeys;
-
     protected static ?string $model = StorageLocation::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArchiveBox;
@@ -37,6 +36,24 @@ class StorageLocationResource extends Resource
     protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'label';
+
+    /**
+     * Accepts a code in any case. Anything that cannot be a code resolves to no
+     * record, so the page answers 404 without querying the database.
+     */
+    public static function resolveRecordRouteBinding(int|string $key, ?Closure $modifyQuery = null): ?Model
+    {
+        $code = strtoupper((string) $key);
+
+        $isCode = strlen($code) === StorageLocation::CODE_LENGTH
+            && strspn($code, StorageLocation::CODE_ALPHABET) === StorageLocation::CODE_LENGTH;
+
+        if (! $isCode) {
+            return null;
+        }
+
+        return parent::resolveRecordRouteBinding($code, $modifyQuery);
+    }
 
     public static function form(Schema $schema): Schema
     {

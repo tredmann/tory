@@ -57,11 +57,31 @@ test('name and note can be edited', function () {
     expect($location->fresh())->name->toBe('Schrank')->note->toBe('Flur');
 });
 
-test('the view page shows number, name and note', function () {
+test('the list finds a location by code and by name', function () {
+    $wanted = StorageLocation::factory()->create(['code' => '7KQ3', 'name' => 'Schrank']);
+    $other = StorageLocation::factory()->create(['code' => 'XY22', 'name' => 'Kiste']);
+
+    Livewire::test(ListStorageLocations::class)
+        ->searchTable('7KQ3')
+        ->assertCanSeeTableRecords([$wanted])
+        ->assertCanNotSeeTableRecords([$other])
+        ->searchTable('Kiste')
+        ->assertCanSeeTableRecords([$other])
+        ->assertCanNotSeeTableRecords([$wanted]);
+});
+
+test('the view page shows code, name and note', function () {
     $location = StorageLocation::factory()->create(['name' => 'Schrank', 'note' => 'Flur']);
 
     Livewire::test(ViewStorageLocation::class, ['record' => $location->getRouteKey()])
-        ->assertSee("Nr. {$location->id}")->assertSee('Schrank')->assertSee('Flur');
+        ->assertSee($location->code)->assertSee('Schrank')->assertSee('Flur');
+});
+
+test('a location opens by its code in any case', function () {
+    $location = StorageLocation::factory()->create(['code' => '7KQ3']);
+
+    $this->get('/lagerorte/7KQ3')->assertOk()->assertSee($location->name);
+    $this->get('/lagerorte/7kq3')->assertOk()->assertSee($location->name);
 });
 
 test('an empty location can be deleted', function () {
@@ -87,8 +107,8 @@ test('a guest opening a location is sent to login and back', function () {
     auth()->logout();
     $location = StorageLocation::factory()->create();
 
-    $this->get("/lagerorte/{$location->id}")->assertRedirect('/login');
-    expect(session('url.intended'))->toEndWith("/lagerorte/{$location->id}");
+    $this->get("/lagerorte/{$location->code}")->assertRedirect('/login');
+    expect(session('url.intended'))->toEndWith("/lagerorte/{$location->code}");
 });
 
 test('the edit page offers no delete action', function () {

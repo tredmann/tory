@@ -140,7 +140,7 @@ test('the view page shows the storage location', function () {
     $import = Import::factory()->create(['storage_location_id' => $location->id]);
 
     Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
-        ->assertSee("Nr. {$location->id} · {$location->name}");
+        ->assertSee("{$location->code} · {$location->name}");
 });
 
 test('the view page renders an import without a storage location', function () {

@@ -26,7 +26,8 @@ test('the list shows items newest first with their location', function () {
 
     Livewire::test(ListItems::class)
         ->assertCanSeeTableRecords([$new, $old], inOrder: true)
-        ->assertSee("Nr. {$location->id} · Elektronik-Kiste");
+        ->assertSee("{$location->code} · Elektronik-Kiste")
+        ->assertSeeHtml("/lagerorte/{$location->code}");
 });
 
 test('items cannot be created directly', function () {
@@ -45,7 +46,8 @@ test('the view page shows title, description and location', function () {
     Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
         ->assertSee('Akkuschrauber')
         ->assertSee('Gelb, mit Ladegerät')
-        ->assertSee("Nr. {$location->id} · Schrank");
+        ->assertSee("{$location->code} · Schrank")
+        ->assertSeeHtml("/lagerorte/{$location->code}");
 });
 
 test('editing changes the title and moves the item to another location', function () {
