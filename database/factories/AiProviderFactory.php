@@ -42,4 +42,20 @@ class AiProviderFactory extends Factory
     {
         return $this->state(fn (): array => ['is_active' => true]);
     }
+
+    public function embedding(string $model = 'text-embedding-3-small'): static
+    {
+        return $this->state(fn (): array => [
+            'vendor' => AiVendor::OpenAi,
+            'embedding_model' => $model,
+        ]);
+    }
+
+    public function activeForSearch(): static
+    {
+        return $this->embedding()->state(fn (): array => [
+            'is_active_for_search' => true,
+            'search_min_similarity' => 0.5,
+        ]);
+    }
 }

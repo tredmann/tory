@@ -25,4 +25,9 @@ enum AiVendor: string implements HasLabel
     {
         return $this !== self::Ollama;
     }
+
+    public function supportsEmbeddings(): bool
+    {
+        return $this !== self::Anthropic;
+    }
 }

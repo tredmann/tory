@@ -31,6 +31,8 @@ class AiProvider extends Model
         'api_key',
         'url',
         'model',
+        'embedding_model',
+        'search_min_similarity',
     ];
 
     /** @var list<string> */
@@ -47,6 +49,8 @@ class AiProvider extends Model
             'vendor' => AiVendor::class,
             'api_key' => 'encrypted',
             'is_active' => 'boolean',
+            'is_active_for_search' => 'boolean',
+            'search_min_similarity' => 'float',
         ];
     }
 
@@ -61,7 +65,7 @@ class AiProvider extends Model
 
         static::deleting(fn (self $provider): bool => ! static::query()
             ->whereKey($provider->getKey())
-            ->where('is_active', true)
+            ->where(fn ($query) => $query->where('is_active', true)->orWhere('is_active_for_search', true))
             ->exists());
     }
 
@@ -83,6 +87,11 @@ class AiProvider extends Model
     public static function active(): ?self
     {
         return static::query()->where('is_active', true)->first();
+    }
+
+    public static function activeForSearch(): ?self
+    {
+        return static::query()->where('is_active_for_search', true)->first();
     }
 
     /**
