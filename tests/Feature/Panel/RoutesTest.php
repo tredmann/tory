@@ -4,6 +4,7 @@ use App\Models\Import;
 use App\Models\Item;
 use App\Models\StorageLocation;
 use App\Models\User;
+use Filament\Facades\Filament;
 
 test('guests are redirected from the panel root to the login page', function () {
     $this->get('/')->assertRedirect('/login');
@@ -41,3 +42,9 @@ test('record pages still open for an existing record', function (string $prefix,
     ['/lagerorte', StorageLocation::class],
     ['/importe', Import::class],
 ]);
+
+test('global search is disabled for a signed-in user', function () {
+    $this->actingAs(User::factory()->create());
+
+    expect(Filament::isGlobalSearchEnabled())->toBeFalse();
+});
