@@ -1,0 +1,41 @@
+# Tory
+
+Tory is a household inventory that answers one question: where is that thing? This file defines the words we use for it. The app's interface is German, so each term gives its German word and the English name used in code.
+
+## Language
+
+### Places
+
+**Location** (Lagerort):
+A named area that groups spots, such as "Keller", "Garage" or "Ferienwohnung". It exists for orientation; things never lie directly in a location, and a location has no code or label of its own.
+_Avoid_: Storage location, area, site, room
+
+**Spot** (Lagerplatz):
+The concrete place where items lie, such as "Regal 3, Fach 2" or "Kiste Weihnachten". Every spot belongs to exactly one location and can move to another one; its name need not be unique.
+_Avoid_: Storage location, Lagerort (for this meaning), bin, slot
+
+**Code**:
+The permanent four-character identifier of a spot, such as `K7XM`. It is what tells two equally named spots apart and what a spot's label will point to.
+_Avoid_: Number, Nr., ID
+
+**Label** (Etikett):
+The printed tag on a spot, carrying its code, name and a QR code. Labels are not built yet.
+_Avoid_: Sticker, tag
+
+### Things
+
+**Item** (Gegenstand):
+A single inventoried thing with photos, a title and a description. An item always lies on exactly one spot; its location follows from that spot.
+_Avoid_: Object, article, Artikel
+
+**Import**:
+The 1–6 photos of one thing on their way to becoming an item, together with the texts the AI suggested for them.
+_Avoid_: Upload, capture, Erfassung
+
+**Search term** (Suchbegriff):
+A word or phrase attached to an item or import so that it can be found by words that its title and description do not contain.
+_Avoid_: Tag, keyword
+
+**Provider** ("Eigene KI"):
+An AI service configured in the app, with its vendor, model and credentials. At most one is active.
+_Avoid_: Model, vendor (for the configured service)
