@@ -4,6 +4,7 @@ use App\Enums\ImportStatus;
 use App\Filament\Resources\Imports\Pages\ViewImport;
 use App\Jobs\ExtractImport;
 use App\Models\Import;
+use App\Models\StorageLocation;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -126,4 +127,20 @@ test('multi-line descriptions keep their line breaks', function () {
         ->assertSee('Zeile eins')
         ->assertSee('Zeile zwei')
         ->assertSeeHtml('white-space: pre-line');
+});
+
+test('the view page shows the storage location', function () {
+    $location = StorageLocation::factory()->create();
+    $import = Import::factory()->create(['storage_location_id' => $location->id]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertSee("Nr. {$location->id} · {$location->name}");
+});
+
+test('the view page renders an import without a storage location', function () {
+    $import = Import::factory()->create(['storage_location_id' => null]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertOk()
+        ->assertSee('Lagerort');
 });

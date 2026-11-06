@@ -22,6 +22,9 @@ class ImportsTable
                 TextColumn::make('title')
                     ->label('Titel')
                     ->placeholder('—'),
+                TextColumn::make('storageLocation.label')
+                    ->label('Lagerort')
+                    ->placeholder('—'),
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge(),

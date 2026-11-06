@@ -38,6 +38,8 @@ class CreateImport extends CreateRecord
         /** @var Import $import */
         $import = $this->getRecord();
 
+        auth()->user()?->forceFill(['last_storage_location_id' => $import->storage_location_id])->save();
+
         ExtractImport::dispatch($import);
     }
 

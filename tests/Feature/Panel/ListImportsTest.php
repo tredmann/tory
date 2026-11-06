@@ -2,6 +2,7 @@
 
 use App\Filament\Resources\Imports\Pages\ListImports;
 use App\Models\Import;
+use App\Models\StorageLocation;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -28,4 +29,14 @@ test('imports are listed newest first with status and title', function () {
 
 test('the list offers the Erfassen action', function () {
     Livewire::test(ListImports::class)->assertActionVisible('create');
+});
+
+test('the list shows the storage location or a placeholder', function () {
+    $location = StorageLocation::factory()->create();
+    $with = Import::factory()->create(['storage_location_id' => $location->id]);
+    $without = Import::factory()->create(['storage_location_id' => null]);
+
+    Livewire::test(ListImports::class)
+        ->assertCanSeeTableRecords([$with, $without])
+        ->assertSee("Nr. {$location->id} · {$location->name}");
 });
