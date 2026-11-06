@@ -64,7 +64,11 @@ class ViewImport extends ViewRecord
                     StorageLocationSelect::make(),
                 ])
                 ->action(function (array $data): void {
-                    $this->import()->convertToItem($data['title'], $data['description'] ?? null, (int) $data['storage_location_id']);
+                    $locationId = (int) $data['storage_location_id'];
+
+                    $this->import()->convertToItem($data['title'], $data['description'] ?? null, $locationId);
+
+                    auth()->user()?->forceFill(['last_storage_location_id' => $locationId])->save();
 
                     Notification::make()
                         ->title('Gegenstand angelegt')

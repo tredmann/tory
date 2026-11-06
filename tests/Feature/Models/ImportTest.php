@@ -2,6 +2,7 @@
 
 use App\Enums\ImportStatus;
 use App\Models\Import;
+use App\Models\Item;
 use App\Models\StorageLocation;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
@@ -73,5 +74,19 @@ test('converting creates the item, removes the import and keeps the files', func
     expect($item)->title->toBe('Pi-Gehäuse')->description->toBe('Schwarz')
         ->photos->toBe(['imports/x.jpg'])->storage_location_id->toBe($location->id)
         ->and(Import::count())->toBe(0);
+    Storage::disk('local')->assertExists('imports/x.jpg');
+});
+
+test('an import that was converted already cannot be converted again', function () {
+    Storage::disk('local')->put('imports/x.jpg', 'x');
+    $location = StorageLocation::factory()->create();
+    $import = Import::factory()->completed()->create(['photos' => ['imports/x.jpg']]);
+    $stale = Import::find($import->id);
+
+    $import->convertToItem('Erster', null, $location->id);
+
+    expect(fn () => $stale->convertToItem('Zweiter', null, $location->id))
+        ->toThrow(Illuminate\Database\Eloquent\ModelNotFoundException::class);
+    expect(Item::count())->toBe(1);
     Storage::disk('local')->assertExists('imports/x.jpg');
 });

@@ -3,6 +3,7 @@
 use App\Enums\ImportStatus;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Resources\Imports\Pages\ViewImport;
+use App\Jobs\EmbedItem;
 use App\Jobs\ExtractImport;
 use App\Models\Import;
 use App\Models\Item;
@@ -191,8 +192,34 @@ test('convert with a corrected title creates the item and returns to the import 
         ->assertNotified('Gegenstand angelegt')
         ->assertRedirect(ImportResource::getUrl('index'));
 
-    expect(Item::sole())->title->toBe('Raspberry Pi 4 Model B')->storage_location_id->toBe($location->id)
+    $item = Item::sole();
+    expect($item)->title->toBe('Raspberry Pi 4 Model B')->storage_location_id->toBe($location->id)
+        ->description->toBe('Grüne Platine mit vier USB-Anschlüssen.')
         ->and(Import::count())->toBe(0);
+    Queue::assertPushed(EmbedItem::class, fn (EmbedItem $job) => $job->item->is($item));
+});
+
+test('convert remembers the chosen location for the user', function () {
+    $location = StorageLocation::factory()->create();
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $import = Import::factory()->completed()->create(['storage_location_id' => null]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->callAction('convert', data: ['storage_location_id' => $location->id]);
+
+    expect($user->fresh()->last_storage_location_id)->toBe($location->id);
+});
+
+test('converting an import that was converted meanwhile answers 404 and creates nothing', function () {
+    $location = StorageLocation::factory()->create();
+    $import = Import::factory()->completed()->create(['storage_location_id' => $location->id]);
+    $page = Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()]);
+    Import::query()->whereKey($import->id)->delete();
+
+    $page->call('mountAction', 'convert')->assertNotFound();
+
+    expect(Item::count())->toBe(0);
 });
 
 test('a failed import can be filled in by hand', function () {
