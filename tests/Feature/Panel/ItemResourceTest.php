@@ -191,6 +191,17 @@ test('the edit page shows the photos field with the first photo as overview', fu
         ->assertSeeHtml($url);
 });
 
+test('the photos field renders real buttons and the add tile', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->assertSeeHtml('x-data="itemPhotos(')
+        ->assertSeeHtml('wire:ignore')
+        ->assertSee('Foto hinzufügen')
+        ->assertSee('Foto entfernen')
+        ->assertSeeHtml('toryPhotoUploads');
+});
+
 test('the photos field also shows on an item with one photo', function () {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
@@ -366,13 +377,48 @@ test('a non-file value in the uploads state is ignored', function () {
     expect($item->fresh()->photos)->toBe(['imports/a.jpg']);
 });
 
+test('a photo uploaded through the Livewire upload lands under its key and is saved', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->upload('data.photo_edits.uploads.11111111-1111-4111-8111-111111111111', [UploadedFile::fake()->image('new.jpg')])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh()->photos)->toHaveCount(2)
+        ->and($item->fresh()->photos[0])->toBe('imports/a.jpg');
+});
+
+test('a new photo marked for removal is not stored and does not block the save', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.uploads.fine', UploadedFile::fake()->image('new.jpg'))
+        ->set('data.photo_edits.uploads.bad', UploadedFile::fake()->create('notes.jpg', 10, 'text/plain'))
+        ->set('data.photo_edits.removed', ['fine', 'bad'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg'])
+        ->and(Storage::disk('local')->files('imports'))->toBe([]);
+});
+
+test('a successful save tells the photos field to start over', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->call('save')
+        ->assertDispatched('item-photos-saved');
+});
+
 test('saving with no photo left shows the error on the field', function () {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
         ->set('data.photo_edits.removed', ['imports/a.jpg'])
         ->call('save')
-        ->assertHasErrors(['data.photo_edits']);
+        ->assertHasErrors(['data.photo_edits'])
+        ->assertSee('Mindestens ein Foto.');
 
     expect($item->fresh()->photos)->toBe(['imports/a.jpg']);
 });

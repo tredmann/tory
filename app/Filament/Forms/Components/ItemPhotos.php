@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Validator;
 
 /**
  * Edits the photos of an item. State: the overview photo (a path or an upload key),
- * the removed paths and the new files keyed by a client-made key.
+ * the marked photos (paths and upload keys) and the new files keyed by a client-made key.
  */
 class ItemPhotos extends Field
 {
@@ -33,9 +33,10 @@ class ItemPhotos extends Field
 
         $this->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
             $uploads = is_array($value) && is_array($value['uploads'] ?? null) ? $value['uploads'] : [];
+            $removed = is_array($value) && is_array($value['removed'] ?? null) ? $value['removed'] : [];
 
-            foreach ($uploads as $file) {
-                if (! $file instanceof UploadedFile) {
+            foreach ($uploads as $key => $file) {
+                if (! $file instanceof UploadedFile || in_array($key, $removed, true)) {
                     continue;
                 }
 
