@@ -2,7 +2,7 @@ import GLightbox from 'glightbox';
 import 'glightbox/dist/css/glightbox.min.css';
 import '../css/slideshow.css';
 
-const lightbox = GLightbox({ loop: true, zoomable: false });
+const lightbox = GLightbox({ loop: true });
 
 function showPosition() {
     const position = document.querySelector('.tory-slideshow-position');
@@ -36,7 +36,8 @@ document.addEventListener(
 
         const urls = JSON.parse(image.dataset.slideshow);
 
-        lightbox.setElements(urls.map((href) => ({ href, type: 'image' })));
+        // GLightbox ignores its global zoomable setting for slides set from code.
+        lightbox.setElements(urls.map((href) => ({ href, type: 'image', zoomable: false })));
         lightbox.open(null, Number(image.dataset.slideshowIndex));
     },
     true,
