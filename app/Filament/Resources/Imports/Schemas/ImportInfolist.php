@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Imports\Schemas;
 
 use App\Enums\ImportStatus;
 use App\Filament\Resources\AiProviders\AiProviderResource;
+use App\Filament\Schemas\PhotoSlideshow;
 use App\Filament\Schemas\RegenerationEntries;
 use App\Models\Import;
 use Filament\Infolists\Components\ImageEntry;
@@ -25,7 +26,9 @@ class ImportInfolist
                             ->label('Fotos')
                             ->disk('local')
                             ->visibility('private')
-                            ->stacked(),
+                            ->imageHeight(160)
+                            ->wrap()
+                            ->extraImgAttributes(fn (ImageEntry $entry, Import $record, string $state): array => PhotoSlideshow::imgAttributes($entry, $record->photos, $state)),
                         TextEntry::make('spot.full_label')
                             ->label('Lagerplatz')
                             ->placeholder('—'),

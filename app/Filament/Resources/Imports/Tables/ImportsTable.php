@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Imports\Tables;
 
 use App\Filament\Resources\Imports\ImportResource;
+use App\Filament\Schemas\PhotoSlideshow;
 use App\Models\Import;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -20,7 +21,9 @@ class ImportsTable
                     ->label('Foto')
                     ->disk('local')
                     ->visibility('private')
-                    ->limit(1),
+                    ->imageHeight(80)
+                    ->limit(1)
+                    ->extraImgAttributes(fn (ImageColumn $column, Import $record, string $state): array => PhotoSlideshow::imgAttributes($column, $record->photos, $state)),
                 TextColumn::make('title')
                     ->label('Titel')
                     ->placeholder('—'),

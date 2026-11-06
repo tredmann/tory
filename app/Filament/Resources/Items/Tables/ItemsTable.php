@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Items\Tables;
 use App\Ai\ItemSearch;
 use App\Filament\Resources\Items\ItemResource;
 use App\Filament\Resources\Spots\SpotResource;
+use App\Filament\Schemas\PhotoSlideshow;
 use App\Models\Item;
 use App\Models\Location;
 use Filament\Tables\Columns\ImageColumn;
@@ -32,7 +33,9 @@ class ItemsTable
                     ->label('Foto')
                     ->disk('local')
                     ->visibility('private')
-                    ->limit(1),
+                    ->imageHeight(80)
+                    ->limit(1)
+                    ->extraImgAttributes(fn (ImageColumn $column, Item $record, string $state): array => PhotoSlideshow::imgAttributes($column, $record->photos, $state)),
                 TextColumn::make('title')
                     ->label('Titel'),
                 TextColumn::make('spot.full_label')

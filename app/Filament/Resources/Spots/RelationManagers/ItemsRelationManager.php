@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Spots\RelationManagers;
 
 use App\Filament\Resources\Items\ItemResource;
+use App\Filament\Schemas\PhotoSlideshow;
 use App\Models\Item;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\ImageColumn;
@@ -23,7 +24,9 @@ class ItemsRelationManager extends RelationManager
                     ->label('Foto')
                     ->disk('local')
                     ->visibility('private')
-                    ->limit(1),
+                    ->imageHeight(80)
+                    ->limit(1)
+                    ->extraImgAttributes(fn (ImageColumn $column, Item $record, string $state): array => PhotoSlideshow::imgAttributes($column, $record->photos, $state)),
                 TextColumn::make('title')
                     ->label('Titel'),
             ])
