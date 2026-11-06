@@ -10,6 +10,7 @@ use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Ai\Embeddings;
@@ -179,22 +180,29 @@ test('a location can be created inside the spot picker on the edit page', functi
     expect(Location::firstWhere('name', 'Keller'))->not->toBeNull();
 });
 
-test('the edit page marks the first photo for the overview', function () {
+test('the edit page shows the photos field with the first photo as overview', function () {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
+    $url = parse_url(Storage::disk('local')->temporaryUrl('imports/a.jpg', now()->addMinutes(5)), PHP_URL_PATH);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
-        ->assertFormFieldVisible('overview_photo')
-        ->assertFormSet(['overview_photo' => 'imports/a.jpg'])
-        ->assertSee('Foto für die Übersicht')
-        ->assertSeeHtml('value="imports/a.jpg"')
-        ->assertSeeHtml('value="imports/b.jpg"');
+        ->assertFormFieldVisible('photo_edits')
+        ->assertFormSet(['photo_edits.overview' => 'imports/a.jpg'])
+        ->assertSee('Fotos')
+        ->assertSeeHtml($url);
+});
+
+test('the photos field also shows on an item with one photo', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->assertFormFieldVisible('photo_edits');
 });
 
 test('saving a chosen overview photo moves it to the front and keeps the others in order', function () {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
-        ->fillForm(['overview_photo' => 'imports/c.jpg'])
+        ->fillForm(['photo_edits.overview' => 'imports/c.jpg'])
         ->call('save')
         ->assertHasNoFormErrors();
 
@@ -212,11 +220,10 @@ test('saving without choosing another photo keeps the order', function () {
     expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']);
 });
 
-test('the overview photo field is hidden for an item with one photo and saving keeps the photo', function () {
+test('saving an item with one photo keeps the photo', function () {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
-        ->assertFormFieldHidden('overview_photo')
         ->fillForm(['title' => 'Neuer Titel'])
         ->call('save')
         ->assertHasNoFormErrors();
@@ -228,7 +235,6 @@ test('an item without photos can be edited', function () {
     $item = Item::factory()->create(['photos' => []]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
-        ->assertFormFieldHidden('overview_photo')
         ->fillForm(['title' => 'Neuer Titel'])
         ->call('save')
         ->assertHasNoFormErrors();
@@ -236,13 +242,13 @@ test('an item without photos can be edited', function () {
     expect($item->fresh())->title->toBe('Neuer Titel')->photos->toBe([]);
 });
 
-test('a path that is not a photo of the item is rejected as overview photo', function () {
+test('a path that is not a photo of the item falls back to the first remaining photo', function () {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
-        ->fillForm(['overview_photo' => 'imports/other.jpg'])
+        ->fillForm(['photo_edits.overview' => 'imports/other.jpg'])
         ->call('save')
-        ->assertHasFormErrors(['overview_photo']);
+        ->assertHasNoFormErrors();
 
     expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg']);
 });
@@ -253,10 +259,134 @@ test('choosing an overview photo does not recompute the embedding', function () 
     Queue::fake();
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
-        ->fillForm(['overview_photo' => 'imports/b.jpg'])
+        ->fillForm(['photo_edits.overview' => 'imports/b.jpg'])
         ->call('save')
         ->assertHasNoFormErrors();
 
     Queue::assertNotPushed(EmbedItem::class);
     expect($item->fresh()->embedding)->not->toBeNull();
+});
+
+test('saving passes added, removed and chosen photos to the item', function () {
+    Storage::disk('local')->put('imports/a.jpg', 'a');
+    Storage::disk('local')->put('imports/b.jpg', 'b');
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.uploads.k', UploadedFile::fake()->image('new.jpg'))
+        ->set('data.photo_edits.removed', ['imports/a.jpg'])
+        ->set('data.photo_edits.overview', 'k')
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    $photos = $item->fresh()->photos;
+
+    expect($photos)->toHaveCount(2)
+        ->and($photos[1])->toBe('imports/b.jpg')
+        ->and($photos[0])->not->toBe('imports/a.jpg');
+    Storage::disk('local')->assertExists($photos[0]);
+    Storage::disk('local')->assertMissing('imports/a.jpg');
+});
+
+test('title and photos change in the same save', function () {
+    Storage::disk('local')->put('imports/a.jpg', 'a');
+    Storage::disk('local')->put('imports/b.jpg', 'b');
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->fillForm(['title' => 'Neuer Titel'])
+        ->set('data.photo_edits.removed', ['imports/a.jpg'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh())->title->toBe('Neuer Titel')->photos->toBe(['imports/b.jpg']);
+});
+
+test('an invalid title changes no photos', function () {
+    Storage::disk('local')->put('imports/a.jpg', 'a');
+    Storage::disk('local')->put('imports/b.jpg', 'b');
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->fillForm(['title' => ''])
+        ->set('data.photo_edits.removed', ['imports/a.jpg'])
+        ->set('data.photo_edits.uploads.k', UploadedFile::fake()->image('new.jpg'))
+        ->call('save')
+        ->assertHasFormErrors(['title']);
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg']);
+    Storage::disk('local')->assertExists('imports/a.jpg');
+    expect(Storage::disk('local')->allFiles('imports'))->toHaveCount(2);
+});
+
+test('saving twice stores an added photo once', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.uploads.k', UploadedFile::fake()->image('new.jpg'))
+        ->call('save')
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh()->photos)->toHaveCount(2)
+        ->and(Storage::disk('local')->allFiles('imports'))->toHaveCount(1);
+});
+
+test('a file of the wrong type is rejected', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.uploads.k', UploadedFile::fake()->create('notes.jpg', 10, 'text/plain'))
+        ->call('save')
+        ->assertHasFormErrors(['photo_edits']);
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg']);
+});
+
+/** Livewire's own upload limit (12288 KB, config livewire.temporary_file_upload.rules) rejects it before the field's rule runs. */
+test('a file over 12 MB is rejected', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.uploads.k', UploadedFile::fake()->createWithContent('big.gif', base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7').str_repeat("\0", 12 * 1024 * 1024)))
+        ->assertHasErrors(['data.photo_edits.uploads.k'])
+        ->call('save');
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg']);
+});
+
+test('a non-file value in the uploads state is ignored', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.uploads.k', 'imports/other.jpg')
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg']);
+});
+
+test('saving with no photo left shows the error on the field', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->set('data.photo_edits.removed', ['imports/a.jpg'])
+        ->call('save')
+        ->assertHasErrors(['data.photo_edits']);
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg']);
+});
+
+test('a save during a regeneration changes no photos', function () {
+    Storage::disk('local')->put('imports/a.jpg', 'a');
+    Storage::disk('local')->put('imports/b.jpg', 'b');
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
+
+    $page = Livewire::test(EditItem::class, ['record' => $item->getRouteKey()]);
+    $item->forceFill(['regenerating_at' => now()])->save();
+
+    $page->set('data.photo_edits.removed', ['imports/a.jpg'])->call('save');
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg']);
+    Storage::disk('local')->assertExists('imports/a.jpg');
 });

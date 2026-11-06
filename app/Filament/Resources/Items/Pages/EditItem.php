@@ -7,7 +7,10 @@ use App\Models\Item;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class EditItem extends EditRecord
 {
@@ -49,23 +52,30 @@ class EditItem extends EditRecord
     }
 
     /**
+     * Title and photos are saved together or not at all.
+     *
      * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
      */
-    protected function mutateFormDataBeforeSave(array $data): array
+    protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        $overviewPhoto = Arr::pull($data, 'overview_photo');
+        assert($record instanceof Item);
 
-        if ($overviewPhoto === null) {
-            return $data;
-        }
+        /** @var array{overview?: ?string, removed?: list<string>, uploads?: array<string, mixed>}|null $edits */
+        $edits = Arr::pull($data, 'photo_edits');
+        $uploads = array_filter($edits['uploads'] ?? [], fn (mixed $file): bool => $file instanceof UploadedFile);
 
-        $item = $this->getRecord();
-        assert($item instanceof Item);
+        DB::transaction(function () use ($record, $data, $edits, $uploads): void {
+            $record->update($data);
+            $record->changePhotos($edits['removed'] ?? [], $uploads, $edits['overview'] ?? null);
+        });
 
-        $data['photos'] = [$overviewPhoto, ...array_values(array_diff($item->photos, [$overviewPhoto]))];
+        return $record;
+    }
 
-        return $data;
+    protected function afterSave(): void
+    {
+        $this->getRecord()->refresh();
+        $this->fillForm();
     }
 
     protected function getHeaderActions(): array
