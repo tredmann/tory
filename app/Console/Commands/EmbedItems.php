@@ -13,6 +13,9 @@ use Throwable;
 #[Description('Berechnet fehlende Embeddings für Gegenstände')]
 class EmbedItems extends Command
 {
+    /** The run stops after this many failures in a row, e.g. while the provider is down. */
+    public const int MAX_CONSECUTIVE_FAILURES = 3;
+
     /**
      * Number of items loaded per page; paging is by id, so filling the
      * embedding column does not shift later pages.
@@ -22,20 +25,31 @@ class EmbedItems extends Command
     public function handle(ItemEmbedder $embedder): int
     {
         $embedded = 0;
+        $failures = 0;
 
         Item::query()
             ->when(! $this->option('all'), fn ($query) => $query->whereNull('embedding'))
-            ->eachById(function (Item $item) use ($embedder, &$embedded): void {
+            ->eachById(function (Item $item) use ($embedder, &$embedded, &$failures): ?bool {
                 try {
-                    $vector = $embedder->embed($embedder->textFor($item));
+                    if ($embedder->embedAndStore($item)) {
+                        $embedded++;
+                    }
 
-                    $item->forceFill(['embedding' => $vector])->saveQuietly();
-                    $embedded++;
+                    $failures = 0;
                 } catch (Throwable $e) {
                     report($e);
+                    $failures++;
 
                     $this->warn("Gegenstand {$item->getKey()} konnte nicht eingebettet werden: {$e->getMessage()}");
+
+                    if ($failures >= self::MAX_CONSECUTIVE_FAILURES) {
+                        $this->warn(self::MAX_CONSECUTIVE_FAILURES.' Fehler in Folge, der Lauf wird vorzeitig beendet.');
+
+                        return false;
+                    }
                 }
+
+                return null;
             }, self::$pageSize);
 
         $this->info("{$embedded} Gegenstände eingebettet.");

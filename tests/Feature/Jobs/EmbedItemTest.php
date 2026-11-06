@@ -6,6 +6,7 @@ use App\Models\Item;
 use App\Models\StorageLocation;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Embeddings;
+use Laravel\Ai\Prompts\EmbeddingsPrompt;
 
 test('the job stores a 1024-dimension embedding', function () {
     Queue::fake();
@@ -28,7 +29,8 @@ test('storing the embedding queues nothing', function () {
 test('the job respects the queue timing invariant', function () {
     $job = new EmbedItem(Item::factory()->make());
 
-    expect($job->tries)->toBe(3)->and($job->timeout)->toBe(60)->and($job->timeout)->toBeLessThan(210);
+    expect($job->tries)->toBe(3)->and($job->timeout)->toBe(60)->and($job->timeout)->toBeLessThan(210)
+        ->and(EmbedItem::CLIENT_TIMEOUT)->toBe(45)->and(EmbedItem::CLIENT_TIMEOUT)->toBeLessThan($job->timeout);
 });
 
 test('creating an item queues its embedding', function () {
@@ -67,4 +69,45 @@ test('a failing embedding leaves the item in place without an embedding', functi
 
     expect(fn () => (new EmbedItem($item))->handle(app(ItemEmbedder::class)))->toThrow(RuntimeException::class);
     expect($item->fresh()->embedding)->toBeNull();
+});
+
+test('the job asks the provider with a client timeout shorter than its own', function () {
+    Queue::fake();
+    $item = Item::factory()->create();
+    $timeouts = [];
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$timeouts) {
+        $timeouts[] = $prompt->timeout;
+
+        return [Embeddings::fakeEmbedding(1024)];
+    });
+
+    (new EmbedItem($item))->handle(app(ItemEmbedder::class));
+
+    expect($timeouts)->toBe([45]);
+});
+
+test('an embedding of text that was edited meanwhile is not stored', function () {
+    Queue::fake();
+    $item = Item::factory()->create(['title' => 'Alt']);
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use ($item) {
+        Item::find($item->id)->update(['title' => 'Neu']);
+
+        return [Embeddings::fakeEmbedding(1024)];
+    });
+
+    (new EmbedItem($item))->handle(app(ItemEmbedder::class));
+
+    expect($item->fresh())->title->toBe('Neu')->embedding->toBeNull();
+});
+
+test('storing an embedding leaves updated_at alone', function () {
+    Queue::fake();
+    $item = Item::factory()->create();
+    $item->forceFill(['updated_at' => now()->subDay()])->saveQuietly();
+    $before = $item->fresh()->updated_at;
+
+    (new EmbedItem($item))->handle(app(ItemEmbedder::class));
+
+    expect($item->fresh()->embedding)->toHaveCount(1024)
+        ->and($item->fresh()->updated_at->equalTo($before))->toBeTrue();
 });

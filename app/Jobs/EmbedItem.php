@@ -14,6 +14,9 @@ class EmbedItem implements ShouldQueue
 {
     use Queueable;
 
+    /** Seconds before the HTTP call fails, so the error arrives before the worker kills the job. */
+    public const int CLIENT_TIMEOUT = 45;
+
     public int $tries = 3;
 
     /** @var list<int> */
@@ -27,8 +30,6 @@ class EmbedItem implements ShouldQueue
 
     public function handle(ItemEmbedder $embedder): void
     {
-        $vector = $embedder->embed($embedder->textFor($this->item), $this->timeout);
-
-        $this->item->forceFill(['embedding' => $vector])->saveQuietly();
+        $embedder->embedAndStore($this->item, self::CLIENT_TIMEOUT);
     }
 }

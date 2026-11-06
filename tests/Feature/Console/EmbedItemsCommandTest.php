@@ -46,6 +46,24 @@ test('items:embed carries on after one item fails', function () {
     Exceptions::assertReported(RuntimeException::class);
 });
 
+test('items:embed stops after three failures in a row', function () {
+    Exceptions::fake();
+    Item::factory()->count(5)->create();
+    $calls = 0;
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$calls) {
+        $calls++;
+
+        throw new RuntimeException('down');
+    });
+
+    $this->artisan('items:embed')
+        ->expectsOutputToContain('vorzeitig beendet')
+        ->assertSuccessful();
+
+    expect($calls)->toBe(3);
+    Exceptions::assertReportedCount(3);
+});
+
 test('items:embed is scheduled hourly', function () {
     $this->artisan('schedule:list')->expectsOutputToContain('0 * * * *  php artisan items:embed');
 });

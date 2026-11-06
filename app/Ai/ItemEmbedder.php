@@ -3,6 +3,7 @@
 namespace App\Ai;
 
 use App\Models\Item;
+use Illuminate\Support\Facades\DB;
 use Laravel\Ai\Embeddings;
 use RuntimeException;
 
@@ -34,6 +35,33 @@ final class ItemEmbedder
         }
 
         return array_values($vector);
+    }
+
+    /**
+     * Embeds the item's current text and stores the vector, unless the text
+     * changed while the provider was working: the edit cleared the embedding
+     * and queued a new job, so the stale vector is dropped. The row is locked
+     * for the check and the write; no model event fires and `updated_at`
+     * stays as it is.
+     *
+     * @return bool whether the vector was stored
+     */
+    public function embedAndStore(Item $item, ?int $timeout = null): bool
+    {
+        $text = $this->textFor($item);
+        $vector = $this->embed($text, $timeout);
+
+        return DB::transaction(function () use ($item, $text, $vector): bool {
+            $current = Item::query()->lockForUpdate()->find($item->getKey());
+
+            if ($current === null || $this->textFor($current) !== $text) {
+                return false;
+            }
+
+            Item::withoutTimestamps(fn () => $current->forceFill(['embedding' => $vector])->saveQuietly());
+
+            return true;
+        });
     }
 
     public function textFor(Item $item): string
