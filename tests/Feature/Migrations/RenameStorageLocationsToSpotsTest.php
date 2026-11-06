@@ -6,9 +6,12 @@ use Illuminate\Support\Str;
 it('renaming keeps spots and the items on them', function () {
     $migration = require glob(database_path('migrations/*_rename_storage_locations_to_spots.php'))[0];
 
+    $createLocations = require glob(database_path('migrations/*_create_locations_table.php'))[0];
+
     DB::beginTransaction();
 
     try {
+        $createLocations->down();
         $migration->down();
 
         $id = DB::table('storage_locations')->insertGetId([
@@ -28,6 +31,7 @@ it('renaming keeps spots and the items on them', function () {
         ]);
 
         $migration->up();
+        $createLocations->up();
 
         $spot = DB::table('spots')->where('id', $id)->first();
 

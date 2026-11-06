@@ -16,6 +16,8 @@ class SpotInfolist
                     ->schema([
                         TextEntry::make('code')
                             ->label('Code'),
+                        TextEntry::make('location.name')
+                            ->label('Lagerort'),
                         TextEntry::make('name')
                             ->label('Name'),
                         TextEntry::make('note')

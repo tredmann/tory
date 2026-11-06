@@ -2,13 +2,14 @@
 
 use App\Models\Import;
 use App\Models\Item;
+use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 
 test('a new spot gets a four character code without ambiguous characters', function () {
-    $spot = Spot::create(['name' => 'Elektronik-Kiste']);
+    $spot = Spot::create(['name' => 'Elektronik-Kiste', 'location_id' => Location::factory()->create()->id]);
 
     expect($spot->code)->toMatch('/^[2-9A-HJ-NP-Z]{4}$/');
 });

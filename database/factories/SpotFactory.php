@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Location;
 use App\Models\Spot;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,6 +21,7 @@ class SpotFactory extends Factory
         return [
             'name' => fake()->words(2, true),
             'note' => null,
+            'location_id' => Location::factory(),
         ];
     }
 }

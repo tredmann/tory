@@ -3,6 +3,7 @@
 use App\Models\AiProvider;
 use App\Models\Import;
 use App\Models\Item;
+use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Support\Facades\Schema;
@@ -18,6 +19,7 @@ test('new records get a uuid as primary key', function (string $model) {
     Import::class,
     AiProvider::class,
     User::class,
+    Location::class,
 ]);
 
 test('spots keep their internal numeric key', function () {

@@ -6,8 +6,10 @@ use App\Filament\Resources\Spots\Pages\ListSpots;
 use App\Filament\Resources\Spots\Pages\ViewSpot;
 use App\Filament\Resources\Spots\RelationManagers\ItemsRelationManager;
 use App\Models\Item;
+use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -29,8 +31,10 @@ test('the list shows spots by number with their item counts', function () {
 });
 
 test('a spot is created with name and note', function () {
+    $location = Location::factory()->create();
+
     Livewire::test(CreateSpot::class)
-        ->fillForm(['name' => 'Elektronik-Kiste', 'note' => 'Keller, Regal links'])
+        ->fillForm(['name' => 'Elektronik-Kiste', 'note' => 'Keller, Regal links', 'location_id' => $location->getKey()])
         ->call('create')
         ->assertHasNoFormErrors();
 
@@ -126,4 +130,53 @@ test('the view page lists exactly the items inside the spot', function () {
     Livewire::test(ItemsRelationManager::class, ['ownerRecord' => $spot, 'pageClass' => ViewSpot::class])
         ->assertCanSeeTableRecords($inside)
         ->assertCanNotSeeTableRecords([$elsewhere]);
+});
+
+test('a spot requires a location', function () {
+    Location::factory()->count(2)->create();
+
+    Livewire::test(CreateSpot::class)
+        ->fillForm(['name' => 'Kiste', 'location_id' => null])
+        ->call('create')
+        ->assertHasFormErrors(['location_id' => 'required']);
+
+    expect(Spot::count())->toBe(0);
+});
+
+test('the only location is preselected', function () {
+    $location = Location::factory()->create();
+
+    Livewire::test(CreateSpot::class)
+        ->assertFormSet(['location_id' => $location->getKey()]);
+
+    Location::factory()->create();
+
+    Livewire::test(CreateSpot::class)
+        ->assertFormSet(['location_id' => null]);
+});
+
+test('moving a spot keeps its code and its items', function () {
+    $item = Item::factory()->create();
+    $spot = $item->spot;
+    $code = $spot->code;
+    $target = Location::factory()->create();
+
+    Livewire::test(EditSpot::class, ['record' => $spot->getRouteKey()])
+        ->fillForm(['location_id' => $target->getKey()])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($spot->fresh()->code)->toBe($code)
+        ->and($item->fresh()->spot->location->is($target))->toBeTrue();
+});
+
+test('a location can be created from the spot form', function () {
+    $component = Livewire::test(CreateSpot::class)
+        ->callAction(TestAction::make('createOption')->schemaComponent('location_id'), ['name' => 'Keller'])
+        ->assertHasNoFormErrors();
+
+    $location = Location::firstWhere('name', 'Keller');
+
+    expect($location)->not->toBeNull();
+    $component->assertFormSet(['location_id' => $location->getKey()]);
 });
