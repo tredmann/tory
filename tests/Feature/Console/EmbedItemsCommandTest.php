@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\EmbedItems;
+use App\Models\AiProvider;
 use App\Models\Item;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Queue;
@@ -79,4 +80,16 @@ test('items:embed covers a backlog larger than one page', function () {
     }
 
     expect(Item::whereNull('embedding')->count())->toBe(0);
+});
+
+test('items:embed with an active provider stores a failure too', function () {
+    Exceptions::fake();
+    $provider = AiProvider::factory()->activeForSearch()->create(['name' => 'OpenAI']);
+    Item::factory()->create();
+    Embeddings::fake(fn () => throw new RuntimeException('boom'));
+
+    $this->artisan('items:embed')->assertSuccessful();
+
+    expect($provider->fresh()->search_failure)
+        ->toBe('Das Embedding ist fehlgeschlagen. Bitte Modell und Zugangsdaten prüfen.');
 });

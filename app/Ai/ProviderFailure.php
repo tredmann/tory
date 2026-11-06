@@ -17,6 +17,8 @@ use Throwable;
  */
 final class ProviderFailure extends RuntimeException
 {
+    public const string GENERIC_EMBEDDING_MESSAGE = 'Das Embedding ist fehlgeschlagen. Bitte Modell und Zugangsdaten prüfen.';
+
     public function __construct(
         string $message,
         public readonly ?ProviderFailureReason $reason,

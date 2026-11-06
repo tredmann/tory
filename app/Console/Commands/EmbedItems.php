@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Ai\ItemEmbedder;
+use App\Ai\EmbeddingRunner;
 use App\Models\Item;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -14,7 +14,7 @@ use Throwable;
 class EmbedItems extends Command
 {
     /** The run stops after this many failures in a row, e.g. while the provider is down. */
-    public const int MAX_CONSECUTIVE_FAILURES = 3;
+    public const int MAX_CONSECUTIVE_FAILURES = EmbeddingRunner::MAX_CONSECUTIVE_FAILURES;
 
     /**
      * Number of items loaded per page; paging is by id, so filling the
@@ -22,37 +22,21 @@ class EmbedItems extends Command
      */
     public static int $pageSize = 500;
 
-    public function handle(ItemEmbedder $embedder): int
+    public function handle(EmbeddingRunner $runner): int
     {
-        $embedded = 0;
-        $failures = 0;
+        $result = $runner->run(
+            Item::query()->when(! $this->option('all'), fn ($query) => $query->whereNull('embedding')),
+            pageSize: self::$pageSize,
+            onFailure: function (Item $item, Throwable $e): void {
+                $this->warn("Gegenstand {$item->getKey()} konnte nicht eingebettet werden: {$e->getMessage()}");
+            },
+        );
 
-        Item::query()
-            ->when(! $this->option('all'), fn ($query) => $query->whereNull('embedding'))
-            ->eachById(function (Item $item) use ($embedder, &$embedded, &$failures): ?bool {
-                try {
-                    if ($embedder->embedAndStore($item)) {
-                        $embedded++;
-                    }
+        if ($result->stoppedEarly) {
+            $this->warn(self::MAX_CONSECUTIVE_FAILURES.' Fehler in Folge, der Lauf wird vorzeitig beendet.');
+        }
 
-                    $failures = 0;
-                } catch (Throwable $e) {
-                    report($e);
-                    $failures++;
-
-                    $this->warn("Gegenstand {$item->getKey()} konnte nicht eingebettet werden: {$e->getMessage()}");
-
-                    if ($failures >= self::MAX_CONSECUTIVE_FAILURES) {
-                        $this->warn(self::MAX_CONSECUTIVE_FAILURES.' Fehler in Folge, der Lauf wird vorzeitig beendet.');
-
-                        return false;
-                    }
-                }
-
-                return null;
-            }, self::$pageSize);
-
-        $this->info("{$embedded} Gegenstände eingebettet.");
+        $this->info("{$result->embedded} Gegenstände eingebettet.");
 
         return self::SUCCESS;
     }
