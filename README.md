@@ -6,6 +6,22 @@ The Filament panel is the whole app and answers at `/`.
 
 Development happens entirely in Docker. You only need Docker Desktop (or compatible) on the host.
 
+## Where things stand
+
+Tory is going to be a household inventory. Built so far (2026-11-04 to 2026-11-06):
+
+- **Stack and tooling.** Dockerised FrankenPHP app with queue worker and scheduler under supervisord, Postgres, Vite service, Pest/Pint/Larastan, Laravel Boost with the Filament skill, GitHub Actions test workflow.
+- **Panel.** Filament 5 is the whole app at `/`, with login, registration, password reset, email verification and profile. Every verified user sees everything; there is no policy layer yet.
+- **Photo imports.** "Importe" → "Erfassen" uploads 1–6 photos, stores them on the private disk and queues `ExtractImport`. The AI extractor (Anthropic in production, Ollama + gemma4 locally) returns a German title and a search-friendly description that only describes what is visible. The import page polls until the job is done, shows the result or the error, and offers Retry. Verified live against gemma4.
+
+Not built yet, in the intended order:
+
+1. Edit the extracted title and description on the import page.
+2. Turn an import into an inventory **item** (the `Item` model does not exist); photos move with it.
+3. Browse and search items; delete imports/items including their photos.
+
+Design documents and plans for each feature are in `docs/superpowers/specs/` and `docs/superpowers/plans/`. Known small gaps are listed at the end of each plan's execution recap (Retry race under concurrent clicks, list table polling while idle, a handful of test-coverage gaps).
+
 ## Getting started
 
 ```sh
