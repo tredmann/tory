@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AiProviders\Schemas;
 
+use App\Ai\ProviderModels;
 use App\Enums\AiVendor;
 use App\Models\AiProvider;
 use Filament\Forms\Components\Select;
@@ -51,8 +52,30 @@ class AiProviderForm
             TextInput::make('model')
                 ->label('Modell')
                 ->required()
-                ->maxLength(255),
+                ->maxLength(255)
+                ->datalist(fn (Get $get, ?AiProvider $record): array => self::models($get, $record) ?? [])
+                ->helperText(fn (Get $get, ?AiProvider $record): ?string => self::models($get, $record) === null
+                    ? 'Modelle konnten nicht geladen werden. Du kannst den Namen auch eintippen.'
+                    : null),
         ]);
+    }
+
+    /**
+     * @return list<string>|null
+     */
+    private static function models(Get $get, ?AiProvider $record): ?array
+    {
+        $vendor = self::vendor($get) ?? $record?->vendor;
+
+        if ($vendor === null) {
+            return [];
+        }
+
+        $key = $get('api_key');
+        $key = is_string($key) && trim($key) !== '' ? $key : $record?->readableKey();
+        $url = $get('url');
+
+        return ProviderModels::for($vendor, $key, is_string($url) ? $url : $record?->url);
     }
 
     private static function vendor(Get $get): ?AiVendor

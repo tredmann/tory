@@ -7,10 +7,15 @@ use App\Filament\Resources\Imports\ImportResource;
 use App\Models\AiProvider;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
+use Filament\Forms\Components\TextInput;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 
 beforeEach(function () {
+    Cache::flush();
     $this->actingAs(User::factory()->create());
 });
 
@@ -181,4 +186,39 @@ test('the navigation entry sorts after Importe', function () {
 
 test('the page title is Eigene KI', function () {
     expect(Livewire::test(ManageAiProviders::class)->instance()->getTitle())->toBe('Eigene KI');
+});
+
+test('the model field suggests fetched models', function () {
+    Http::fake(['http://ollama:11434/api/tags' => Http::response(['models' => [['name' => 'b:1'], ['name' => 'a:1']]])]);
+
+    Livewire::test(ManageAiProviders::class)
+        ->mountAction('create')
+        ->fillForm(['vendor' => AiVendor::Ollama->value, 'url' => 'http://ollama:11434'])
+        ->assertSchemaComponentExists('model', checkComponentUsing: fn (TextInput $field): bool => $field->getDatalistOptions() === ['a:1', 'b:1']
+            && $field->getChildSchema($field::BELOW_CONTENT_SCHEMA_KEY) === null);
+});
+
+test('editing with an empty key fetches with the stored key', function () {
+    $provider = AiProvider::factory()->create(['api_key' => 'sk-stored-7777']);
+    Http::fake(['https://api.anthropic.com/*' => Http::response(['data' => [['id' => 'claude-x']]])]);
+
+    Livewire::test(ManageAiProviders::class)
+        ->mountAction(TestAction::make('edit')->table($provider))
+        ->assertSchemaComponentExists('model', checkComponentUsing: fn (TextInput $field): bool => $field->getDatalistOptions() === ['claude-x']);
+
+    Http::assertSent(fn (Request $request): bool => $request->header('x-api-key') === ['sk-stored-7777']);
+});
+
+test('a failed fetch shows a hint and a free-text model still saves', function () {
+    Http::fake(['*' => Http::response('boom', 500)]);
+
+    Livewire::test(ManageAiProviders::class)
+        ->mountAction('create')
+        ->fillForm(['vendor' => AiVendor::Ollama->value, 'url' => 'http://ollama:11434'])
+        ->assertSchemaComponentExists('model', checkComponentUsing: fn (TextInput $field): bool => $field->getChildSchema($field::BELOW_CONTENT_SCHEMA_KEY)?->getComponents()[0]->getContent() === 'Modelle konnten nicht geladen werden. Du kannst den Namen auch eintippen.')
+        ->fillForm(['name' => 'Frei', 'model' => 'mein-modell'])
+        ->callMountedAction()
+        ->assertHasNoFormErrors();
+
+    expect(AiProvider::sole()->model)->toBe('mein-modell');
 });
