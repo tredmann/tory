@@ -49,13 +49,28 @@ class AiProvider extends Model
     protected static function booted(): void
     {
         static::saving(function (self $provider): void {
-            if ($provider->isDirty('api_key')) {
+            if (($provider->getAttributes()['api_key'] ?? null) !== $provider->getRawOriginal('api_key')) {
                 $key = $provider->readableKey();
                 $provider->key_hint = $key === null ? null : substr($key, -4);
             }
         });
 
         static::deleting(fn (self $provider): bool => ! $provider->is_active);
+    }
+
+    /**
+     * Compares the stored key payloads raw, so saving never has to decrypt
+     * an old key that has become unreadable.
+     *
+     * @param  string  $key
+     */
+    public function originalIsEquivalent($key): bool
+    {
+        if ($key === 'api_key') {
+            return ($this->attributes[$key] ?? null) === ($this->original[$key] ?? null);
+        }
+
+        return parent::originalIsEquivalent($key);
     }
 
     public static function active(): ?self
