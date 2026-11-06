@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\ProviderImportResult;
 use App\Ai\ProviderTransfer;
 use App\Enums\AiVendor;
 use App\Models\AiProvider;
@@ -36,12 +37,12 @@ test('a round trip restores values and key, encrypted and with its hint', functi
     $local = AiProvider::factory()->ollama()->create(['name' => 'Lokal']);
     $transfer = new ProviderTransfer;
 
-    $json = json_encode($transfer->export()['document'], JSON_THROW_ON_ERROR);
+    $json = $transfer->export()->toJson();
     DB::table('ai_providers')->delete();
 
-    expect($transfer->import($json))->toBe(['created' => 2, 'skipped' => 0, 'renamed' => 0]);
+    expect($transfer->import($json))->toEqual(new ProviderImportResult(created: 2, skipped: 0, renamed: 0));
 
-    $restored = AiProvider::query()->where('uuid', $cloud->uuid)->firstOrFail();
+    $restored = AiProvider::query()->whereKey($cloud->id)->firstOrFail();
 
     expect($restored->name)->toBe('Claude')
         ->and($restored->vendor)->toBe(AiVendor::Anthropic)
@@ -51,7 +52,7 @@ test('a round trip restores values and key, encrypted and with its hint', functi
         ->and($restored->key_hint)->toBe('3fa9')
         ->and($restored->getRawOriginal('api_key'))->not->toContain('sk-secret');
 
-    $restoredLocal = AiProvider::query()->where('uuid', $local->uuid)->firstOrFail();
+    $restoredLocal = AiProvider::query()->whereKey($local->id)->firstOrFail();
 
     expect($restoredLocal->vendor)->toBe(AiVendor::Ollama)
         ->and($restoredLocal->url)->toBe($local->url)
@@ -62,7 +63,7 @@ test('a round trip restores values and key, encrypted and with its hint', functi
 test('the export contains the format header and no active state', function () {
     AiProvider::factory()->active()->create();
 
-    $document = (new ProviderTransfer)->export()['document'];
+    $document = json_decode((new ProviderTransfer)->export()->toJson(), true);
 
     expect($document['format'])->toBe('tory-ai-providers')
         ->and($document['version'])->toBe(1)
@@ -74,12 +75,12 @@ test('an existing uuid is skipped and left unchanged, even with another key in t
     $provider = AiProvider::factory()->create(['api_key' => 'sk-local-key-0000', 'model' => 'lokal']);
 
     $result = (new ProviderTransfer)->import(transferFile([
-        transferEntry(['uuid' => $provider->uuid, 'name' => 'Anders', 'model' => 'anders']),
+        transferEntry(['uuid' => $provider->id, 'name' => 'Anders', 'model' => 'anders']),
     ]));
 
     $fresh = $provider->fresh();
 
-    expect($result)->toBe(['created' => 0, 'skipped' => 1, 'renamed' => 0])
+    expect($result)->toEqual(new ProviderImportResult(created: 0, skipped: 1, renamed: 0))
         ->and($fresh->name)->toBe($provider->name)
         ->and($fresh->model)->toBe('lokal')
         ->and($fresh->api_key)->toBe('sk-local-key-0000');
@@ -91,7 +92,7 @@ test('importing the same file twice creates nothing twice', function () {
 
     $transfer->import($file);
 
-    expect($transfer->import($file))->toBe(['created' => 0, 'skipped' => 1, 'renamed' => 0])
+    expect($transfer->import($file))->toEqual(new ProviderImportResult(created: 0, skipped: 1, renamed: 0))
         ->and(AiProvider::query()->count())->toBe(1);
 });
 
@@ -103,7 +104,7 @@ test('a new uuid with a taken name is renamed, also a second time', function () 
         transferEntry(),
     ]));
 
-    expect($result)->toBe(['created' => 2, 'skipped' => 0, 'renamed' => 2])
+    expect($result)->toEqual(new ProviderImportResult(created: 2, skipped: 0, renamed: 2))
         ->and(AiProvider::query()->pluck('name')->sort()->values()->all())
         ->toBe(['OpenAI', 'OpenAI (Import 2)', 'OpenAI (Import)']);
 });
@@ -114,7 +115,7 @@ test('a renamed entry stays within the name length', function () {
 
     (new ProviderTransfer)->import(transferFile([transferEntry(['name' => $name])]));
 
-    expect(AiProvider::query()->latest('id')->firstOrFail()->name)
+    expect(AiProvider::query()->where('name', '!=', $name)->firstOrFail()->name)
         ->toHaveLength(255)
         ->toEndWith(' (Import)');
 });
@@ -135,9 +136,9 @@ test('a provider with an unreadable key is left out of the export and counted', 
 
     $result = (new ProviderTransfer)->export();
 
-    expect($result['omitted'])->toBe(1)
-        ->and($result['document']['providers'])->toHaveCount(1)
-        ->and($result['document']['providers'][0]['uuid'])->not->toBe($broken->uuid);
+    expect($result->omitted)->toBe(1)
+        ->and($result->entries)->toHaveCount(1)
+        ->and($result->entries[0]->uuid)->not->toBe($broken->id);
 });
 
 test('an Ollama entry stores no key from the file', function () {

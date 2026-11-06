@@ -32,7 +32,7 @@ class ManageAiProviders extends ManageRecords
                 ->modalHeading('Provider exportieren')
                 ->modalDescription('Die Datei enthält die API-Keys im Klartext. Bewahre sie sicher auf und lösche sie nach dem Import.')
                 ->modalSubmitActionLabel('Exportieren')
-                ->action(fn (): StreamedResponse => $this->downloadExport()),
+                ->action(fn (ProviderTransfer $transfer): StreamedResponse => $this->downloadExport($transfer)),
             Action::make('import')
                 ->label('Importieren')
                 ->color('gray')
@@ -47,17 +47,18 @@ class ManageAiProviders extends ManageRecords
                         ->maxSize(1024)
                         ->required(),
                 ])
-                ->action(fn (array $data) => $this->importFile($data['file'])),
+                ->action(fn (array $data, ProviderTransfer $transfer) => $this->importFile($data['file'], $transfer)),
             CreateAction::make()
                 ->label('Provider anlegen')
                 ->createAnother(false),
         ];
     }
 
-    private function downloadExport(): StreamedResponse
+    private function downloadExport(ProviderTransfer $transfer): StreamedResponse
     {
-        ['document' => $document, 'omitted' => $omitted] = app(ProviderTransfer::class)->export();
-        $json = json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        $export = $transfer->export();
+        $json = $export->toJson();
+        $omitted = $export->omitted;
 
         if ($omitted > 0) {
             Notification::make()
@@ -80,13 +81,13 @@ class ManageAiProviders extends ManageRecords
     /**
      * The upload holds keys in plain text, so it is removed whatever the outcome.
      */
-    private function importFile(TemporaryUploadedFile $file): void
+    private function importFile(TemporaryUploadedFile $file, ProviderTransfer $transfer): void
     {
         try {
-            $result = app(ProviderTransfer::class)->import((string) $file->get());
+            $result = $transfer->import((string) $file->get());
 
             Notification::make()
-                ->title("{$result['created']} angelegt, {$result['skipped']} übersprungen, {$result['renamed']} umbenannt")
+                ->title("{$result->created} angelegt, {$result->skipped} übersprungen, {$result->renamed} umbenannt")
                 ->success()
                 ->send();
         } catch (InvalidArgumentException $exception) {

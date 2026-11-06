@@ -1,6 +1,8 @@
 <?php
 
+use App\Ai\ItemSearch;
 use App\Models\Item;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Embeddings;
@@ -19,6 +21,18 @@ function itemWith(array $attributes, ?array $embedding = null): Item
     return $item;
 }
 
+/**
+ * @return Builder<Item>
+ */
+function searchItems(string $term): Builder
+{
+    $query = Item::query();
+
+    app(ItemSearch::class)->apply($query, $term);
+
+    return $query;
+}
+
 /** Makes every query embed to the given vector. */
 function queriesEmbedTo(array $vector): void
 {
@@ -31,7 +45,7 @@ test('a word matches as a case-insensitive substring of title or description', f
     $inDescription = itemWith(['title' => 'Box', 'description' => 'Ein GEHÄUSE aus Metall']);
     $other = itemWith(['title' => 'HDMI-Kabel']);
 
-    expect(Item::query()->search('Gehäuse')->pluck('id')->all())
+    expect(searchItems('Gehäuse')->pluck('id')->all())
         ->toEqualCanonicalizing([$inTitle->id, $inDescription->id]);
 });
 
@@ -40,7 +54,7 @@ test('every word must match', function () {
     $both = itemWith(['title' => 'Raspberry Pi', 'description' => 'mit Gehäuse']);
     itemWith(['title' => 'Raspberry Pi', 'description' => 'ohne alles']);
 
-    expect(Item::query()->search('  pi   gehäuse ')->pluck('id')->all())->toBe([$both->id]);
+    expect(searchItems('  pi   gehäuse ')->pluck('id')->all())->toBe([$both->id]);
 });
 
 test('a query finds an item by meaning without sharing a word', function () {
@@ -48,7 +62,7 @@ test('a query finds an item by meaning without sharing a word', function () {
     $similar = itemWith(['title' => 'Pi-Gehäuse'], axis(1));
     itemWith(['title' => 'Gartenschlauch'], axis(2));
 
-    expect(Item::query()->search('Hülle für Einplatinencomputer')->pluck('id')->all())->toBe([$similar->id]);
+    expect(searchItems('Hülle für Einplatinencomputer')->pluck('id')->all())->toBe([$similar->id]);
 });
 
 test('keyword matches come before semantic-only matches', function () {
@@ -57,7 +71,7 @@ test('keyword matches come before semantic-only matches', function () {
     $keyword = itemWith(['title' => 'Hülle', 'description' => null], axis(2));
     $keywordWithoutEmbedding = itemWith(['title' => 'Schutzhülle', 'description' => null]);
 
-    expect(Item::query()->search('Hülle')->pluck('id')->all())
+    expect(searchItems('Hülle')->pluck('id')->all())
         ->toBe([$keyword->id, $keywordWithoutEmbedding->id, $semantic->id]);
 });
 
@@ -68,7 +82,7 @@ test('items below the similarity threshold are left out', function () {
     queriesEmbedTo(axis(1));
     itemWith(['title' => 'Irgendwas'], $half);
 
-    expect(Item::query()->search('Suchbegriff')->count())->toBe(0);
+    expect(searchItems('Suchbegriff')->count())->toBe(0);
 });
 
 test('search falls back to keywords and reports when embedding fails', function () {
@@ -77,7 +91,7 @@ test('search falls back to keywords and reports when embedding fails', function 
     $match = itemWith(['title' => 'HDMI-Kabel'], axis(1));
     itemWith(['title' => 'Gartenschlauch'], axis(1));
 
-    expect(Item::query()->search('hdmi')->pluck('id')->all())->toBe([$match->id]);
+    expect(searchItems('hdmi')->pluck('id')->all())->toBe([$match->id]);
     Exceptions::assertReported(RuntimeException::class);
 });
 
@@ -86,7 +100,7 @@ test('search falls back to keywords when the provider returns another dimension'
     queriesEmbedTo(array_fill(0, 768, 0.1));
     $match = itemWith(['title' => 'HDMI-Kabel'], axis(1));
 
-    expect(Item::query()->search('hdmi')->pluck('id')->all())->toBe([$match->id]);
+    expect(searchItems('hdmi')->pluck('id')->all())->toBe([$match->id]);
 });
 
 test('percent, underscore and backslash are literal', function () {
@@ -94,9 +108,9 @@ test('percent, underscore and backslash are literal', function () {
     $percent = itemWith(['title' => '100% Baumwolle']);
     itemWith(['title' => '100 Schrauben']);
 
-    expect(Item::query()->search('100%')->pluck('id')->all())->toBe([$percent->id])
-        ->and(Item::query()->search('_')->count())->toBe(0)
-        ->and(Item::query()->search('\\')->count())->toBe(0);
+    expect(searchItems('100%')->pluck('id')->all())->toBe([$percent->id])
+        ->and(searchItems('_')->count())->toBe(0)
+        ->and(searchItems('\\')->count())->toBe(0);
 });
 
 test('a blank term returns everything and embeds nothing', function () {
@@ -104,7 +118,7 @@ test('a blank term returns everything and embeds nothing', function () {
     itemWith(['title' => 'A']);
     itemWith(['title' => 'B']);
 
-    expect(Item::query()->search('   ')->count())->toBe(2)
-        ->and(Item::query()->search("\u{00A0}\u{00A0}")->count())->toBe(2);
+    expect(searchItems('   ')->count())->toBe(2)
+        ->and(searchItems("\u{00A0}\u{00A0}")->count())->toBe(2);
     Embeddings::assertNothingGenerated();
 });

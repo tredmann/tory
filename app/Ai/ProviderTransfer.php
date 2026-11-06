@@ -17,90 +17,84 @@ use JsonException;
  */
 class ProviderTransfer
 {
-    private const FORMAT = 'tory-ai-providers';
+    public const FORMAT = 'tory-ai-providers';
 
-    private const VERSION = 1;
+    public const VERSION = 1;
 
     private const MAX_NAME_LENGTH = 255;
 
     /**
      * Leaves out providers whose key can no longer be decrypted, because their
      * entries could not be imported anywhere.
-     *
-     * @return array{document: array{format: string, version: int, providers: array<int, array<string, string|null>>}, omitted: int}
      */
-    public function export(): array
+    public function export(): ProviderExport
     {
         $providers = AiProvider::query()->orderBy('name')->get();
         $readable = $providers->reject(fn (AiProvider $provider): bool => $provider->hasUnreadableKey());
 
-        return [
-            'document' => [
-                'format' => self::FORMAT,
-                'version' => self::VERSION,
-                'providers' => $readable->map(fn (AiProvider $provider): array => [
-                    'uuid' => $provider->uuid,
-                    'name' => $provider->name,
-                    'vendor' => $provider->vendor->value,
-                    'api_key' => $provider->readableKey(),
-                    'url' => $provider->url,
-                    'model' => $provider->model,
-                ])->values()->all(),
-            ],
-            'omitted' => $providers->count() - $readable->count(),
-        ];
+        return new ProviderExport(
+            entries: array_values($readable->map(fn (AiProvider $provider): ProviderTransferEntry => new ProviderTransferEntry(
+                uuid: $provider->id,
+                name: $provider->name,
+                vendor: $provider->vendor,
+                model: $provider->model,
+                apiKey: $provider->readableKey(),
+                url: $provider->url,
+            ))->all()),
+            omitted: $providers->count() - $readable->count(),
+        );
     }
 
     /**
      * Imports all entries or none. An existing uuid is skipped without any
      * change; a new uuid with a taken name is created under a free name.
      *
-     * @return array{created: int, skipped: int, renamed: int}
-     *
      * @throws InvalidArgumentException with a message that repeats nothing from the file
      */
-    public function import(string $json): array
+    public function import(string $json): ProviderImportResult
     {
         $entries = $this->validEntries($json);
 
-        return DB::transaction(function () use ($entries): array {
-            $result = ['created' => 0, 'skipped' => 0, 'renamed' => 0];
+        return DB::transaction(function () use ($entries): ProviderImportResult {
+            $created = 0;
+            $skipped = 0;
+            $renamed = 0;
 
             foreach ($entries as $entry) {
-                $uuid = strtolower($entry['uuid']);
+                $uuid = strtolower($entry->uuid);
 
-                if (AiProvider::query()->where('uuid', $uuid)->exists()) {
-                    $result['skipped']++;
+                if (AiProvider::query()->whereKey($uuid)->exists()) {
+                    $skipped++;
 
                     continue;
                 }
 
-                $name = trim($entry['name']);
+                $name = trim($entry->name);
                 $freeName = $this->freeName($name);
-                $vendor = AiVendor::from($entry['vendor']);
 
-                AiProvider::create([
-                    'uuid' => $uuid,
+                $provider = new AiProvider([
                     'name' => $freeName,
-                    'vendor' => $vendor,
-                    'api_key' => $vendor->requiresKey() ? trim($entry['api_key'] ?? '') : null,
-                    'url' => $vendor === AiVendor::Ollama ? rtrim(trim($entry['url'] ?? ''), '/') : null,
-                    'model' => trim($entry['model']),
+                    'vendor' => $entry->vendor,
+                    'api_key' => $entry->vendor->requiresKey() ? trim($entry->apiKey ?? '') : null,
+                    'url' => $entry->vendor === AiVendor::Ollama ? rtrim(trim($entry->url ?? ''), '/') : null,
+                    'model' => trim($entry->model),
                 ]);
+                $provider->id = $uuid;
+                $provider->save();
 
-                $result['created']++;
+                $created++;
 
                 if ($freeName !== $name) {
-                    $result['renamed']++;
+                    $renamed++;
                 }
             }
 
-            return $result;
+            return new ProviderImportResult($created, $skipped, $renamed);
         });
     }
 
     /**
-     * @return list<array{uuid: string, name: string, vendor: string, model: string, api_key?: string, url?: string}>
+     * @return list<ProviderTransferEntry>
      */
     private function validEntries(string $json): array
     {
@@ -130,7 +124,7 @@ class ProviderTransfer
         /** @var array<int, array{uuid: string, name: string, vendor: string, model: string, api_key?: string, url?: string}> $entries */
         $entries = $validator->validated()['providers'];
 
-        return array_values($entries);
+        return array_map(ProviderTransferEntry::fromValidated(...), array_values($entries));
     }
 
     private function errorMessage(string $field): string

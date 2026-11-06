@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ImportStatus;
 use App\Enums\ProviderFailureReason;
 use Database\Factories\ImportFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -12,10 +13,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property string $id
+ */
 class Import extends Model
 {
     /** @use HasFactory<ImportFactory> */
     use HasFactory;
+
+    use HasUuids;
 
     /** @var list<string> */
     protected $fillable = [

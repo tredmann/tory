@@ -14,6 +14,7 @@ use Laravel\Ai\Ai;
 use Laravel\Ai\Providers\Provider;
 
 /**
+ * @property string $id
  * @property AiVendor $vendor
  */
 class AiProvider extends Model
@@ -25,7 +26,6 @@ class AiProvider extends Model
 
     /** @var list<string> */
     protected $fillable = [
-        'uuid',
         'name',
         'vendor',
         'api_key',
@@ -37,16 +37,6 @@ class AiProvider extends Model
     protected $hidden = [
         'api_key',
     ];
-
-    /**
-     * The uuid identifies a provider across installations; `id` stays the key.
-     *
-     * @return list<string>
-     */
-    public function uniqueIds(): array
-    {
-        return ['uuid'];
-    }
 
     /**
      * @return array<string, string>

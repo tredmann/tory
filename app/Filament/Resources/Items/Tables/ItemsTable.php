@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Items\Tables;
 
+use App\Ai\ItemSearch;
 use App\Filament\Resources\Items\ItemResource;
 use App\Filament\Resources\StorageLocations\StorageLocationResource;
 use App\Models\Item;
@@ -14,11 +15,10 @@ class ItemsTable
 {
     /**
      * @param  Builder<Item>  $query
-     * @return Builder<Item>
      */
-    private static function search(Builder $query, string $search): Builder
+    private static function search(Builder $query, string $search, ItemSearch $itemSearch): void
     {
-        return $query->search($search);
+        $itemSearch->apply($query, $search);
     }
 
     public static function configure(Table $table): Table

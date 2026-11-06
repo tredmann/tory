@@ -34,6 +34,10 @@ test('record pages answer 404 for a key that is no valid key', function (string 
     '/lagerorte/ABC0',
     '/lagerorte/ABCDE',
     '/lagerorte/ABC%00',
+    '/gegenstaende/1',
+    '/importe/1',
+    '/gegenstaende/019a0000-0000-7000-8000-000000000000',
+    '/importe/019a0000-0000-7000-8000-000000000000',
 ]);
 
 test('record pages still open for an existing record', function (string $prefix, string $model) {

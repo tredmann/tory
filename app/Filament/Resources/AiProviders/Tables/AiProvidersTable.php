@@ -56,8 +56,8 @@ class AiProvidersTable
                     }),
                 Action::make('test')
                     ->label('Testen')
-                    ->action(function (AiProvider $record): void {
-                        $reason = app(ProviderTester::class)->run($record);
+                    ->action(function (AiProvider $record, ProviderTester $tester): void {
+                        $reason = $tester->run($record);
 
                         if ($reason === null) {
                             Notification::make()

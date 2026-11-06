@@ -4,7 +4,6 @@ use App\Enums\AiVendor;
 use App\Models\AiProvider;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 test('vendor labels and key requirement', function () {
     expect(AiVendor::Ollama->getLabel())->toBe('Ollama')
@@ -15,15 +14,6 @@ test('vendor labels and key requirement', function () {
         ->and(AiVendor::Anthropic->requiresKey())->toBeTrue()
         ->and(AiVendor::OpenAi->requiresKey())->toBeTrue()
         ->and(AiVendor::Mistral->requiresKey())->toBeTrue();
-});
-
-test('a new provider gets a uuid and keeps its numeric id', function () {
-    $provider = AiProvider::factory()->create();
-
-    expect(Str::isUuid($provider->uuid))->toBeTrue()
-        ->and($provider->id)->toBeInt()
-        ->and($provider->getKeyName())->toBe('id')
-        ->and($provider->getIncrementing())->toBeTrue();
 });
 
 test('the key is encrypted at rest and hidden from arrays', function () {

@@ -203,7 +203,7 @@ test('export downloads a file with the key and warns about the plain text', func
         ->callMountedAction()
         ->assertFileDownloaded(
             'tory-ai-providers-'.now()->format('Y-m-d').'.json',
-            json_encode((new ProviderTransfer)->export()['document'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            (new ProviderTransfer)->export()->toJson(),
         );
 
     expect($provider->fresh()->api_key)->toBe('sk-secret-3fa9');
@@ -231,7 +231,7 @@ test('import through the dialog creates providers inactive and reports the numbe
         'format' => 'tory-ai-providers',
         'version' => 1,
         'providers' => [
-            ['uuid' => $existing->uuid, 'name' => 'OpenAI', 'vendor' => 'openai', 'api_key' => 'sk-a', 'url' => null, 'model' => 'x'],
+            ['uuid' => $existing->id, 'name' => 'OpenAI', 'vendor' => 'openai', 'api_key' => 'sk-a', 'url' => null, 'model' => 'x'],
             ['uuid' => (string) Str::uuid(), 'name' => 'OpenAI', 'vendor' => 'openai', 'api_key' => 'sk-b', 'url' => null, 'model' => 'x'],
             ['uuid' => (string) Str::uuid(), 'name' => 'Neu', 'vendor' => 'mistral', 'api_key' => 'sk-c', 'url' => null, 'model' => 'x'],
         ],

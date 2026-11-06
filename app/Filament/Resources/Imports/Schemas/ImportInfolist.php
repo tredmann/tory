@@ -9,6 +9,7 @@ use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Contracts\Foundation\Application;
 
 class ImportInfolist
 {
@@ -46,9 +47,9 @@ class ImportInfolist
                         TextEntry::make('error')
                             ->label('Fehler')
                             ->color('danger')
-                            ->visible(fn (Import $record): bool => $record->status === ImportStatus::Failed
-                                && (app()->hasDebugModeEnabled() || $record->failure_reason === null))
-                            ->state(fn (Import $record): ?string => app()->hasDebugModeEnabled()
+                            ->visible(fn (Import $record, Application $app): bool => $record->status === ImportStatus::Failed
+                                && ($app->hasDebugModeEnabled() || $record->failure_reason === null))
+                            ->state(fn (Import $record, Application $app): ?string => $app->hasDebugModeEnabled()
                                 ? $record->error
                                 : 'Die Analyse ist fehlgeschlagen. Bitte erneut versuchen.'),
                         TextEntry::make('created_at')
