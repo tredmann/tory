@@ -14,6 +14,7 @@ use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Vite;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
@@ -178,4 +179,16 @@ test('the import view page keeps the slideshow data on a re-render', function ()
     $page = Livewire::test(ViewImport::class, ['record' => $import->getKey()])->call('$refresh');
 
     expect(slideshowImages($page->html()))->toHaveCount(1);
+});
+
+test('the panel loads the slideshow script', function () {
+    $hotFile = tempnam(sys_get_temp_dir(), 'hot');
+    file_put_contents($hotFile, 'http://vite.test');
+
+    $this->withVite();
+    Vite::useHotFile($hotFile);
+
+    $this->get('/imports')->assertOk()->assertSee('resources/js/slideshow.js');
+
+    unlink($hotFile);
 });

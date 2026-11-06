@@ -1,0 +1,12 @@
+img[data-slideshow] {
+    cursor: pointer;
+}
+
+.tory-slideshow-position {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    z-index: 99999;
+    color: #fff;
+    font-size: 14px;
+}

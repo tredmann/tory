@@ -9,13 +9,14 @@ use RuntimeException;
 abstract class TestCase extends BaseTestCase
 {
     /**
-     * No test may reach a real embedding provider.
+     * No test may reach a real embedding provider or need built assets.
      */
     protected function setUp(): void
     {
         parent::setUp();
 
         Embeddings::fake();
+        $this->withoutVite();
     }
 
     /**
