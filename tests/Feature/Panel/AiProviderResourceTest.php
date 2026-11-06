@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\InventoryExtractor;
 use App\Enums\AiVendor;
 use App\Filament\Resources\AiProviders\AiProviderResource;
 use App\Filament\Resources\AiProviders\Pages\ManageAiProviders;
@@ -8,6 +9,7 @@ use App\Models\AiProvider;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -221,4 +223,29 @@ test('a failed fetch shows a hint and a free-text model still saves', function (
         ->assertHasNoFormErrors();
 
     expect(AiProvider::sole()->model)->toBe('mein-modell');
+});
+
+test('testing an inactive provider uses it and leaves it inactive', function () {
+    InventoryExtractor::fake([['title' => 'Rotes Quadrat', 'description' => 'Rot.']]);
+    $inactive = AiProvider::factory()->create(['name' => 'Reserve']);
+    $before = DB::table('ai_providers')->where('id', $inactive->id)->first();
+
+    Livewire::test(ManageAiProviders::class)
+        ->callAction(TestAction::make('test')->table($inactive))
+        ->assertNotified('Reserve hat das Testbild beantwortet.');
+
+    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->attachments->count() === 1);
+    expect(DB::table('ai_providers')->where('id', $inactive->id)->first())->toEqual($before)
+        ->and($inactive->refresh()->is_active)->toBeFalse();
+});
+
+test('a failed test notifies with the reason', function () {
+    Http::fake(['*' => Http::response([], 401)]);
+    $provider = AiProvider::factory()->create(['name' => 'Claude']);
+
+    Livewire::test(ManageAiProviders::class)
+        ->callAction(TestAction::make('test')->table($provider))
+        ->assertNotified(
+            Notification::make()->title('Test fehlgeschlagen')->body('Claude hat den API-Key abgelehnt.')->danger()
+        );
 });

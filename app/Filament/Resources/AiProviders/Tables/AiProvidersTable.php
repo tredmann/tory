@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AiProviders\Tables;
 
+use App\Ai\ProviderTester;
 use App\Enums\AiVendor;
 use App\Models\AiProvider;
 use Filament\Actions\Action;
@@ -51,6 +52,26 @@ class AiProvidersTable
                         Notification::make()
                             ->title('Provider aktiviert')
                             ->success()
+                            ->send();
+                    }),
+                Action::make('test')
+                    ->label('Testen')
+                    ->action(function (AiProvider $record): void {
+                        $reason = app(ProviderTester::class)->run($record);
+
+                        if ($reason === null) {
+                            Notification::make()
+                                ->title("{$record->name} hat das Testbild beantwortet.")
+                                ->success()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Test fehlgeschlagen')
+                            ->body($reason)
+                            ->danger()
                             ->send();
                     }),
                 EditAction::make()
