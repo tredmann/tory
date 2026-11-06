@@ -2,15 +2,20 @@
 
 namespace App\Ai\Agents;
 
+use App\Models\AiProvider;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Promptable;
+use Laravel\Ai\Providers\Provider;
+use RuntimeException;
 
 final class InventoryExtractor implements Agent, HasStructuredOutput
 {
     use Promptable;
+
+    public function __construct(public ?AiProvider $aiProvider = null) {}
 
     /**
      * Get the instructions that the agent should follow.
@@ -43,18 +48,44 @@ final class InventoryExtractor implements Agent, HasStructuredOutput
         ];
     }
 
-    public function provider(): string
+    public function provider(): Provider|string
     {
+        if ($this->aiProvider !== null) {
+            return $this->aiProvider->toLaravelProvider();
+        }
+
         return config('ai.inventory.provider') ?: 'anthropic';
     }
 
     public function model(): ?string
     {
-        return config('ai.inventory.model') ?: null;
+        return $this->aiProvider !== null
+            ? $this->aiProvider->model
+            : (config('ai.inventory.model') ?: null);
     }
 
     public function timeout(): int
     {
         return 180;
+    }
+
+    /**
+     * @param  array<int, mixed>  $attachments
+     * @return array{title: string, description: string}
+     */
+    public function extract(array $attachments, ?int $timeout = null): array
+    {
+        $result = $this
+            ->prompt('Analysiere die Fotos und liefere Titel und Beschreibung.', $attachments, timeout: $timeout)
+            ->toArray();
+
+        $title = $result['title'] ?? null;
+        $description = $result['description'] ?? null;
+
+        if (! is_string($title) || trim($title) === '' || ! is_string($description) || trim($description) === '') {
+            throw new RuntimeException('Das Modell hat keine vollständige Antwort geliefert.');
+        }
+
+        return ['title' => $title, 'description' => $description];
     }
 }

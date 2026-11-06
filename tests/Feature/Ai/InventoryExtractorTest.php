@@ -1,6 +1,8 @@
 <?php
 
 use App\Ai\Agents\InventoryExtractor;
+use App\Enums\AiVendor;
+use App\Models\AiProvider;
 use Laravel\Ai\Files\Image;
 
 test('provider and model come from the inventory config', function () {
@@ -56,3 +58,31 @@ test('an empty provider env value falls back to anthropic', function () {
 
     expect((new InventoryExtractor)->provider())->toBe('anthropic');
 });
+
+test('builds its provider from the given AI provider', function () {
+    $aiProvider = AiProvider::factory()->create([
+        'vendor' => AiVendor::Mistral, 'api_key' => 'mk-1', 'model' => 'pixtral-x',
+    ]);
+    $agent = new InventoryExtractor($aiProvider);
+
+    expect($agent->provider()->driver())->toBe('mistral')
+        ->and($agent->provider()->providerCredentials()['key'])->toBe('mk-1')
+        ->and($agent->model())->toBe('pixtral-x');
+});
+
+test('an Ollama provider uses its stored address and needs no key', function () {
+    $aiProvider = AiProvider::factory()->create([
+        'vendor' => AiVendor::Ollama, 'api_key' => null, 'url' => 'http://ollama.test:11434', 'model' => 'gemma',
+    ]);
+    $provider = (new InventoryExtractor($aiProvider))->provider();
+
+    expect($provider->driver())->toBe('ollama')
+        ->and($provider->providerCredentials()['key'])->toBe('')
+        ->and($provider->additionalConfiguration()['url'])->toBe('http://ollama.test:11434');
+});
+
+test('extract rejects an incomplete answer', function () {
+    InventoryExtractor::fake([['title' => 'Nur Titel', 'description' => ' ']]);
+
+    InventoryExtractor::make()->extract([]);
+})->throws(RuntimeException::class, 'Das Modell hat keine vollständige Antwort geliefert.');

@@ -9,7 +9,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Laravel\Ai\Ai;
+use Laravel\Ai\Providers\Provider;
 
+/**
+ * @property AiVendor $vendor
+ */
 class AiProvider extends Model
 {
     /** @use HasFactory<AiProviderFactory> */
@@ -73,6 +78,24 @@ class AiProvider extends Model
 
         $this->is_active = true;
         $this->syncOriginalAttribute('is_active');
+    }
+
+    /**
+     * Builds an on-demand laravel/ai provider from the stored settings. The
+     * key is read directly, so an unreadable key surfaces when prompted.
+     */
+    public function toLaravelProvider(): Provider
+    {
+        $vendor = $this->vendor;
+        /** @var array<string, mixed> $config */
+        $config = config("ai.providers.{$vendor->value}", []);
+        $config['key'] = $vendor === AiVendor::Ollama ? '' : $this->api_key;
+
+        if ($vendor === AiVendor::Ollama && $this->url !== null && $this->url !== '') {
+            $config['url'] = $this->url;
+        }
+
+        return Ai::build($config);
     }
 
     public function readableKey(): ?string

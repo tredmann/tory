@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Ai\Agents\InventoryExtractor;
 use App\Enums\ImportStatus;
+use App\Models\AiProvider;
 use App\Models\Import;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -41,20 +42,11 @@ class ExtractImport implements ShouldQueue
                 return Image::fromStorage($path, 'local');
             }, $photos);
 
-            $result = InventoryExtractor::make()
-                ->prompt('Analysiere die Fotos und liefere Titel und Beschreibung.', $attachments)
-                ->toArray();
-
-            $title = $result['title'] ?? null;
-            $description = $result['description'] ?? null;
-
-            if (! is_string($title) || trim($title) === '' || ! is_string($description) || trim($description) === '') {
-                throw new RuntimeException('Das Modell hat keine vollständige Antwort geliefert.');
-            }
+            $result = InventoryExtractor::make(aiProvider: AiProvider::active())->extract($attachments);
 
             $this->import->update([
-                'title' => $title,
-                'description' => $description,
+                'title' => $result['title'],
+                'description' => $result['description'],
                 'error' => null,
                 'status' => ImportStatus::Completed,
             ]);

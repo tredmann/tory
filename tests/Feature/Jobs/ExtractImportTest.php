@@ -1,8 +1,10 @@
 <?php
 
 use App\Ai\Agents\InventoryExtractor;
+use App\Enums\AiVendor;
 use App\Enums\ImportStatus;
 use App\Jobs\ExtractImport;
+use App\Models\AiProvider;
 use App\Models\Import;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Storage;
@@ -97,4 +99,36 @@ test('the database queue retry_after exceeds the job timeout', function () {
     $job = new ExtractImport(Import::factory()->create());
 
     expect(config('queue.connections.database.retry_after'))->toBeGreaterThan($job->timeout);
+});
+
+test('runs on the active provider', function () {
+    InventoryExtractor::fake([['title' => 'A', 'description' => 'B']]);
+    AiProvider::factory()->active()->create(['vendor' => AiVendor::OpenAi, 'model' => 'gpt-x']);
+
+    (new ExtractImport(Import::factory()->create()))->handle();
+
+    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->provider->driver() === 'openai' && $prompt->model === 'gpt-x');
+});
+
+test('reads the active provider fresh for every job', function () {
+    InventoryExtractor::fake([['title' => 'A', 'description' => 'B'], ['title' => 'A', 'description' => 'B']]);
+    $first = AiProvider::factory()->active()->create(['vendor' => AiVendor::OpenAi, 'model' => 'gpt-x']);
+    $second = AiProvider::factory()->create(['vendor' => AiVendor::Mistral, 'model' => 'mis-x']);
+
+    (new ExtractImport(Import::factory()->create()))->handle();
+    $second->activate();
+    (new ExtractImport(Import::factory()->create()))->handle();
+
+    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->model === 'gpt-x');
+    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->model === 'mis-x' && $prompt->provider->driver() === 'mistral');
+});
+
+test('falls back to the inventory config without an active provider', function () {
+    config(['ai.inventory.provider' => 'ollama']);
+    InventoryExtractor::fake([['title' => 'A', 'description' => 'B']]);
+    AiProvider::factory()->create(['vendor' => AiVendor::OpenAi]);
+
+    (new ExtractImport(Import::factory()->create()))->handle();
+
+    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->provider->driver() === 'ollama');
 });
