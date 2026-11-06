@@ -113,3 +113,13 @@ test('scrub removes the key from text and leaves text unchanged without a key', 
     expect($keyed->scrub('Bad key sk-secret-3fa9 rejected, sk-secret-3fa9'))->toBe('Bad key [Key] rejected, [Key]')
         ->and($keyless->scrub('nothing to hide'))->toBe('nothing to hide');
 });
+
+test('a stale instance of a meanwhile activated provider cannot be deleted', function () {
+    $provider = AiProvider::factory()->create();
+    $stale = AiProvider::find($provider->id);
+
+    AiProvider::find($provider->id)->activate();
+
+    expect($stale->delete())->toBeFalse()
+        ->and(AiProvider::whereKey($provider->id)->exists())->toBeTrue();
+});

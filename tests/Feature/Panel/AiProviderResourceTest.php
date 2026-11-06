@@ -143,11 +143,18 @@ test('activate switches the active provider and shows the badge', function () {
     Livewire::test(ManageAiProviders::class)
         ->assertActionHidden(TestAction::make('activate')->table($old))
         ->assertActionVisible(TestAction::make('activate')->table($new))
+        ->assertSeeHtml('tory-active-provider')
         ->callAction(TestAction::make('activate')->table($new))
         ->assertNotified()
-        ->assertSee('Aktiv');
+        ->assertSeeHtml('tory-active-provider');
 
     expect(AiProvider::active()->is($new))->toBeTrue()->and($old->refresh()->is_active)->toBeFalse();
+});
+
+test('no card is marked active while no provider is active', function () {
+    AiProvider::factory()->create();
+
+    Livewire::test(ManageAiProviders::class)->assertDontSeeHtml('tory-active-provider');
 });
 
 test('delete is disabled for the active provider and works for an inactive one', function () {

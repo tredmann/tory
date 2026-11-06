@@ -37,7 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->globalSearch(false)
             ->renderHook(
                 PanelsRenderHook::STYLES_AFTER,
-                fn (): HtmlString => new HtmlString('<style>.tory-active-provider { outline: 2px solid rgb(var(--success-500)); }</style>'),
+                fn (): HtmlString => new HtmlString('<style>.tory-active-provider { outline: 2px solid var(--success-500); }</style>'),
             )
             ->colors([
                 'primary' => Color::Amber,

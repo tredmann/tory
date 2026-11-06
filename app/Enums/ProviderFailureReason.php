@@ -6,7 +6,6 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Laravel\Ai\Exceptions\ProviderConnectionException;
-use Laravel\Ai\Exceptions\ProviderOverloadedException;
 use Throwable;
 
 /**
@@ -29,9 +28,7 @@ enum ProviderFailureReason: string
             return self::KeyUnreadable;
         }
 
-        if ($e instanceof ProviderConnectionException
-            || $e instanceof ProviderOverloadedException
-            || $e instanceof ConnectionException) {
+        if ($e instanceof ProviderConnectionException || $e instanceof ConnectionException) {
             return self::Unreachable;
         }
 

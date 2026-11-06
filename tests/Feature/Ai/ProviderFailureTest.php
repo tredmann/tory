@@ -45,7 +45,7 @@ dataset('failures', [
     'too large' => [400, ['error' => ['message' => 'image exceeds 5 MB']], null],
     'server error' => [500, [], null],
     'credits' => [402, [], null],
-    'overloaded' => [503, [], ProviderFailureReason::Unreachable],
+    'overloaded' => [503, [], null],
 ]);
 
 test('classifies vendor failures the same way for every vendor', function (int $status, array $body, ?ProviderFailureReason $expected) {

@@ -55,7 +55,10 @@ class AiProvider extends Model
             }
         });
 
-        static::deleting(fn (self $provider): bool => ! $provider->is_active);
+        static::deleting(fn (self $provider): bool => ! static::query()
+            ->whereKey($provider->getKey())
+            ->where('is_active', true)
+            ->exists());
     }
 
     /**
