@@ -7,6 +7,7 @@ use App\Models\Item;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Arr;
 
 class EditItem extends EditRecord
 {
@@ -45,6 +46,26 @@ class EditItem extends EditRecord
         $this->redirect(ItemResource::getUrl('view', ['record' => $item]));
 
         $this->halt();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $overviewPhoto = Arr::pull($data, 'overview_photo');
+
+        if ($overviewPhoto === null) {
+            return $data;
+        }
+
+        $item = $this->getRecord();
+        assert($item instanceof Item);
+
+        $data['photos'] = [$overviewPhoto, ...array_values(array_diff($item->photos, [$overviewPhoto]))];
+
+        return $data;
     }
 
     protected function getHeaderActions(): array

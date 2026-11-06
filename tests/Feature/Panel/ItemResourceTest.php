@@ -4,6 +4,7 @@ use App\Filament\Resources\Items\ItemResource;
 use App\Filament\Resources\Items\Pages\EditItem;
 use App\Filament\Resources\Items\Pages\ListItems;
 use App\Filament\Resources\Items\Pages\ViewItem;
+use App\Jobs\EmbedItem;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\Spot;
@@ -176,4 +177,86 @@ test('a location can be created inside the spot picker on the edit page', functi
         ->assertHasNoFormErrors();
 
     expect(Location::firstWhere('name', 'Keller'))->not->toBeNull();
+});
+
+test('the edit page marks the first photo for the overview', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->assertFormFieldVisible('overview_photo')
+        ->assertFormSet(['overview_photo' => 'imports/a.jpg'])
+        ->assertSee('Foto für die Übersicht')
+        ->assertSeeHtml('value="imports/a.jpg"')
+        ->assertSeeHtml('value="imports/b.jpg"');
+});
+
+test('saving a chosen overview photo moves it to the front and keeps the others in order', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->fillForm(['overview_photo' => 'imports/c.jpg'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh()->photos)->toBe(['imports/c.jpg', 'imports/a.jpg', 'imports/b.jpg']);
+});
+
+test('saving without choosing another photo keeps the order', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->fillForm(['title' => 'Neuer Titel'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']);
+});
+
+test('the overview photo field is hidden for an item with one photo and saving keeps the photo', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->assertFormFieldHidden('overview_photo')
+        ->fillForm(['title' => 'Neuer Titel'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg']);
+});
+
+test('an item without photos can be edited', function () {
+    $item = Item::factory()->create(['photos' => []]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->assertFormFieldHidden('overview_photo')
+        ->fillForm(['title' => 'Neuer Titel'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($item->fresh())->title->toBe('Neuer Titel')->photos->toBe([]);
+});
+
+test('a path that is not a photo of the item is rejected as overview photo', function () {
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->fillForm(['overview_photo' => 'imports/other.jpg'])
+        ->call('save')
+        ->assertHasFormErrors(['overview_photo']);
+
+    expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg']);
+});
+
+test('choosing an overview photo does not recompute the embedding', function () {
+    $embedding = array_fill(0, 1024, 0.1);
+    $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg'], 'embedding' => $embedding]);
+    Queue::fake();
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->fillForm(['overview_photo' => 'imports/b.jpg'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    Queue::assertNotPushed(EmbedItem::class);
+    expect($item->fresh()->embedding)->not->toBeNull();
 });

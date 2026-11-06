@@ -1,0 +1,65 @@
+.tory-photo-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.tory-photo-picker .fi-fo-radio-label {
+    position: relative;
+    display: block;
+    margin: 0;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.tory-photo-picker .fi-radio-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tory-photo-picker .fi-fo-radio-label-text {
+    display: block;
+    margin: 0;
+}
+
+.tory-photo-picker img {
+    display: block;
+    height: 112px;
+    width: auto;
+    border-radius: 8px;
+    opacity: 0.55;
+    transition: opacity 0.1s;
+}
+
+.tory-photo-picker .fi-fo-radio-label:hover img,
+.tory-photo-picker .fi-fo-radio-label:has(input:checked) img {
+    opacity: 1;
+}
+
+.tory-photo-picker .fi-fo-radio-label:has(input:checked) {
+    outline: 3px solid var(--primary-500);
+    outline-offset: 2px;
+}
+
+.tory-photo-picker .fi-fo-radio-label:has(input:focus-visible) {
+    outline: 3px solid var(--primary-700);
+    outline-offset: 2px;
+}
+
+.tory-photo-picker .fi-fo-radio-label:has(input:checked)::after {
+    content: '✓';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--primary-500);
+    color: #fff;
+    font-size: 14px;
+    line-height: 1;
+}

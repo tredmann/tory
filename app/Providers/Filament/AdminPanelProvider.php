@@ -47,7 +47,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): HtmlString => new HtmlString(Blade::render("@vite('resources/js/slideshow.js')")),
+                fn (): HtmlString => new HtmlString(Blade::render("@vite(['resources/js/slideshow.js', 'resources/css/photo-picker.css'])")),
             )
             ->colors([
                 'primary' => Color::Amber,
