@@ -10,6 +10,8 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class ManageAiProviders extends ManageRecords
 {
+    protected static ?string $title = 'Eigene KI';
+
     protected static string $resource = AiProviderResource::class;
 
     protected function getHeaderActions(): array

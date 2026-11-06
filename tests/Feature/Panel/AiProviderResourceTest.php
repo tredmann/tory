@@ -178,3 +178,7 @@ test('the subheading names the env fallback only without an active provider', fu
 test('the navigation entry sorts after Importe', function () {
     expect(AiProviderResource::getNavigationSort())->toBeGreaterThan(ImportResource::getNavigationSort());
 });
+
+test('the page title is Eigene KI', function () {
+    expect(Livewire::test(ManageAiProviders::class)->instance()->getTitle())->toBe('Eigene KI');
+});

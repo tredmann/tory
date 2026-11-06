@@ -26,8 +26,6 @@ class AiProviderResource extends Resource
 
     protected static ?string $navigationLabel = 'Eigene KI';
 
-    protected static ?string $title = 'Eigene KI';
-
     protected static ?int $navigationSort = 4;
 
     protected static ?string $recordTitleAttribute = 'name';
