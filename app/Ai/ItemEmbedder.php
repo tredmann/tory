@@ -52,7 +52,7 @@ final class ItemEmbedder
         $vector = $this->embed($text, $timeout);
 
         return DB::transaction(function () use ($item, $text, $vector): bool {
-            $current = Item::query()->lockForUpdate()->find($item->getKey());
+            $current = Item::query()->whereKey($item->getKey())->lockForUpdate()->first();
 
             if ($current === null || $this->textFor($current) !== $text) {
                 return false;

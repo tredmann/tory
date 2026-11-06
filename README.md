@@ -14,7 +14,7 @@ Tory is a household inventory. Built so far (2026-11-04 to 2026-11-06):
 - **Panel.** Filament 5 is the whole app at `/`, with login, registration, password reset, email verification and profile. Every verified user sees everything; there is no policy layer yet.
 - **Photo imports.** "Importe" → "Erfassen" uploads 1–6 photos, stores them on the private disk and queues `ExtractImport`. The AI extractor (Anthropic in production, Ollama + gemma4 locally) returns a German title and a search-friendly description. The import page polls until the job is done, shows the result or the error, and offers Retry and "Löschen".
 - **Storage locations.** "Lagerorte": every location has a permanent number (its id, shown as `Nr. 12 · Name`) and a page at `/lagerorte/{id}` that lists the items inside; that address is the future QR target.
-- **Items.** "Gegenstände": "Übernehmen" on a completed import turns it into an item in a chosen storage location (the photos move with it). Items can be edited and deleted (photos included).
+- **Items.** "Gegenstände": "Übernehmen" on a completed or failed import turns it into an item in a chosen storage location (the photo files stay where they are; ownership moves to the item). Items can be edited and deleted (photos included).
 - **Search.** The item list searches by keyword (title and description) and by meaning via embeddings (`bge-m3` on Ollama, 1024 dimensions, stored in pgvector). Run `ollama pull bge-m3` once to enable the semantic part; without it the search still works by keyword. `items:embed` catches up missing embeddings hourly.
 
 Next: print labels with QR codes for storage locations.
@@ -34,7 +34,7 @@ On first start the `app` container copies `.env.example` to `.env`, generates `A
 |---|---|---|
 | `app` | http://localhost:8000 | FrankenPHP (classic mode) + `queue:listen` + `schedule:work` under supervisord |
 | `vite` | http://localhost:5173 | Vite dev server with HMR |
-| `db` | `localhost:5432` (`tory` / `tory` / `secret`) | Postgres 18 |
+| `db` | `localhost:5432` (`tory` / `tory` / `secret`) | Postgres 18 with pgvector |
 
 Mail uses the `log` driver: verification and password-reset links appear in `storage/logs/laravel.log`.
 
@@ -64,11 +64,19 @@ INVENTORY_AI_MODEL=gemma4:e4b-mlx
 OLLAMA_URL=http://host.docker.internal:11434
 ```
 
+Semantic search embeds items and queries with a separate provider and model (defaults `ollama` and `bge-m3`, 1024 dimensions; run `ollama pull bge-m3` once). The minimum cosine similarity for a semantic match is tunable:
+
+```dotenv
+INVENTORY_EMBEDDING_PROVIDER=ollama
+INVENTORY_EMBEDDING_MODEL=bge-m3
+INVENTORY_SEARCH_MIN_SIMILARITY=0.5
+```
+
 ## Everyday commands
 
 ```sh
 docker compose exec app php artisan <command>      # artisan
-docker compose exec app php artisan test           # Pest test suite
+docker compose exec app php artisan test           # Pest test suite (database tory_testing)
 docker compose exec app ./vendor/bin/pint          # code style
 docker compose exec app ./vendor/bin/phpstan analyse
 docker compose exec app composer <command>
@@ -77,6 +85,8 @@ docker compose exec app supervisorctl status       # frankenphp / queue / schedu
 docker compose logs -f app                         # web, queue and scheduler output
 docker compose exec db psql -U tory -d tory
 ```
+
+The tests run on the Postgres database `tory_testing`, which a fresh volume creates on first start. For a volume that already existed, create it once with `docker compose exec db createdb -U tory tory_testing`.
 
 Smoke-test the queue worker: `docker compose exec app php artisan tinker --execute="App\Jobs\PingLog::dispatch();"` and watch for `queue ok` in `storage/logs/laravel.log`.
 
@@ -92,4 +102,4 @@ Smoke-test the queue worker: `docker compose exec app php artisan tinker --execu
 docker build -f docker/Dockerfile --target prod -t tory:prod .
 ```
 
-Provide a real `.env` (or environment variables) and set `AUTO_MIGRATE=true` if you want migrations to run on start. Keep `DB_QUEUE_RETRY_AFTER` above the import job timeout (200 seconds; the default is 300), otherwise a second worker can re-run a running extraction.
+Provide a real `.env` (or environment variables) and set `AUTO_MIGRATE=true` if you want migrations to run on start. The database needs the pgvector extension (the dev `db` image is `pgvector/pgvector:pg18-trixie`; the items migration creates the extension, which needs a role allowed to do so), and an embedding provider must be reachable for semantic search; without one, search falls back to keywords and `items:embed` reports failures. Keep `DB_QUEUE_RETRY_AFTER` above the import job timeout (200 seconds; the default is 300), otherwise a second worker can re-run a running extraction.
