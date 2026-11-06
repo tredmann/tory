@@ -24,20 +24,20 @@ test('record pages answer 404 for a key that is no valid key', function (string 
 
     $this->get($path)->assertNotFound();
 })->with([
-    '/gegenstaende/create',
-    '/gegenstaende/abc',
+    '/items/create',
+    '/items/abc',
     '/spots/abc',
     '/spots/abc/edit',
-    '/importe/abc',
+    '/imports/abc',
     '/spots/99999999999999999999',
     '/spots/1',
     '/spots/ABC0',
     '/spots/ABCDE',
     '/spots/ABC%00',
-    '/gegenstaende/1',
-    '/importe/1',
-    '/gegenstaende/019a0000-0000-7000-8000-000000000000',
-    '/importe/019a0000-0000-7000-8000-000000000000',
+    '/items/1',
+    '/imports/1',
+    '/items/019a0000-0000-7000-8000-000000000000',
+    '/imports/019a0000-0000-7000-8000-000000000000',
 ]);
 
 test('record pages still open for an existing record', function (string $prefix, string $model) {
@@ -46,10 +46,22 @@ test('record pages still open for an existing record', function (string $prefix,
 
     $this->get("{$prefix}/{$record->getRouteKey()}")->assertOk();
 })->with([
-    ['/gegenstaende', Item::class],
+    ['/items', Item::class],
     ['/spots', Spot::class],
-    ['/importe', Import::class],
+    ['/imports', Import::class],
 ]);
+
+test('the provider page is served at its english address', function () {
+    $this->actingAs(User::factory()->create());
+
+    $this->get('/ai-providers')->assertOk();
+});
+
+test('old german addresses are gone', function (string $path) {
+    $this->actingAs(User::factory()->create());
+
+    $this->get($path)->assertNotFound();
+})->with(['/lagerorte', '/gegenstaende', '/importe', '/eigene-ki']);
 
 test('global search is disabled for a signed-in user', function () {
     $this->actingAs(User::factory()->create());

@@ -22,7 +22,7 @@ class ImportResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhoto;
 
-    protected static ?string $slug = 'importe';
+    protected static ?string $slug = 'imports';
 
     protected static ?string $modelLabel = 'Import';
 

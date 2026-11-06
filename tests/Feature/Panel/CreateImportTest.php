@@ -20,20 +20,20 @@ beforeEach(function () {
 });
 
 test('the create page is reachable for verified users and titled Erfassen', function () {
-    $this->get('/importe/create')->assertOk()->assertSee('Erfassen');
+    $this->get('/imports/create')->assertOk()->assertSee('Erfassen');
 });
 
 test('unverified users are redirected to the verification prompt', function () {
     auth()->logout();
     $this->actingAs(User::factory()->unverified()->create());
 
-    $this->get('/importe/create')->assertRedirect('/email-verification/prompt');
+    $this->get('/imports/create')->assertRedirect('/email-verification/prompt');
 });
 
 test('guests are redirected to login', function () {
     auth()->logout();
 
-    $this->get('/importe/create')->assertRedirect('/login');
+    $this->get('/imports/create')->assertRedirect('/login');
 });
 
 test('submitting without images fails validation and dispatches nothing', function () {

@@ -13,7 +13,7 @@ beforeEach(function () {
 });
 
 test('the list is reachable and in the navigation as Importe', function () {
-    $this->get('/importe')->assertOk()->assertSee('Importe');
+    $this->get('/imports')->assertOk()->assertSee('Importe');
 });
 
 test('imports are listed newest first with status and title', function () {

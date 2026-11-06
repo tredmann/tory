@@ -18,7 +18,7 @@ class AiProviderResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCpuChip;
 
-    protected static ?string $slug = 'eigene-ki';
+    protected static ?string $slug = 'ai-providers';
 
     protected static ?string $modelLabel = 'Provider';
 

@@ -21,7 +21,7 @@ class ItemResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static ?string $slug = 'gegenstaende';
+    protected static ?string $slug = 'items';
 
     protected static ?string $modelLabel = 'Gegenstand';
 
