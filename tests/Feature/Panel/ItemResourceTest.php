@@ -86,21 +86,12 @@ test('deleting an item removes the row and its photo files', function () {
     Storage::disk('local')->assertMissing('imports/x.jpg');
 });
 
-/** A 1024-dimension unit vector pointing along the given axis. */
-function axisVector(int $index): array
-{
-    $vector = array_fill(0, 1024, 0.0);
-    $vector[$index] = 1.0;
-
-    return $vector;
-}
-
 test('the search field above the list finds items by keyword and by meaning', function () {
     $keyword = Item::factory()->create(['title' => 'Kunststoffgehäuse']);
-    $semantic = Item::factory()->create(['title' => 'Pi-Hülle']);
-    $semantic->forceFill(['embedding' => axisVector(1)])->saveQuietly();
+    $semantic = Item::factory()->create(['title' => 'Pi-Hülle', 'created_at' => now()->addMinute()]);
+    $semantic->forceFill(['embedding' => axis(1)])->saveQuietly();
     $other = Item::factory()->create(['title' => 'Gartenschlauch']);
-    Embeddings::fake(fn (EmbeddingsPrompt $prompt) => array_map(fn () => axisVector(1), $prompt->inputs));
+    Embeddings::fake(fn (EmbeddingsPrompt $prompt) => array_map(fn () => axis(1), $prompt->inputs));
 
     Livewire::test(ListItems::class)
         ->searchTable('Gehäuse')
