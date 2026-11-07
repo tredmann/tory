@@ -284,3 +284,13 @@ it('requires a token to create an item', function () {
 
     expect(Item::count())->toBe(0);
 });
+
+it('lists thumbnail urls in photo order', function () {
+    $item = Item::factory()->create(['photos' => ['imports/b.jpg', 'photos/2026/11/a.png']]);
+
+    $urls = $this->getJson("/api/v1/items/{$item->id}")->assertOk()->json('data.thumbnails');
+
+    expect($urls)->toHaveCount(2)
+        ->and($urls[0])->toEndWith('/photos/b.jpg/thumb')
+        ->and($urls[1])->toEndWith('/photos/a.png/thumb');
+});

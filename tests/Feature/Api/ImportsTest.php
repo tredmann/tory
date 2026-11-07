@@ -216,3 +216,13 @@ it('answers a conflict when deleting a pending import', function () {
         ->assertJsonPath('message', 'Der Import läuft noch.');
     expect(Import::find($import->id))->not->toBeNull();
 });
+
+it('lists thumbnail urls in photo order', function () {
+    $import = Import::factory()->create(['photos' => ['imports/b.jpg', 'photos/2026/11/a.png']]);
+
+    $urls = $this->getJson("/api/v1/imports/{$import->id}")->assertOk()->json('data.thumbnails');
+
+    expect($urls)->toHaveCount(2)
+        ->and($urls[0])->toEndWith('/photos/b.jpg/thumb')
+        ->and($urls[1])->toEndWith('/photos/a.png/thumb');
+});

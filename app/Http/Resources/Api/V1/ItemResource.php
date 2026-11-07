@@ -23,6 +23,7 @@ class ItemResource extends JsonResource
             'search_terms' => $this->search_terms ?? [],
             'spot' => new SpotResource($this->spot),
             'photos' => PhotoUrls::for('api.v1.items.photos.show', $this->resource),
+            'thumbnails' => PhotoUrls::for('api.v1.items.photos.thumbnail', $this->resource),
             'regenerating' => $this->isRegenerating(),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
