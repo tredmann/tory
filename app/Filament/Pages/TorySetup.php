@@ -43,7 +43,7 @@ class TorySetup extends Page
                     ->copyMessage('Kopiert'),
             ]),
             Section::make('Im Browser (claude.ai)')->schema([
-                Text::make('Öffne in claude.ai die Einstellungen, dann Connectors, und füge einen eigenen Connector hinzu. Füge die Adresse von oben ein, melde dich bei Tory an und klicke auf „Erlauben".'),
+                Text::make('Öffne in claude.ai die Einstellungen, dann Connectors, und füge einen eigenen Connector hinzu. Tippe als Name „Tory" ein und füge die Adresse von oben ein, melde dich bei Tory an und klicke auf „Erlauben".'),
             ]),
             Section::make('In der Handy-App')->schema([
                 Text::make('Hier ist nichts zu tun: Der Connector aus claude.ai ist dort auch da.'),
@@ -52,10 +52,10 @@ class TorySetup extends Page
                 Text::make('Genau wie im Browser.'),
             ]),
             Section::make('In Claude Code')->schema([
-                Text::make('Kopiere diesen Befehl und folge dann der Anmeldung.'),
+                Text::make('Kopiere diesen Befehl. Starte danach Claude Code, tippe /mcp, wähle „tory“ und melde dich bei Tory an.'),
                 TextEntry::make('command')
                     ->hiddenLabel()
-                    ->state('claude mcp add --transport http tory '.$address)
+                    ->state('claude mcp add --transport http --scope user tory '.$address)
                     ->copyable()
                     ->icon(Heroicon::OutlinedClipboard)
                     ->iconPosition(IconPosition::After)
@@ -65,6 +65,8 @@ class TorySetup extends Page
                 Text::make('„Wo ist die Bohrmaschine?"'),
                 Text::make('„Ich habe den Akkuschrauber in die Kiste Werkzeug gelegt."'),
                 Text::make('„Leg im Keller einen neuen Lagerplatz ‚Regal 4\' an."'),
+            ]),
+            Section::make('Was Claude nicht kann')->schema([
                 Text::make('Fotos und neue Gegenstände gehen über „Erfassen".'),
             ]),
             Section::make('Verbundene Claude-Zugänge')->schema([

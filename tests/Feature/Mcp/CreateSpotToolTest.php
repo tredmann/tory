@@ -49,3 +49,24 @@ it('validates the name like the panel', function (string $name) {
     'empty' => '',
     'too long' => fn () => str_repeat('a', 256),
 ]);
+
+it('refuses a location name that matches several locations', function () {
+    Location::factory()->create(['name' => 'Keller']);
+    Location::factory()->create(['name' => 'keller']);
+
+    ToryServer::actingAs(User::factory()->create())
+        ->tool(CreateSpotTool::class, ['name' => 'Regal 5', 'location' => 'KELLER'])
+        ->assertHasErrors(['Mehrere Lagerorte', 'Keller', 'keller']);
+
+    expect(Spot::query()->where('name', 'Regal 5')->exists())->toBeFalse();
+});
+
+it('trims the spot name', function () {
+    Location::factory()->create(['name' => 'Keller']);
+
+    ToryServer::actingAs(User::factory()->create())
+        ->tool(CreateSpotTool::class, ['name' => ' Regal 5 ', 'location' => 'Keller'])
+        ->assertOk();
+
+    expect(Spot::query()->where('name', 'Regal 5')->exists())->toBeTrue();
+});

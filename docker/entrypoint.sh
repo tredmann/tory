@@ -37,9 +37,9 @@ if [ -f artisan ]; then
         php artisan key:generate --force --no-interaction
     fi
 
-    if [ "${APP_ENV:-local}" != "production" ] && [ ! -f storage/oauth-private.key ]; then
+    if [ "${APP_ENV:-local}" != "production" ] && { [ ! -f storage/oauth-private.key ] || [ ! -f storage/oauth-public.key ]; }; then
         echo "[entrypoint] generating Passport keys"
-        php artisan passport:keys --no-interaction
+        php artisan passport:keys --force --no-interaction
     fi
 
     if [ "${AUTO_MIGRATE:-false}" = "true" ]; then

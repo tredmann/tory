@@ -16,13 +16,14 @@ test('the page explains how to connect', function () {
     $this->get('/tory-in-claude')
         ->assertOk()
         ->assertSee(url('/mcp'))
-        ->assertSee('claude mcp add --transport http tory '.url('/mcp'))
+        ->assertSee('claude mcp add --transport http --scope user tory '.url('/mcp'))
         ->assertSee('Wo ist die Bohrmaschine?');
 });
 
 test('the explanation avoids technical terms', function () {
     $html = Livewire::test(TorySetup::class)->html();
-    $body = str_replace('claude mcp add --transport http tory '.url('/mcp'), '', $html);
+    $body = str_replace('claude mcp add --transport http --scope user tory '.url('/mcp'), '', $html);
+    $body = str_replace('tippe /mcp,', '', $body);
     $body = str_replace(url('/mcp'), '', $body);
     $text = strip_tags(preg_replace('#<(script|style)\b.*?</\1>#s', '', $body));
 
@@ -58,4 +59,12 @@ test('trennen disconnects', function () {
         ->assertHasNoActionErrors();
 
     expect(app(ClaudeConnections::class)->for($this->user))->toBeEmpty();
+});
+
+test('the page lists what claude cannot do in its own section', function () {
+    Livewire::test(TorySetup::class)
+        ->assertSee('Was Claude nicht kann')
+        ->assertSee('Fotos und neue Gegenstände gehen über „Erfassen".')
+        ->assertSee('Tippe als Name')
+        ->assertSee('tippe /mcp, wähle „tory“ und melde dich bei Tory an.', escape: false);
 });

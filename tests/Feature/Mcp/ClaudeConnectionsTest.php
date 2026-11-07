@@ -2,6 +2,7 @@
 
 use App\Mcp\ClaudeConnections;
 use App\Models\User;
+use Laravel\Passport\AuthCode;
 
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\withToken;
@@ -88,4 +89,21 @@ it('dates a connection from the first token, not from a refresh', function () {
 
     expect($connections)->toHaveCount(1)
         ->and($connections->first()->connectedAt->equalTo($connectedAt))->toBeTrue();
+});
+
+test('disconnecting also revokes authorization codes that were not exchanged', function () {
+    $user = User::factory()->create();
+    $tokens = issueMcpTokens($user);
+    $code = AuthCode::query()->create([
+        'id' => 'offener-code',
+        'user_id' => $user->getKey(),
+        'client_id' => $tokens['client_id'],
+        'scopes' => '["mcp:use"]',
+        'revoked' => false,
+        'expires_at' => now()->addMinutes(10),
+    ]);
+
+    app(ClaudeConnections::class)->disconnect($user, $tokens['client_id']);
+
+    expect($code->fresh()->revoked)->toBeTrue();
 });

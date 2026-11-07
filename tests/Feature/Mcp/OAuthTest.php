@@ -44,7 +44,14 @@ function authorizeQuery(string $clientId, string $redirect): string
 }
 
 test('the protected resource and authorization server are discoverable', function () {
-    getJson('/.well-known/oauth-protected-resource')->assertOk();
+    getJson('/.well-known/oauth-protected-resource')
+        ->assertOk()
+        ->assertJsonStructure(['resource', 'authorization_servers']);
+
+    getJson('/.well-known/oauth-protected-resource/mcp')
+        ->assertOk()
+        ->assertJsonPath('resource', url('/mcp'))
+        ->assertJsonStructure(['authorization_servers']);
 
     getJson('/.well-known/oauth-authorization-server')
         ->assertOk()
@@ -125,4 +132,12 @@ test('an unverified user cannot use the server', function () {
     withToken($tokens['access_token'])
         ->postJson('/mcp', mcpMessage('tools/list'))
         ->assertForbidden();
+});
+
+test('client registration is throttled', function () {
+    foreach (range(1, 10) as $number) {
+        postJson('/oauth/register', ['client_name' => "Client {$number}", 'redirect_uris' => ['https://example.org/cb']])->assertCreated();
+    }
+
+    postJson('/oauth/register', ['client_name' => 'Zu viel', 'redirect_uris' => ['https://example.org/cb']])->assertTooManyRequests();
 });

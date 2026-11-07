@@ -58,7 +58,7 @@ A Filament page with its own navigation entry (after "Eigene KI"), German, writt
   1. claude.ai in the browser: Settings → Connectors → add custom connector → paste address → log in to Tory and click "Erlauben".
   2. Mobile app: nothing to do; a connector added on claude.ai shows up there.
   3. Claude Desktop: same as the browser.
-  4. Claude Code: one command to copy (`claude mcp add --transport http tory {APP_URL}/mcp`), then log in when Claude Code asks.
+  4. Claude Code: one command to copy (`claude mcp add --transport http --scope user tory {APP_URL}/mcp`, user scope so it works in every folder), then start Claude Code, type `/mcp`, pick "tory" and log in.
 - **Try it:** example sentences: "Wo ist die Bohrmaschine?", "Ich habe den Akkuschrauber in die Kiste Werkzeug gelegt.", "Leg im Keller einen neuen Lagerplatz ‚Regal 4' an."
 - **What Claude cannot do:** take photos or add new things; that stays "Erfassen".
 - **Verbundene Claude-Zugänge:** one row per connected program, i.e. per OAuth client for which the logged-in user holds a non-revoked token (refreshes add tokens but no rows). Each row shows the client's registered name, the host of its redirect address and when it was first connected. A "Trennen" button per row (with confirmation) revokes all of that user's access **and** refresh tokens for that client, so the program cannot quietly get a new token; it has to go through "Erlauben" again. A test proves that a refresh after "Trennen" fails and a tool call answers `401`. Only one's own connections are shown and can be disconnected.

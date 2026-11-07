@@ -76,7 +76,7 @@ docker compose exec db psql -U tory -d tory
 
 - `routes/web.php` must never define `/`.
 - `User` keeps only Sanctum's `HasApiTokens` and does not implement Passport's `OAuthenticatable` (the traits clash); it defines `oauthApps()` and `oauthTokens()` itself. Never use `$user->tokens()` for Passport tokens. A Passport upgrade that adds a runtime `instanceof OAuthenticatable` check would break MCP auth.
-- `/mcp` is exempt from the guest redirect to the panel login (it must answer 401 with `WWW-Authenticate`); `/oauth/authorize` redirects guests to it. MCP tests get tokens with `issueMcpTokens()` (real OAuth flow); a test with several requests must reset guards, as that helper does, because the app instance persists.
+- `/mcp` is exempt from the guest redirect to the panel login (it must answer 401 with `WWW-Authenticate`); `/oauth/authorize` redirects guests to the panel login. MCP tests get tokens with `issueMcpTokens()` (real OAuth flow); a test with several requests must reset guards, as that helper does, because the app instance persists.
 - `php artisan make:enum` writes to `app/`; move the file to `app/Enums/`.
 - A Select without a relationship needs `->actionSchemaModel(...)` when its create form has a `unique()` field.
 - `gemma4` ignores Ollama's `format` schema and prefixes `json`, so the extractor's instructions ask for a bare JSON object.

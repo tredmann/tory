@@ -32,13 +32,23 @@ class CreateSpotTool extends Tool
     {
         $rules = (new StoreSpotRequest)->rules();
 
+        if (is_string($request->get('name'))) {
+            $request->merge(['name' => trim($request->get('name'))]);
+        }
+
         $validated = $request->validate([
             'name' => $rules['name'],
             'note' => $rules['note'],
             'location' => ['required', 'string'],
         ]);
 
-        $location = Location::query()->whereRaw('lower(name) = lower(?)', [trim($validated['location'])])->first();
+        $matches = Location::query()->named($validated['location'])->orderBy('name')->get();
+
+        if ($matches->count() > 1) {
+            return Response::error('Mehrere Lagerorte passen zu diesem Namen: '.$matches->pluck('name')->implode(', ').'. Bitte den Nutzer fragen, welcher gemeint ist.');
+        }
+
+        $location = $matches->first();
 
         if ($location === null) {
             $names = Location::query()->orderBy('name')->pluck('name')->all();

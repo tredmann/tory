@@ -56,7 +56,7 @@ class FindSpotsTool extends Tool
             ->orderBy('spots.code');
 
         if (filled($validated['location'] ?? null)) {
-            $query->whereRaw('lower(locations.name) = lower(?)', [trim($validated['location'])]);
+            $query->whereIn('spots.location_id', Location::query()->named($validated['location'])->select('id'));
         }
 
         $spots = $query->get()->map(fn (Spot $spot): array => SpotSummary::of($spot))->all();

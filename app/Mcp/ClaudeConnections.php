@@ -6,6 +6,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Laravel\Passport\AuthCode;
 use Laravel\Passport\Token;
 
 class ClaudeConnections
@@ -40,10 +41,15 @@ class ClaudeConnections
             ->values();
     }
 
-    /** Revokes the user's access and refresh tokens for one client. */
+    /** Revokes the user's access tokens, refresh tokens and unexchanged authorization codes for one client. */
     public function disconnect(User $user, string $clientId): void
     {
         DB::transaction(function () use ($user, $clientId): void {
+            AuthCode::query()
+                ->where('user_id', $user->getKey())
+                ->where('client_id', $clientId)
+                ->update(['revoked' => true]);
+
             $user->oauthTokens()
                 ->where('client_id', $clientId)
                 ->with('refreshToken')
