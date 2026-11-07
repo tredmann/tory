@@ -6,10 +6,13 @@ use App\Ai\ProviderFailure;
 use App\BulkImports\BulkPhoto;
 use App\BulkImports\PhotoGroup;
 use App\BulkImports\StagedPhoto;
+use App\BulkImports\StaleBulkImport;
 use App\BulkImports\TimeGrouping;
 use App\Enums\BulkImportStatus;
 use App\Enums\GroupMark;
+use App\Enums\ImportStatus;
 use App\Enums\ProviderFailureReason;
+use App\Jobs\ExtractImport;
 use App\Jobs\GroupBulkImport;
 use Carbon\CarbonImmutable;
 use Closure;
@@ -17,6 +20,7 @@ use Database\Factories\BulkImportFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -274,6 +278,258 @@ class BulkImport extends Model
 
             $this->setRawAttributes($row->getAttributes(), true);
         });
+    }
+
+    /**
+     * Moves a photo to $position (clamped) in another or the same card. A card left without
+     * photos disappears.
+     *
+     * @throws StaleBulkImport
+     */
+    public function movePhoto(string $path, string $groupId, int $position): void
+    {
+        $this->whileReady(function (BulkImport $row) use ($path, $groupId, $position): void {
+            $groups = $row->groups ?? [];
+            $from = self::cardOf($groups, $path);
+            $to = self::cardIndex($groups, $groupId);
+
+            $groups[$from]['photos'] = array_values(array_diff($groups[$from]['photos'], [$path]));
+            $emptied = $from !== $to && $groups[$from]['photos'] === [];
+            $groups[$from]['mark'] = null;
+
+            $photos = $groups[$to]['photos'];
+            array_splice($photos, max(0, min($position, count($photos))), 0, [$path]);
+            $groups[$to]['photos'] = $photos;
+            $groups[$to]['mark'] = null;
+
+            if ($emptied) {
+                array_splice($groups, $from, 1);
+            }
+
+            $row->update(['groups' => $groups]);
+        });
+    }
+
+    /**
+     * Ends the card holding $path before it; $path and the photos after it become a new card
+     * right after.
+     *
+     * @throws StaleBulkImport
+     */
+    public function splitBefore(string $path): void
+    {
+        $this->whileReady(function (BulkImport $row) use ($path): void {
+            $groups = $row->groups ?? [];
+            $index = self::cardOf($groups, $path);
+            $photos = $groups[$index]['photos'];
+            $position = (int) array_search($path, $photos, true);
+
+            if ($position === 0) {
+                throw new StaleBulkImport;
+            }
+
+            $groups[$index]['photos'] = array_slice($photos, 0, $position);
+            $groups[$index]['mark'] = null;
+
+            array_splice($groups, $index + 1, 0, [[
+                'id' => (string) Str::uuid7(),
+                'photos' => array_slice($photos, $position),
+                'mark' => null,
+            ]]);
+
+            $row->update(['groups' => $groups]);
+        });
+    }
+
+    /**
+     * Appends the photos of the next card to this one.
+     *
+     * @throws StaleBulkImport
+     */
+    public function mergeWithNext(string $groupId): void
+    {
+        $this->whileReady(function (BulkImport $row) use ($groupId): void {
+            $groups = $row->groups ?? [];
+            $index = self::cardIndex($groups, $groupId);
+
+            if (! isset($groups[$index + 1])) {
+                throw new StaleBulkImport;
+            }
+
+            $groups[$index]['photos'] = [...$groups[$index]['photos'], ...$groups[$index + 1]['photos']];
+            $groups[$index]['mark'] = null;
+            array_splice($groups, $index + 1, 1);
+
+            $row->update(['groups' => $groups]);
+        });
+    }
+
+    /**
+     * Marks a photo as discarded or restores it. It stays in its card either way.
+     *
+     * @throws StaleBulkImport
+     */
+    public function setDiscarded(string $path, bool $discarded): void
+    {
+        $this->whileReady(function (BulkImport $row) use ($path, $discarded): void {
+            self::cardOf($row->groups ?? [], $path);
+
+            $others = array_values(array_diff($row->discarded ?? [], [$path]));
+
+            $row->update(['discarded' => $discarded ? [...$others, $path] : $others]);
+        });
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function remainingPhotos(PhotoGroup $group): array
+    {
+        return array_values(array_diff($group->photos, $this->discarded ?? []));
+    }
+
+    /**
+     * The number of imports a confirm would create: cards with at least one remaining photo.
+     */
+    public function importCount(): int
+    {
+        return count(array_filter($this->groupList(), fn (PhotoGroup $group): bool => $this->remainingPhotos($group) !== []));
+    }
+
+    public function canConfirm(): bool
+    {
+        if ($this->status !== BulkImportStatus::Ready || $this->importCount() === 0) {
+            return false;
+        }
+
+        foreach ($this->groupList() as $group) {
+            if (count($this->remainingPhotos($group)) > Import::MAX_PHOTOS) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Turns every card with remaining photos into a pending import and removes the bulk import.
+     * The imports take over the files; only the discarded files are deleted, after the commit.
+     *
+     * @return list<Import>
+     *
+     * @throws ModelNotFoundException<BulkImport>
+     * @throws ValidationException
+     */
+    public function confirm(): array
+    {
+        return DB::transaction(function (): array {
+            $row = self::query()->whereKey($this->getKey())->lockForUpdate()->first();
+
+            if ($row === null) {
+                throw (new ModelNotFoundException)->setModel(self::class, [$this->getKey()]);
+            }
+
+            if (! $row->canConfirm()) {
+                throw ValidationException::withMessages([
+                    'confirm' => 'Jede Gruppe braucht 1 bis '.Import::MAX_PHOTOS.' verbleibende Fotos.',
+                ]);
+            }
+
+            $imports = [];
+
+            foreach ($row->groupList() as $group) {
+                $photos = $row->remainingPhotos($group);
+
+                if ($photos === []) {
+                    continue;
+                }
+
+                $imports[] = Import::create([
+                    'user_id' => $row->user_id,
+                    'spot_id' => $row->spot_id,
+                    'status' => ImportStatus::Pending,
+                    'photos' => $photos,
+                ]);
+            }
+
+            self::query()->whereKey($row->getKey())->delete();
+
+            $discarded = $row->discarded ?? [];
+
+            DB::afterCommit(function () use ($imports, $discarded): void {
+                foreach ($imports as $import) {
+                    ExtractImport::dispatch($import);
+                }
+
+                if ($discarded === []) {
+                    return;
+                }
+
+                try {
+                    if (! Storage::disk('local')->delete($discarded)) {
+                        report(new RuntimeException('Photo files could not be deleted: '.implode(', ', $discarded)));
+                    }
+                } catch (Throwable $e) {
+                    report($e);
+                }
+            });
+
+            return $imports;
+        });
+    }
+
+    /**
+     * Runs the callback on the locked row while it is ready for review, then takes over its state.
+     *
+     * @param  Closure(BulkImport): void  $callback
+     *
+     * @throws StaleBulkImport
+     */
+    private function whileReady(Closure $callback): void
+    {
+        DB::transaction(function () use ($callback): void {
+            $row = self::query()->whereKey($this->getKey())->lockForUpdate()->first();
+
+            if ($row === null || $row->status !== BulkImportStatus::Ready) {
+                throw new StaleBulkImport;
+            }
+
+            $callback($row);
+
+            $this->setRawAttributes($row->getAttributes(), true);
+        });
+    }
+
+    /**
+     * @param  list<array{id: string, photos: list<string>, mark: string|null}>  $groups
+     *
+     * @throws StaleBulkImport
+     */
+    private static function cardOf(array $groups, string $path): int
+    {
+        foreach ($groups as $index => $group) {
+            if (in_array($path, $group['photos'], true)) {
+                return $index;
+            }
+        }
+
+        throw new StaleBulkImport;
+    }
+
+    /**
+     * @param  list<array{id: string, photos: list<string>, mark: string|null}>  $groups
+     *
+     * @throws StaleBulkImport
+     */
+    private static function cardIndex(array $groups, string $groupId): int
+    {
+        foreach ($groups as $index => $group) {
+            if ($group['id'] === $groupId) {
+                return $index;
+            }
+        }
+
+        throw new StaleBulkImport;
     }
 
     public function failureMessage(): ?string
