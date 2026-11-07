@@ -102,17 +102,25 @@ test('zero photos are rejected and nothing changes', function () {
     Storage::disk('local')->assertExists(['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']);
 });
 
-test('more than six photos are rejected and nothing changes', function () {
-    $item = itemWithPhotos(['a', 'b', 'c', 'd', 'e', 'f']);
+test('more than twenty photos are rejected and nothing changes', function () {
+    $item = itemWithPhotos(range('a', 't'));
 
     try {
         $item->changePhotos([], ['k' => newPhoto()], null);
         $this->fail('Expected a ValidationException.');
     } catch (ValidationException $e) {
-        expect($e->errors()['data.photo_edits'][0])->toContain('Höchstens 6 Fotos');
+        expect($e->errors()['data.photo_edits'][0])->toContain('Höchstens 20 Fotos');
     }
 
-    expect($item->fresh()->photos)->toHaveCount(6)->and(storedFiles())->toHaveCount(6);
+    expect($item->fresh()->photos)->toHaveCount(20)->and(storedFiles())->toHaveCount(20);
+});
+
+test('twenty photos are accepted', function () {
+    $item = itemWithPhotos(range('a', 's'));
+
+    $item->changePhotos([], ['k' => newPhoto()], null);
+
+    expect($item->fresh()->photos)->toHaveCount(20);
 });
 
 test('an item without photos may stay without photos', function () {

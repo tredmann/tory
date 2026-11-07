@@ -3,7 +3,7 @@ import '../css/photo-picker.css';
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_BYTES = 12288 * 1024;
 const MAX_SIDE = 2048;
-const MAX_PHOTOS = 6;
+const MAX_PHOTOS = 20;
 
 const isAcceptable = (file) => ACCEPTED_TYPES.includes(file.type) && file.size <= MAX_BYTES;
 
@@ -157,7 +157,7 @@ const itemPhotos = ({ statePath, photos }) => {
             this.message = null;
 
             if (this.photoCount + files.filter(isAcceptable).length > MAX_PHOTOS) {
-                this.message = 'Höchstens 6 Fotos.';
+                this.message = 'Höchstens 20 Fotos.';
 
                 return;
             }

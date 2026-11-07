@@ -42,6 +42,28 @@ it('uploads photos and starts extraction', function () {
     Queue::assertPushed(ExtractImport::class);
 });
 
+it('accepts twenty photos', function () {
+    $spot = Spot::factory()->create();
+
+    $this->postJson('/api/v1/imports', [
+        'photos' => array_map(fn ($i) => UploadedFile::fake()->image("$i.jpg"), range(1, 20)),
+        'spot' => $spot->code,
+    ])->assertCreated()->assertJsonCount(20, 'data.photos');
+});
+
+it('rejects photos over 70 MB in total', function () {
+    $spot = Spot::factory()->create();
+
+    $this->postJson('/api/v1/imports', [
+        'photos' => array_map(fn ($i) => UploadedFile::fake()->create("$i.jpg", 12000, 'image/jpeg'), range(1, 6)),
+        'spot' => $spot->code,
+    ])->assertUnprocessable()
+        ->assertJsonPath('errors.photos', ['Alle Fotos zusammen dürfen höchstens 70 MB groß sein.']);
+
+    expect(Import::count())->toBe(0);
+    expect(Storage::disk('local')->allFiles())->toBe([]);
+});
+
 it('rejects invalid uploads', function (Closure $payload, string $field) {
     $spot = Spot::factory()->create();
 
@@ -53,7 +75,7 @@ it('rejects invalid uploads', function (Closure $payload, string $field) {
     expect(Storage::disk('local')->allFiles())->toBe([]);
     Queue::assertNothingPushed();
 })->with([
-    'seven photos' => [fn (Spot $s) => ['spot' => $s->code, 'photos' => array_map(fn ($i) => UploadedFile::fake()->image("$i.jpg"), range(1, 7))], 'photos'],
+    'twenty-one photos' => [fn (Spot $s) => ['spot' => $s->code, 'photos' => array_map(fn ($i) => UploadedFile::fake()->image("$i.jpg"), range(1, 21))], 'photos'],
     'a pdf' => [fn (Spot $s) => ['spot' => $s->code, 'photos' => [UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')]], 'photos.0'],
     'a 13 MB file' => [fn (Spot $s) => ['spot' => $s->code, 'photos' => [UploadedFile::fake()->create('big.jpg', 13 * 1024, 'image/jpeg')]], 'photos.0'],
     'no spot' => [fn (Spot $s) => ['photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],

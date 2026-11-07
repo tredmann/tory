@@ -62,13 +62,21 @@ test('rejects image formats the provider cannot read', function () {
         ->assertHasFormErrors(['photos']);
 });
 
-test('rejects more than six images', function () {
-    $photos = collect(range(1, 7))->map(fn (int $i) => UploadedFile::fake()->image("p{$i}.jpg"))->all();
+test('erfassen accepts twenty photos and rejects twenty-one', function () {
+    $make = fn (int $n) => collect(range(1, $n))->map(fn (int $i) => UploadedFile::fake()->image("p{$i}.jpg"))->all();
+    $spot = Spot::factory()->create();
 
     Livewire::test(CreateImport::class)
-        ->fillForm(['photos' => $photos, 'spot_id' => Spot::factory()->create()->id])
+        ->fillForm(['photos' => $make(21), 'spot_id' => $spot->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
+
+    Livewire::test(CreateImport::class)
+        ->fillForm(['photos' => $make(20), 'spot_id' => $spot->id])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Import::sole()->photos)->toHaveCount(20);
 });
 
 test('a valid upload stores the photos, creates a pending import, dispatches the job and redirects to the view page', function () {

@@ -29,7 +29,7 @@ A single inventoried thing with photos, a title and a description. An item alway
 _Avoid_: Object, article, Artikel
 
 **Import**:
-The 1–6 photos of one thing on their way to becoming an item, together with the texts the AI suggested for them.
+The 1–20 photos of one thing on their way to becoming an item, together with the texts the AI suggested for them.
 _Avoid_: Upload, capture, Erfassung
 
 **Search term** (Suchbegriff):

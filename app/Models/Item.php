@@ -103,8 +103,8 @@ class Item extends Model
             $remaining = array_values(array_diff($current, $removed));
             $count = count($remaining) + count($uploads);
 
-            if ($count > 6) {
-                throw ValidationException::withMessages(['data.photo_edits' => 'Höchstens 6 Fotos.']);
+            if ($count > Import::MAX_PHOTOS) {
+                throw ValidationException::withMessages(['data.photo_edits' => 'Höchstens '.Import::MAX_PHOTOS.' Fotos.']);
             }
 
             if ($count === 0 && $current !== []) {

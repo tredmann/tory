@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Imports\Schemas;
 
 use App\Filament\Resources\Spots\Schemas\SpotSelect;
+use App\Models\Import;
 use Filament\Forms\Components\FileUpload;
 use Filament\Schemas\Schema;
 
@@ -25,7 +26,7 @@ class ImportForm
                     ->multiple()
                     ->required()
                     ->minFiles(1)
-                    ->maxFiles(6)
+                    ->maxFiles(Import::MAX_PHOTOS)
                     ->maxSize(12288)
                     ->imageResizeMode('contain')
                     ->imageResizeTargetWidth('2048')

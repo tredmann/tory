@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class Import extends Model
 {
+    public const int MAX_PHOTOS = 20;
+
     /** @use HasFactory<ImportFactory> */
     use HasFactory;
 
