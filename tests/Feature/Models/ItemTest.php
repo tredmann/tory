@@ -2,6 +2,7 @@
 
 use App\Models\Item;
 use App\Models\Spot;
+use App\Photos\PhotoStore;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -44,4 +45,15 @@ test('deleting an item quietly keeps its photo files', function () {
     Item::factory()->create(['photos' => ['imports/x.jpg']])->deleteQuietly();
 
     Storage::disk('local')->assertExists('imports/x.jpg');
+});
+
+test('deleting an item deletes the thumbnails with the photos', function () {
+    Storage::disk('local')->put('imports/x.jpg', 'x');
+    Storage::disk('local')->put(PhotoStore::thumbnailPath('imports/x.jpg'), 'thumb');
+    $item = Item::factory()->create(['photos' => ['imports/x.jpg']]);
+
+    $item->delete();
+
+    Storage::disk('local')->assertMissing('imports/x.jpg');
+    Storage::disk('local')->assertMissing(PhotoStore::thumbnailPath('imports/x.jpg'));
 });

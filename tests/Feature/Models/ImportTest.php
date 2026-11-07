@@ -7,6 +7,7 @@ use App\Models\Import;
 use App\Models\Item;
 use App\Models\Spot;
 use App\Models\User;
+use App\Photos\PhotoStore;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -128,4 +129,27 @@ test('an import is finished when completed or failed', function () {
         ->and(Import::factory()->failed()->make()->isFinished())->toBeTrue()
         ->and(Import::factory()->pending()->make()->isFinished())->toBeFalse()
         ->and(Import::factory()->running()->make()->isFinished())->toBeFalse();
+});
+
+test('deleting an import deletes the thumbnails with the photos', function () {
+    Storage::disk('local')->put('imports/x.jpg', 'x');
+    Storage::disk('local')->put(PhotoStore::thumbnailPath('imports/x.jpg'), 'thumb');
+    $import = Import::factory()->create(['photos' => ['imports/x.jpg']]);
+
+    $import->delete();
+
+    Storage::disk('local')->assertMissing('imports/x.jpg');
+    Storage::disk('local')->assertMissing(PhotoStore::thumbnailPath('imports/x.jpg'));
+});
+
+test('converting keeps the original and its thumbnail', function () {
+    Storage::disk('local')->put('imports/x.jpg', 'x');
+    Storage::disk('local')->put(PhotoStore::thumbnailPath('imports/x.jpg'), 'thumb');
+    $spot = Spot::factory()->create();
+    $import = Import::factory()->completed()->create(['photos' => ['imports/x.jpg']]);
+
+    $import->convertToItem('Pi-Gehäuse', 'Schwarz', $spot->id);
+
+    Storage::disk('local')->assertExists('imports/x.jpg');
+    Storage::disk('local')->assertExists(PhotoStore::thumbnailPath('imports/x.jpg'));
 });

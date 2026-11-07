@@ -15,7 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
@@ -88,7 +87,7 @@ class ItemController extends Controller
                 'photos' => $paths,
             ]);
         } catch (Throwable $e) {
-            Storage::disk('local')->delete($paths);
+            PhotoStore::delete($paths);
 
             throw $e;
         }

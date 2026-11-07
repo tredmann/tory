@@ -2,6 +2,7 @@
 
 use App\Jobs\EmbedItem;
 use App\Models\Item;
+use App\Photos\PhotoStore;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
@@ -229,4 +230,15 @@ test('a model that lags behind the row still writes the change', function () {
     expect($item->fresh()->photos)->toBe(['imports/b.jpg']);
     Storage::disk('local')->assertMissing('imports/a.jpg');
     Storage::disk('local')->assertExists('imports/b.jpg');
+});
+
+test('removing a photo removes its thumbnail', function () {
+    $item = itemWithPhotos();
+    Storage::disk('local')->put(PhotoStore::thumbnailPath('imports/a.jpg'), 'thumb');
+    Storage::disk('local')->put(PhotoStore::thumbnailPath('imports/b.jpg'), 'thumb');
+
+    $item->changePhotos(['imports/a.jpg'], [], null);
+
+    Storage::disk('local')->assertMissing(PhotoStore::thumbnailPath('imports/a.jpg'));
+    Storage::disk('local')->assertExists(PhotoStore::thumbnailPath('imports/b.jpg'));
 });

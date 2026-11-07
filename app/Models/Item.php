@@ -60,7 +60,7 @@ class Item extends Model
         });
 
         static::deleted(function (Item $item): void {
-            Storage::disk('local')->delete($item->photos ?? []);
+            PhotoStore::delete($item->photos ?? []);
         });
     }
 
@@ -141,7 +141,7 @@ class Item extends Model
                 $this->syncOriginalAttribute('photos');
                 $this->update(['photos' => $ordered]);
             } catch (Throwable $e) {
-                Storage::disk('local')->delete(array_values($stored));
+                PhotoStore::delete(array_values($stored));
 
                 throw $e;
             }
@@ -150,7 +150,7 @@ class Item extends Model
 
             DB::afterCommit(function () use ($deletable): void {
                 try {
-                    if (! Storage::disk('local')->delete($deletable)) {
+                    if (! PhotoStore::delete($deletable)) {
                         report(new RuntimeException('Photo files could not be deleted: '.implode(', ', $deletable)));
                     }
                 } catch (Throwable $e) {

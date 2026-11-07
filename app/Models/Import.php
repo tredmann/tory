@@ -6,6 +6,7 @@ use App\Enums\ImportStatus;
 use App\Enums\ProviderFailureReason;
 use App\Jobs\ExtractImport;
 use App\Models\Concerns\RegeneratesTexts;
+use App\Photos\PhotoStore;
 use Database\Factories\ImportFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * @property string $id
@@ -46,7 +46,7 @@ class Import extends Model
     protected static function booted(): void
     {
         static::deleted(function (Import $import): void {
-            Storage::disk('local')->delete($import->photos ?? []);
+            PhotoStore::delete($import->photos ?? []);
         });
     }
 

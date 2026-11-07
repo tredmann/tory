@@ -68,7 +68,7 @@ class BulkImport extends Model
         static::deleted(function (BulkImport $bulkImport): void {
             // A confirm in another tab may have removed the row and handed the files to imports.
             if ($bulkImport->rowWasDeleted) {
-                Storage::disk('local')->delete($bulkImport->allPaths());
+                PhotoStore::delete($bulkImport->allPaths());
             }
         });
     }
@@ -154,7 +154,7 @@ class BulkImport extends Model
                     'discarded' => [],
                 ]);
             } catch (Throwable $e) {
-                Storage::disk('local')->delete($stored);
+                PhotoStore::delete($stored);
 
                 throw $e;
             }
@@ -447,7 +447,7 @@ class BulkImport extends Model
                 }
 
                 try {
-                    if (! Storage::disk('local')->delete($discarded)) {
+                    if (! PhotoStore::delete($discarded)) {
                         report(new RuntimeException('Photo files could not be deleted: '.implode(', ', $discarded)));
                     }
                 } catch (Throwable $e) {

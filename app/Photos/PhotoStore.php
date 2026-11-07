@@ -3,6 +3,7 @@
 namespace App\Photos;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 final class PhotoStore
 {
@@ -21,6 +22,22 @@ final class PhotoStore
     public static function thumbnailPath(string $path): string
     {
         return 'thumbs/'.pathinfo($path, PATHINFO_DIRNAME).'/'.pathinfo($path, PATHINFO_FILENAME).'.webp';
+    }
+
+    /**
+     * Deletes the originals and their thumbnails; a missing thumbnail is no failure.
+     *
+     * @param  array<int, string>  $paths
+     */
+    public static function delete(array $paths): bool
+    {
+        $files = [];
+        foreach ($paths as $path) {
+            $files[] = $path;
+            $files[] = self::thumbnailPath($path);
+        }
+
+        return Storage::disk('local')->delete($files);
     }
 
     public static function routePath(string $path): string
