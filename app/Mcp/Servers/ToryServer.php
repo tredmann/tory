@@ -4,6 +4,7 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\FindItemsTool;
 use App\Mcp\Tools\FindSpotsTool;
+use App\Mcp\Tools\MoveItemTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -21,5 +22,6 @@ class ToryServer extends Server
     protected array $tools = [
         FindItemsTool::class,
         FindSpotsTool::class,
+        MoveItemTool::class,
     ];
 }
