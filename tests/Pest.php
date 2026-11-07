@@ -1,8 +1,10 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Filesystem\LocalFilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use League\Flysystem\Config;
 use League\Flysystem\Filesystem;
 use League\Flysystem\Local\LocalFilesystemAdapter as FlysystemLocalAdapter;
@@ -13,6 +15,56 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
+
+/**
+ * Connects an OAuth client to Tory the way Claude does: dynamic registration, authorization with
+ * PKCE (S256) as the given user, approval on the consent page and the code exchange.
+ *
+ * @return array{access_token: string, refresh_token: string, client_id: string}
+ */
+function issueMcpTokens(User $user, string $clientName = 'Claude', string $redirect = 'https://claude.ai/api/mcp/auth_callback'): array
+{
+    $clientId = test()->postJson('/oauth/register', ['client_name' => $clientName, 'redirect_uris' => [$redirect]])
+        ->assertCreated()
+        ->json('client_id');
+
+    $verifier = Str::random(64);
+    $state = Str::random(16);
+
+    $authorization = test()->actingAs($user)->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $clientId,
+        'redirect_uri' => $redirect,
+        'response_type' => 'code',
+        'scope' => 'mcp:use',
+        'state' => $state,
+        'code_challenge' => strtr(rtrim(base64_encode(hash('sha256', $verifier, true)), '='), '+/', '-_'),
+        'code_challenge_method' => 'S256',
+    ]))->assertOk();
+
+    $approval = test()->post('/oauth/authorize', [
+        'state' => $state,
+        'client_id' => $clientId,
+        'auth_token' => $authorization->viewData('authToken'),
+    ])->assertRedirect();
+
+    parse_str((string) parse_url((string) $approval->headers->get('Location'), PHP_URL_QUERY), $query);
+
+    $tokens = test()->postJson('/oauth/token', [
+        'grant_type' => 'authorization_code',
+        'client_id' => $clientId,
+        'redirect_uri' => $redirect,
+        'code_verifier' => $verifier,
+        'code' => $query['code'],
+    ])->assertOk();
+
+    auth()->forgetGuards();
+
+    return [
+        'access_token' => $tokens->json('access_token'),
+        'refresh_token' => $tokens->json('refresh_token'),
+        'client_id' => $clientId,
+    ];
+}
 
 /** A 1024-dimension unit vector pointing along the given axis. */
 function axis(int $index): array

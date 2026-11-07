@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [ForceJsonResponse::class]);
+
+        // Guests on the OAuth authorization page log in through the panel; an MCP client
+        // instead needs the 401 with its WWW-Authenticate header, whatever it accepts.
+        $middleware->redirectGuestsTo(
+            fn (Request $request): ?string => $request->is('mcp') ? null : route('filament.admin.auth.login'),
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

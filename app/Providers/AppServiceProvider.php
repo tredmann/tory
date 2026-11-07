@@ -40,10 +40,11 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Connected Claude access lasts until the user disconnects it.
+     * Connected Claude access lasts until the user disconnects it; consent is asked on a German page.
      */
     protected function configurePassport(): void
     {
+        Passport::authorizationView('mcp.authorize');
         Passport::tokensExpireIn(CarbonInterval::years(100));
         Passport::refreshTokensExpireIn(CarbonInterval::years(100));
     }
