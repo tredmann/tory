@@ -2,12 +2,17 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use Carbon\CarbonImmutable;
+use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -28,6 +33,19 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureTrustedProxies();
+        $this->configureApiDocs();
+    }
+
+    /**
+     * The API docs are for verified panel users only; requests carry bearer tokens.
+     */
+    protected function configureApiDocs(): void
+    {
+        Gate::define('viewApiDocs', fn (User $user): bool => $user->hasVerifiedEmail());
+
+        Scramble::configure()->withDocumentTransformers(
+            fn (OpenApi $openApi) => $openApi->secure(SecurityScheme::http('bearer')),
+        );
     }
 
     /**

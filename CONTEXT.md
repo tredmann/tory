@@ -36,6 +36,10 @@ _Avoid_: Upload, capture, Erfassung
 A word or phrase attached to an item or import so that it can be found by words that its title and description do not contain.
 _Avoid_: Tag, keyword
 
+**API token**:
+A long-lived secret that one device of the mobile app uses to act as a user on the REST API. It is named after the device and never expires.
+_Avoid_: Session, API key (that is a provider's credential)
+
 **Provider** ("Eigene KI"):
 An AI service configured in the app, with its vendor, model(s) and credentials. It can serve object recognition, search or both. At most one is active for each role, and they may differ.
 _Avoid_: Model, vendor (for the configured service)
