@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\ImportStatus;
+use App\Enums\ProviderFailureReason;
+use App\Jobs\ExtractImport;
 use App\Models\Import;
 use App\Models\Item;
 use App\Models\Spot;
@@ -99,4 +101,31 @@ test('an import that was converted already cannot be converted again', function 
         ->toThrow(ModelNotFoundException::class);
     expect(Item::count())->toBe(1);
     Storage::disk('local')->assertExists('imports/x.jpg');
+});
+
+test('restart resets a failed import and dispatches extraction', function () {
+    $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::KeyRejected, 'Claude')->create([
+        'title' => 'Alt',
+        'description' => 'Alt',
+        'search_terms' => ['a'],
+    ]);
+
+    $import->restart();
+
+    $import->refresh();
+    expect($import->status)->toBe(ImportStatus::Pending)
+        ->and($import->error)->toBeNull()
+        ->and($import->failure_reason)->toBeNull()
+        ->and($import->failure_provider)->toBeNull()
+        ->and($import->title)->toBeNull()
+        ->and($import->description)->toBeNull()
+        ->and($import->search_terms)->toBe([]);
+    Queue::assertPushed(ExtractImport::class);
+});
+
+test('an import is finished when completed or failed', function () {
+    expect(Import::factory()->completed()->make()->isFinished())->toBeTrue()
+        ->and(Import::factory()->failed()->make()->isFinished())->toBeTrue()
+        ->and(Import::factory()->pending()->make()->isFinished())->toBeFalse()
+        ->and(Import::factory()->running()->make()->isFinished())->toBeFalse();
 });
