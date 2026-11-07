@@ -60,6 +60,12 @@ Generator quirk: `php artisan make:enum` writes to `app/`, not `app/Enums/`; mov
 - **AI:** `laravel/ai` with Anthropic as the app default (`config/ai.php`, `ANTHROPIC_API_KEY`). The extractor runs on `AiProvider::active()`, read fresh in every `ExtractImport` run (the worker is long-lived); only with no active provider does it read its own provider/model from `config('ai.inventory.*')` (`INVENTORY_AI_PROVIDER`, `INVENTORY_AI_MODEL`) as before. Embeddings follow the provider active for search the same way, with `EmbeddingTarget` falling back to `config('ai.inventory.embedding_*')`; nothing fails over from a provider to `.env`, since that would mix models. For the `.env` fallback with local Ollama set `INVENTORY_AI_PROVIDER=ollama`, `INVENTORY_AI_MODEL=gemma4:e4b-mlx`, `OLLAMA_URL=http://host.docker.internal:11434`. The extractor's instructions ask for a bare JSON object because `gemma4` ignores Ollama's `format` schema and otherwise prefixes `json`, which fails decoding. `app/Ai/Agents/Assistant.php` is an unused stub.
 - **Assets/styling:** Filament's precompiled theme; generated assets in `public/{css,js,fonts}/filament` are gitignored and refreshed by `filament:upgrade` on `composer dump-autoload` (run `php artisan filament:assets` after a manual upgrade). The panel loads `resources/js/slideshow.js` and `resources/js/item-photos.js` (with `resources/css/slideshow.css` and `resources/css/photo-picker.css`, plain CSS because uncompiled Tailwind classes do not exist in the panel) through a `HEAD_END` render hook with `@vite`, so panel pages outside tests need the running `vite` service or a build. `resources/css/app.css` and `resources/js/app.js` are entries nothing loads yet (Tailwind 4 in the CSS); add a theme with `php artisan make:filament-theme admin` when needed. No app-level Blade layout exists, so a `Route::livewire()` full-page component would fail until `php artisan livewire:layout` creates one. Livewire's `make_command.emoji` is off.
 
+## Tickets and branches
+
+- No code change without a ticket. Tickets live in Kaneo (`TOR-<number>`).
+- Before creating a ticket, always ask the user first.
+- Work on a ticket happens in its own branch named `feature/TOR-<number>-<short-description>`, e.g. `feature/TOR-4-user-theme`.
+
 ## Code conventions
 
 - **YAGNI:** build only what is needed now; no speculative options, abstractions or extension points.
