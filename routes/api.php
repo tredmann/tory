@@ -25,7 +25,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::post('imports/{import}/retry', [ImportController::class, 'retry'])->name('imports.retry');
         Route::post('imports/{import}/convert', [ImportController::class, 'convert'])->name('imports.convert');
 
-        Route::apiResource('items', ItemController::class)->only(['index', 'show', 'destroy']);
+        Route::apiResource('items', ItemController::class)->only(['index', 'show', 'store', 'destroy']);
         Route::patch('items/{item}', [ItemController::class, 'update'])->name('items.update');
 
         Route::get('imports/{import}/photos/{photo}', [PhotoController::class, 'import'])->name('imports.photos.show');
