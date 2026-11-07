@@ -35,7 +35,7 @@ test('start stores the photos, sorts them and sets time cuts', function () {
         ->and($bulk->groupList())->toBe([]);
 
     foreach ($bulk->allPaths() as $path) {
-        expect($path)->toStartWith('imports/');
+        expect($path)->toMatch('#^photos/\d{4}/\d{2}/[^/]+$#');
         Storage::disk('local')->assertExists($path);
     }
 });

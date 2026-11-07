@@ -1,0 +1,25 @@
+<?php
+
+use App\Photos\PhotoStore;
+
+it('stores into the month folder', function () {
+    $this->travelTo('2026-11-07 12:00');
+    expect(PhotoStore::directory())->toBe('photos/2026/11');
+});
+
+it('names the thumbnail after the original', function () {
+    expect(PhotoStore::thumbnailPath('photos/2026/11/abc.jpg'))->toBe('thumbs/photos/2026/11/abc.webp')
+        ->and(PhotoStore::thumbnailPath('imports/abc.png'))->toBe('thumbs/imports/abc.webp');
+});
+
+it('maps storage paths to route paths and back', function (string $storage, string $route) {
+    expect(PhotoStore::routePath($storage))->toBe($route)
+        ->and(PhotoStore::storagePath($route))->toBe($storage);
+})->with([
+    ['photos/2026/11/abc.jpg', '2026/11/abc.jpg'],
+    ['imports/abc.jpg', 'imports/abc.jpg'],
+]);
+
+it('refuses route paths outside the photo folders', function (string $route) {
+    expect(PhotoStore::storagePath($route))->toBeNull();
+})->with(['../.env', 'imports/..', 'imports/.', 'imports/a/b.jpg', 'evals/x.json', 'livewire-tmp/x.jpg', 'thumb/imports/a.jpg', '2026/1/a.jpg', '']);

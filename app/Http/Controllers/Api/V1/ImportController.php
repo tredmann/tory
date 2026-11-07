@@ -10,6 +10,7 @@ use App\Http\Resources\Api\V1\ImportResource;
 use App\Http\Resources\Api\V1\ItemResource;
 use App\Jobs\ExtractImport;
 use App\Models\Import;
+use App\Photos\PhotoStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -31,7 +32,7 @@ class ImportController extends Controller
     public function store(StoreImportRequest $request): JsonResponse
     {
         $paths = array_map(
-            fn ($file): string => (string) $file->store('imports', 'local'),
+            fn ($file): string => (string) PhotoStore::store($file),
             $request->file('photos'),
         );
         $spotId = $request->spotId();

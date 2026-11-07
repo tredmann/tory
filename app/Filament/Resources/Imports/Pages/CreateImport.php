@@ -7,6 +7,7 @@ use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Jobs\ExtractImport;
 use App\Models\Import;
+use App\Photos\PhotoStore;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Validation\ValidationException;
 
@@ -27,7 +28,7 @@ class CreateImport extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         foreach ($data['photos'] ?? [] as $path) {
-            if (! is_string($path) || ! str_starts_with($path, 'imports/')) {
+            if (! is_string($path) || PhotoStore::storagePath(PhotoStore::routePath($path)) !== $path) {
                 throw ValidationException::withMessages(['data.photos' => 'Ungültiger Foto-Pfad.']);
             }
         }

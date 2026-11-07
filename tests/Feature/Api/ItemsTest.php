@@ -215,7 +215,7 @@ it('creates an item with photos and texts without extraction', function () {
         ->and(Import::count())->toBe(0);
     foreach ($item->photos as $path) {
         Storage::disk('local')->assertExists($path);
-        expect($path)->toStartWith('imports/');
+        expect($path)->toMatch('#^photos/\d{4}/\d{2}/[^/]+$#');
     }
     expect(Storage::disk('local')->get($item->photos[0]))->toBe($front->getContent())
         ->and(Storage::disk('local')->get($item->photos[1]))->toBe($back->getContent());

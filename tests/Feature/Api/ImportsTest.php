@@ -37,7 +37,7 @@ it('uploads photos and starts extraction', function () {
         ->and($this->user->fresh()->last_spot_id)->toBe($spot->id);
     foreach ($import->photos as $path) {
         Storage::disk('local')->assertExists($path);
-        expect($path)->toStartWith('imports/');
+        expect($path)->toMatch('#^photos/\d{4}/\d{2}/[^/]+$#');
     }
     Queue::assertPushed(ExtractImport::class);
 });

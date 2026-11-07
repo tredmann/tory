@@ -14,6 +14,7 @@ use App\Enums\ImportStatus;
 use App\Enums\ProviderFailureReason;
 use App\Jobs\ExtractImport;
 use App\Jobs\GroupBulkImport;
+use App\Photos\PhotoStore;
 use Closure;
 use Database\Factories\BulkImportFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -118,7 +119,7 @@ class BulkImport extends Model
 
             try {
                 foreach ($photos as $photo) {
-                    $path = $photo->file->store('imports', 'local');
+                    $path = PhotoStore::store($photo->file);
 
                     if ($path === false) {
                         throw new RuntimeException('Photo could not be stored.');

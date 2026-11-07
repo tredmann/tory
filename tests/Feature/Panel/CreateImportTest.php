@@ -94,7 +94,7 @@ test('a valid upload stores the photos, creates a pending import, dispatches the
         ->and($import->title)->toBeNull();
 
     foreach ($import->photos as $path) {
-        expect($path)->toStartWith('imports/');
+        expect($path)->toMatch('#^photos/\d{4}/\d{2}/[^/]+$#');
         Storage::disk('local')->assertExists($path);
     }
 

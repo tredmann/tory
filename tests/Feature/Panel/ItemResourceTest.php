@@ -362,7 +362,7 @@ test('saving twice stores an added photo once', function () {
         ->assertHasNoFormErrors();
 
     expect($item->fresh()->photos)->toHaveCount(2)
-        ->and(Storage::disk('local')->allFiles('imports'))->toHaveCount(1);
+        ->and(Storage::disk('local')->allFiles('photos'))->toHaveCount(1);
 });
 
 test('a file of the wrong type is rejected', function () {

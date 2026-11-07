@@ -48,7 +48,7 @@ test('the upload page creates a bulk import and dispatches grouping', function (
         ->and($bulkImport->user_id)->toBe($this->user->id)
         ->and(array_column($bulkImport->photos, 'name'))->toBe(['early.jpg', 'late.jpg'])
         ->and($bulkImport->photos[0]['taken_at'])->toBe('2026-11-07T10:00:00+00:00')
-        ->and(Storage::disk('local')->allFiles('imports'))->toHaveCount(2)
+        ->and(Storage::disk('local')->allFiles('photos'))->toHaveCount(2)
         ->and($this->user->fresh()->last_spot_id)->toBe($this->spot->id);
 
     $component->assertRedirect(BulkImportResource::getUrl('view', ['record' => $bulkImport]))

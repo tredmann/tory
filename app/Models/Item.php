@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Jobs\EmbedItem;
 use App\Models\Concerns\RegeneratesTexts;
+use App\Photos\PhotoStore;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\AsVector;
@@ -115,7 +116,7 @@ class Item extends Model
 
             try {
                 foreach ($uploads as $key => $file) {
-                    $path = $file->store('imports', 'local');
+                    $path = PhotoStore::store($file);
 
                     if ($path === false) {
                         throw new RuntimeException('Photo could not be stored.');
