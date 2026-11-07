@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Imports\Pages;
 
 use App\Enums\ImportStatus;
+use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Jobs\ExtractImport;
 use App\Models\Import;
@@ -11,9 +12,13 @@ use Illuminate\Validation\ValidationException;
 
 class CreateImport extends CreateRecord
 {
+    use StartsBreadcrumbsAtHome;
+
     protected static string $resource = ImportResource::class;
 
     protected static ?string $title = 'Erfassen';
+
+    protected static ?string $breadcrumb = 'Erfassen';
 
     /**
      * @param  array<string, mixed>  $data

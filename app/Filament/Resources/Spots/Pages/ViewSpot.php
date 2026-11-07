@@ -3,6 +3,9 @@
 namespace App\Filament\Resources\Spots\Pages;
 
 use App\Filament\Actions\SpotLabelsAction;
+use App\Filament\Resources\Concerns\OmitsPageBreadcrumb;
+use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
+use App\Filament\Resources\Concerns\TitledByRecord;
 use App\Filament\Resources\Spots\SpotResource;
 use App\Models\Spot;
 use Filament\Actions\DeleteAction;
@@ -12,6 +15,8 @@ use Filament\Resources\Pages\ViewRecord;
 
 class ViewSpot extends ViewRecord
 {
+    use OmitsPageBreadcrumb, StartsBreadcrumbsAtHome, TitledByRecord;
+
     protected static string $resource = SpotResource::class;
 
     protected function getHeaderActions(): array

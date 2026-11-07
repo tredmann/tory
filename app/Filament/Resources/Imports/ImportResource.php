@@ -28,6 +28,8 @@ class ImportResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Importe';
 
+    protected static ?string $recordTitleAttribute = 'title';
+
     protected static ?string $navigationLabel = 'Importe';
 
     protected static ?int $navigationSort = 4;

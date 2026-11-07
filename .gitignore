@@ -41,3 +41,4 @@ yarn-error.log
 /opencode.jsonc
 
 /.superpowers
+/.playwright-cli

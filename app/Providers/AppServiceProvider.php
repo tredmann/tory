@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use Filament\Schemas\Schema;
+use Filament\Tables\Table;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -46,6 +48,9 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
+
+        Table::configureUsing(fn (Table $table): Table => $table->defaultDateTimeDisplayFormat('d.m.Y H:i'));
+        Schema::configureUsing(fn (Schema $schema): Schema => $schema->defaultDateTimeDisplayFormat('d.m.Y H:i'));
 
         DB::prohibitDestructiveCommands(
             $this->app->isProduction(),

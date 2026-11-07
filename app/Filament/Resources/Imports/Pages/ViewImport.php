@@ -4,6 +4,9 @@ namespace App\Filament\Resources\Imports\Pages;
 
 use App\Enums\ImportStatus;
 use App\Filament\Actions\RegenerateTextsAction;
+use App\Filament\Resources\Concerns\OmitsPageBreadcrumb;
+use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
+use App\Filament\Resources\Concerns\TitledByRecord;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Resources\Spots\Schemas\SpotSelect;
 use App\Jobs\ExtractImport;
@@ -18,6 +21,8 @@ use Filament\Resources\Pages\ViewRecord;
 
 class ViewImport extends ViewRecord
 {
+    use OmitsPageBreadcrumb, StartsBreadcrumbsAtHome, TitledByRecord;
+
     protected static string $resource = ImportResource::class;
 
     /**

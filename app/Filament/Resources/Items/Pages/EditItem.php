@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Items\Pages;
 
 use App\Filament\Forms\Components\ItemPhotos;
+use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
 use App\Filament\Resources\Items\ItemResource;
 use App\Models\Item;
 use Filament\Actions\Action;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 
 class EditItem extends EditRecord
 {
+    use StartsBreadcrumbsAtHome;
+
     protected static string $resource = ItemResource::class;
 
     public function mount(int|string $record): void

@@ -4,6 +4,8 @@ namespace App\Filament\Resources\AiProviders\Pages;
 
 use App\Ai\ProviderTransfer;
 use App\Filament\Resources\AiProviders\AiProviderResource;
+use App\Filament\Resources\Concerns\OmitsPageBreadcrumb;
+use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
 use App\Models\AiProvider;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
@@ -17,6 +19,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ManageAiProviders extends ManageRecords
 {
+    use OmitsPageBreadcrumb, StartsBreadcrumbsAtHome;
+
     protected static ?string $title = 'Eigene KI';
 
     protected static string $resource = AiProviderResource::class;

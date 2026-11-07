@@ -53,7 +53,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::STYLES_AFTER,
-                fn (): HtmlString => new HtmlString('<style>.tory-active-provider { outline: 2px solid var(--success-500); }</style>'),
+                fn (): HtmlString => new HtmlString('<style>.tory-active-provider { outline: 2px solid var(--success-500); } .tory-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }</style>'),
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,

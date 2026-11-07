@@ -3,6 +3,9 @@
 namespace App\Filament\Resources\Items\Pages;
 
 use App\Filament\Actions\RegenerateTextsAction;
+use App\Filament\Resources\Concerns\OmitsPageBreadcrumb;
+use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
+use App\Filament\Resources\Concerns\TitledByRecord;
 use App\Filament\Resources\Items\ItemResource;
 use App\Models\Item;
 use Filament\Actions\DeleteAction;
@@ -11,6 +14,8 @@ use Filament\Resources\Pages\ViewRecord;
 
 class ViewItem extends ViewRecord
 {
+    use OmitsPageBreadcrumb, StartsBreadcrumbsAtHome, TitledByRecord;
+
     protected static string $resource = ItemResource::class;
 
     protected function getHeaderActions(): array
