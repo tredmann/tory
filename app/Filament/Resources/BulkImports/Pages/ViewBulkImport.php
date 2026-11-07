@@ -14,12 +14,12 @@ use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Models\BulkImport;
 use App\Models\Import;
+use App\Photos\PhotoLinks;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class ViewBulkImport extends ViewRecord
@@ -125,7 +125,7 @@ class ViewBulkImport extends ViewRecord
     }
 
     /**
-     * The cards in order, each with its photos as temporary signed links.
+     * The cards in order, each with its photos linked to their thumbnails.
      *
      * @return list<ReviewCard>
      */
@@ -133,9 +133,8 @@ class ViewBulkImport extends ViewRecord
     {
         $bulkImport = $this->bulkImport();
         $discarded = $bulkImport->discarded ?? [];
-        $expiry = now()->addMinutes(30)->endOfHour();
 
-        return array_map(function (PhotoGroup $group) use ($bulkImport, $discarded, $expiry): ReviewCard {
+        return array_map(function (PhotoGroup $group) use ($bulkImport, $discarded): ReviewCard {
             $remaining = count($bulkImport->remainingPhotos($group));
 
             return new ReviewCard(
@@ -144,7 +143,7 @@ class ViewBulkImport extends ViewRecord
                 overLimit: $remaining > Import::MAX_PHOTOS,
                 photos: array_map(fn (string $path): ReviewPhoto => new ReviewPhoto(
                     path: $path,
-                    url: Storage::disk('local')->temporaryUrl($path, $expiry),
+                    url: PhotoLinks::thumbnail($path),
                     discarded: in_array($path, $discarded, true),
                 ), $group->photos),
             );

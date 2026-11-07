@@ -12,6 +12,7 @@ use App\Models\Import;
 use App\Models\Item;
 use App\Models\Spot;
 use App\Models\User;
+use App\Photos\PhotoLinks;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Vite;
@@ -99,6 +100,7 @@ test('a list thumbnail opens all photos of its record from the first', function 
     expect($images[0]['index'])->toBe(0);
     expect($images[0]['urls'])->toHaveCount(3);
     expect($images[0]['urls'][0])->toContain('a.jpg');
+    expect($images[0]['urls'][0])->toEndWith('/photos/imports/a.jpg');
     expect($images[0]['urls'][1])->toContain('b.jpg');
     expect($images[0]['urls'][2])->toContain('c.jpg');
 })->with('lists');
@@ -112,6 +114,7 @@ test('each view page thumbnail starts at its own photo', function (string $surfa
     expect(array_column($images, 'index'))->toBe([0, 1, 2]);
     expect($images[2]['urls'])->toHaveCount(3);
     expect($images[2]['urls'][2])->toContain('c.jpg');
+    expect($images[2]['urls'][0])->toEndWith('/photos/imports/a.jpg');
 })->with('view pages');
 
 test('a photo whose file is missing is left out and the positions match the rest', function () {
@@ -125,11 +128,23 @@ test('a photo whose file is missing is left out and the positions match the rest
     expect($images[1]['urls'][1])->toContain('c.jpg');
 });
 
-test('a list thumbnail whose file is missing opens no slideshow', function (string $surface) {
+test('a list tile skips a missing first photo', function (string $surface) {
     storePhotos(['imports/b.jpg']);
 
-    expect(slideshowImages(photoSurface($surface, ['imports/missing.jpg', 'imports/b.jpg'])->html()))->toBeEmpty();
+    $html = photoSurface($surface, ['imports/missing.jpg', 'imports/b.jpg'])->html();
+    $images = slideshowImages($html);
+
+    expect($html)->toContain(PhotoLinks::thumbnail('imports/b.jpg'));
+    expect($images)->toHaveCount(1);
+    expect($images[0]['index'])->toBe(0);
+    expect($images[0]['urls'])->toBe([PhotoLinks::original('imports/b.jpg')]);
 })->with('lists');
+
+test('thumbnails show the small variant', function (string $surface) {
+    storePhotos(['imports/a.jpg']);
+
+    expect(photoSurface($surface, ['imports/a.jpg'])->html())->toContain(PhotoLinks::thumbnail('imports/a.jpg'));
+})->with('all surfaces');
 
 test('a path with special characters stays a valid attribute', function (string $surface) {
     $photos = ['imports/a "b" & c.jpg'];

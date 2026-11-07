@@ -7,6 +7,7 @@ use App\Filament\Resources\AiProviders\AiProviderResource;
 use App\Filament\Schemas\PhotoSlideshow;
 use App\Filament\Schemas\RegenerationEntries;
 use App\Models\Import;
+use App\Photos\PhotoLinks;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -24,11 +25,10 @@ class ImportInfolist
                     ->schema([
                         ImageEntry::make('photos')
                             ->label('Fotos')
-                            ->disk('local')
-                            ->visibility('private')
+                            ->state(fn (Import $record): array => array_map(PhotoLinks::thumbnail(...), PhotoLinks::existing($record->photos ?? [])))
                             ->imageHeight(160)
                             ->wrap()
-                            ->extraImgAttributes(fn (ImageEntry $entry, Import $record, string $state): array => PhotoSlideshow::imgAttributes($entry, $record->photos, $state)),
+                            ->extraImgAttributes(fn (Import $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),
                         TextEntry::make('spot.full_label')
                             ->label('Lagerplatz')
                             ->placeholder('—'),

@@ -12,6 +12,7 @@ use App\Models\BulkImport;
 use App\Models\Import;
 use App\Models\Spot;
 use App\Models\User;
+use App\Photos\PhotoLinks;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -86,6 +87,13 @@ test('a ready bulk import shows its cards with counts and marks', function () {
         ->assertActionVisible('confirm')
         ->assertActionEnabled('confirm')
         ->assertActionHasLabel('confirm', '2 Importe anlegen');
+});
+
+test('the review page shows the thumbnail of a group photo', function () {
+    $bulkImport = readyBulkImport([1]);
+
+    Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
+        ->assertSeeHtml(PhotoLinks::thumbnail($bulkImport->groups[0]['photos'][0]));
 });
 
 test('the review page keeps no form data in its state', function () {
