@@ -12,6 +12,15 @@ test('a verified panel user sees the docs', function () {
     expect($paths)->toHaveKeys(['/login', '/items/{item}']);
 });
 
+test('the spec documents creating an item from a multipart upload', function () {
+    $this->actingAs(User::factory()->create());
+
+    $operation = $this->get('/docs/api.json')->json('paths./items.post');
+
+    expect($operation['requestBody']['content'])->toHaveKey('multipart/form-data')
+        ->and($operation['responses'])->toHaveKey('201');
+});
+
 test('a guest gets 403', function () {
     $this->get('/docs/api')->assertForbidden();
     $this->get('/docs/api.json')->assertForbidden();

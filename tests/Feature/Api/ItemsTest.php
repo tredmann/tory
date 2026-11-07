@@ -1,9 +1,13 @@
 <?php
 
+use App\Jobs\EmbedItem;
+use App\Jobs\ExtractImport;
+use App\Models\Import;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Ai\Embeddings;
@@ -183,4 +187,100 @@ it('orders items created at the same moment by id descending', function () {
     $expected = collect([$first, $second])->sortByDesc('id')->pluck('id')->all();
 
     expect(collect($this->getJson('/api/v1/items')->json('data'))->pluck('id')->all())->toBe($expected);
+});
+
+it('creates an item with photos and texts without extraction', function () {
+    $spot = Spot::factory()->create();
+    $user = auth()->user();
+    $front = UploadedFile::fake()->image('front.jpg', 20, 10);
+    $back = UploadedFile::fake()->image('back.png', 10, 20);
+
+    $response = $this->postJson('/api/v1/items', [
+        'photos' => [$front, $back],
+        'title' => 'Akkuschrauber',
+        'description' => 'Grüner Akkuschrauber mit zwei Akkus.',
+        'search_terms' => ['Werkzeug', 'Bohrer'],
+        'spot' => strtolower($spot->code),
+    ])->assertCreated()
+        ->assertJsonPath('data.title', 'Akkuschrauber')
+        ->assertJsonPath('data.description', 'Grüner Akkuschrauber mit zwei Akkus.')
+        ->assertJsonPath('data.search_terms', ['Werkzeug', 'Bohrer'])
+        ->assertJsonPath('data.spot.code', $spot->code)
+        ->assertJsonCount(2, 'data.photos');
+
+    $item = Item::findOrFail($response->json('data.id'));
+    expect($item->spot_id)->toBe($spot->id)
+        ->and($item->photos)->toHaveCount(2)
+        ->and($user->fresh()->last_spot_id)->toBe($spot->id)
+        ->and(Import::count())->toBe(0);
+    foreach ($item->photos as $path) {
+        Storage::disk('local')->assertExists($path);
+        expect($path)->toStartWith('imports/');
+    }
+    expect(Storage::disk('local')->get($item->photos[0]))->toBe($front->getContent())
+        ->and(Storage::disk('local')->get($item->photos[1]))->toBe($back->getContent());
+    Queue::assertPushed(EmbedItem::class);
+    Queue::assertNotPushed(ExtractImport::class);
+});
+
+it('creates an item without description and search terms', function () {
+    $spot = Spot::factory()->create();
+
+    $this->postJson('/api/v1/items', [
+        'photos' => [UploadedFile::fake()->image('a.jpg')],
+        'title' => 'Hammer',
+        'spot' => $spot->code,
+    ])->assertCreated()
+        ->assertJsonPath('data.description', null)
+        ->assertJsonPath('data.search_terms', []);
+});
+
+it('rejects an invalid new item', function (Closure $payload, string $field) {
+    $spot = Spot::factory()->create();
+
+    $this->postJson('/api/v1/items', $payload($spot))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors($field);
+
+    expect(Item::count())->toBe(0);
+    expect(Storage::disk('local')->allFiles())->toBe([]);
+})->with([
+    'no photos' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X'], 'photos'],
+    'twenty-one photos' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'photos' => array_map(fn ($i) => UploadedFile::fake()->image("$i.jpg"), range(1, 21))], 'photos'],
+    'a pdf' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'photos' => [UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')]], 'photos.0'],
+    'a 13 MB file' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'photos' => [UploadedFile::fake()->create('big.jpg', 13 * 1024, 'image/jpeg')]], 'photos.0'],
+    'over 70 MB in total' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'photos' => array_map(fn ($i) => UploadedFile::fake()->create("$i.jpg", 12000, 'image/jpeg'), range(1, 6))], 'photos'],
+    'no title' => [fn (Spot $s) => ['spot' => $s->code, 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'title'],
+    'a too long title' => [fn (Spot $s) => ['spot' => $s->code, 'title' => str_repeat('x', 256), 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'title'],
+    'a search term that is no string' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'search_terms' => [['x']], 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'search_terms.0'],
+    'no spot' => [fn (Spot $s) => ['title' => 'X', 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
+    'an unknown spot' => [fn (Spot $s) => ['spot' => 'ZZZZ', 'title' => 'X', 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
+]);
+
+it('deletes the stored photos when the item cannot be created', function () {
+    $spot = Spot::factory()->create();
+    Item::creating(fn () => throw new RuntimeException('database down'));
+
+    $this->withoutExceptionHandling();
+
+    expect(fn () => $this->postJson('/api/v1/items', [
+        'photos' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->image('b.jpg')],
+        'title' => 'Hammer',
+        'spot' => $spot->code,
+    ]))->toThrow(RuntimeException::class, 'database down');
+
+    expect(Storage::disk('local')->allFiles())->toBe([]);
+});
+
+it('requires a token to create an item', function () {
+    $spot = Spot::factory()->create();
+    auth()->forgetGuards();
+
+    $this->postJson('/api/v1/items', [
+        'photos' => [UploadedFile::fake()->image('a.jpg')],
+        'title' => 'Hammer',
+        'spot' => $spot->code,
+    ])->assertUnauthorized();
+
+    expect(Item::count())->toBe(0);
 });
