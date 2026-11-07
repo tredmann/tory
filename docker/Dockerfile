@@ -8,7 +8,7 @@ FROM dunglas/frankenphp:1-php8.5-trixie AS base
 RUN install-php-extensions pdo_pgsql pgsql intl zip gd pcntl bcmath exif
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends supervisor git unzip \
+    && apt-get install -y --no-install-recommends supervisor git unzip weasyprint fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer/composer:2-bin /composer /usr/bin/composer

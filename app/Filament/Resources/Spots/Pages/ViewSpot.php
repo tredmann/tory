@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Spots\Pages;
 
+use App\Filament\Actions\SpotLabelsAction;
 use App\Filament\Resources\Spots\SpotResource;
 use App\Models\Spot;
 use Filament\Actions\DeleteAction;
@@ -16,6 +17,7 @@ class ViewSpot extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            SpotLabelsAction::make(),
             EditAction::make(),
             DeleteAction::make()
                 ->before(function (DeleteAction $action, Spot $record): void {

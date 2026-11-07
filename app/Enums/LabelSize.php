@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Enums;
+
+use Filament\Support\Contracts\HasLabel;
+
+enum LabelSize: string implements HasLabel
+{
+    case Small = 'small';
+    case Medium = 'medium';
+    case Large = 'large';
+
+    public function getLabel(): string
+    {
+        return match ($this) {
+            self::Small => 'Klein (ca. 5 × 3 cm)',
+            self::Medium => 'Mittel (ca. 7 × 4 cm)',
+            self::Large => 'Groß (ca. 10 × 7 cm)',
+        };
+    }
+
+    public function fileNamePart(): string
+    {
+        return match ($this) {
+            self::Small => 'klein',
+            self::Medium => 'mittel',
+            self::Large => 'gross',
+        };
+    }
+
+    /**
+     * How many labels fit next to each other on an A4 sheet.
+     *
+     * @return positive-int
+     */
+    public function columns(): int
+    {
+        return match ($this) {
+            self::Small => 4,
+            self::Medium, self::Large => 2,
+        };
+    }
+}

@@ -15,11 +15,11 @@ The concrete place where items lie, such as "Regal 3, Fach 2" or "Kiste Weihnach
 _Avoid_: Storage location, Lagerort (for this meaning), bin, slot
 
 **Code**:
-The permanent four-character identifier of a spot, such as `K7XM`. It is what tells two equally named spots apart and what a spot's label will point to.
+The permanent four-character identifier of a spot, such as `K7XM`. It is what tells two equally named spots apart and what a spot's label points to.
 _Avoid_: Number, Nr., ID
 
 **Label** (Etikett):
-The printed tag on a spot, carrying its code, name and a QR code. Labels are not built yet.
+The printed tag on a spot, carrying its code, name, a QR code and the address the QR code leads to. It leaves out the location, so it stays correct when the spot moves.
 _Avoid_: Sticker, tag
 
 ### Things

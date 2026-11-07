@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Spots\Tables;
 
+use App\Filament\Actions\SpotLabelsAction;
 use App\Filament\Resources\Spots\SpotResource;
 use App\Models\Spot;
 use Filament\Tables\Columns\TextColumn;
@@ -32,6 +33,9 @@ class SpotsTable
                     ->counts('items'),
             ])
             ->defaultSort('id')
+            ->toolbarActions([
+                SpotLabelsAction::bulk(),
+            ])
             ->recordUrl(fn (Spot $record): string => SpotResource::getUrl('view', ['record' => $record]));
     }
 }
