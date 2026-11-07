@@ -8,7 +8,7 @@ final class BoundaryWindows
 
     /**
      * Splits the neighbouring pairs of a photo sequence into windows so that every pair is decided once,
-     * with two photos of context on each side where the sequence allows.
+     * with at least one photo of context on each side of every decided pair, except at the ends of the sequence.
      *
      * @return list<BoundaryWindow>
      */

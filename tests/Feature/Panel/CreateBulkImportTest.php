@@ -158,7 +158,8 @@ test('the resource has no navigation entry', function () {
 });
 
 test('the upload page is titled Viele erfassen below the imports', function () {
-    $this->get('/bulk-imports/create')->assertOk()->assertSee('Viele erfassen')->assertSee('Gruppieren');
+    $this->get('/bulk-imports/create')->assertOk()->assertSee('Viele erfassen')->assertSee('Gruppieren')
+        ->assertSee('\\u0022maxPhotos\\u0022:'.BulkImport::MAX_PHOTOS.'}', false);
 
     $page = Livewire::test(CreateBulkImport::class)->instance();
     $breadcrumbs = $page->getBreadcrumbs();

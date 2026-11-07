@@ -5,6 +5,7 @@ use App\Filament\Resources\Items\Pages\EditItem;
 use App\Filament\Resources\Items\Pages\ListItems;
 use App\Filament\Resources\Items\Pages\ViewItem;
 use App\Jobs\EmbedItem;
+use App\Models\Import;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\Spot;
@@ -215,6 +216,7 @@ test('the photos field renders real buttons and the add tile', function () {
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
         ->assertSeeHtml('x-data="itemPhotos(')
+        ->assertSeeHtml('\\u0022maxPhotos\\u0022:'.Import::MAX_PHOTOS.'}')
         ->assertSeeHtml('wire:ignore')
         ->assertSee('Foto hinzufügen')
         ->assertSee('Foto entfernen')

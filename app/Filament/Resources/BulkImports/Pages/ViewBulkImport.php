@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\BulkImports\Pages;
 
 use App\BulkImports\PhotoGroup;
+use App\BulkImports\ReviewCard;
+use App\BulkImports\ReviewPhoto;
 use App\BulkImports\StaleBulkImport;
 use App\Enums\BulkImportStatus;
 use App\Filament\Resources\BulkImports\BulkImportResource;
@@ -29,6 +31,11 @@ class ViewBulkImport extends ViewRecord
     protected static ?string $title = 'Bulkimport';
 
     protected string $view = 'filament.resources.bulk-imports.view';
+
+    /**
+     * The page shows its own view and no form, so the record stays out of the Livewire state.
+     */
+    protected function fillForm(): void {}
 
     public function getSubheading(): ?string
     {
@@ -94,9 +101,9 @@ class ViewBulkImport extends ViewRecord
         $this->edit(fn (BulkImport $bulkImport) => $bulkImport->splitBefore($path));
     }
 
-    public function mergeWithNext(string $groupId): void
+    public function mergeWithNext(string $groupId, string $nextGroupId): void
     {
-        $this->edit(fn (BulkImport $bulkImport) => $bulkImport->mergeWithNext($groupId));
+        $this->edit(fn (BulkImport $bulkImport) => $bulkImport->mergeWithNext($groupId, $nextGroupId));
     }
 
     public function discard(string $path): void
@@ -110,7 +117,7 @@ class ViewBulkImport extends ViewRecord
     }
 
     /**
-     * @return array{bulkImport: BulkImport, cards: list<array{group: PhotoGroup, remaining: int, overLimit: bool, photos: list<array{path: string, url: string, discarded: bool}>}>}
+     * @return array{bulkImport: BulkImport, cards: list<ReviewCard>}
      */
     protected function getViewData(): array
     {
@@ -120,7 +127,7 @@ class ViewBulkImport extends ViewRecord
     /**
      * The cards in order, each with its photos as temporary signed links.
      *
-     * @return list<array{group: PhotoGroup, remaining: int, overLimit: bool, photos: list<array{path: string, url: string, discarded: bool}>}>
+     * @return list<ReviewCard>
      */
     private function cards(): array
     {
@@ -128,19 +135,19 @@ class ViewBulkImport extends ViewRecord
         $discarded = $bulkImport->discarded ?? [];
         $expiry = now()->addMinutes(30)->endOfHour();
 
-        return array_map(function (PhotoGroup $group) use ($bulkImport, $discarded, $expiry): array {
+        return array_map(function (PhotoGroup $group) use ($bulkImport, $discarded, $expiry): ReviewCard {
             $remaining = count($bulkImport->remainingPhotos($group));
 
-            return [
-                'group' => $group,
-                'remaining' => $remaining,
-                'overLimit' => $remaining > Import::MAX_PHOTOS,
-                'photos' => array_map(fn (string $path): array => [
-                    'path' => $path,
-                    'url' => Storage::disk('local')->temporaryUrl($path, $expiry),
-                    'discarded' => in_array($path, $discarded, true),
-                ], $group->photos),
-            ];
+            return new ReviewCard(
+                group: $group,
+                remaining: $remaining,
+                overLimit: $remaining > Import::MAX_PHOTOS,
+                photos: array_map(fn (string $path): ReviewPhoto => new ReviewPhoto(
+                    path: $path,
+                    url: Storage::disk('local')->temporaryUrl($path, $expiry),
+                    discarded: in_array($path, $discarded, true),
+                ), $group->photos),
+            );
         }, $bulkImport->groupList());
     }
 

@@ -102,17 +102,41 @@ test('merging appends the next card', function () {
     $bulk = reviewBulk([1, 2, 1]);
     [$a, $b, $c] = $bulk->groupList();
 
-    $bulk->mergeWithNext($a->id);
+    $bulk->mergeWithNext($a->id, $b->id);
 
     $groups = $bulk->fresh()->groupList();
     expect(cardPhotos($bulk))->toBe([[...$a->photos, ...$b->photos], $c->photos])
         ->and($groups[0]->id)->toBe($a->id);
 });
 
+test('repeating a merge is stale and leaves the following card alone', function () {
+    $bulk = reviewBulk([1, 1, 1]);
+    [$a, $b, $c] = $bulk->groupList();
+
+    $bulk->mergeWithNext($a->id, $b->id);
+    $before = $bulk->fresh()->groups;
+
+    expect(fn () => $bulk->mergeWithNext($a->id, $b->id))->toThrow(StaleBulkImport::class)
+        ->and($bulk->fresh()->groups)->toBe($before)
+        ->and(cardPhotos($bulk)[1])->toBe($c->photos);
+});
+
+test('a merge whose expected next card is no longer next is stale', function () {
+    $bulk = reviewBulk([1, 1, 1]);
+    [$a, $b, $c] = $bulk->groupList();
+
+    $bulk->movePhoto($b->photos[0], $c->id, 0);
+    $before = $bulk->fresh()->groups;
+
+    expect(fn () => $bulk->mergeWithNext($a->id, $b->id))->toThrow(StaleBulkImport::class)
+        ->and(fn () => $bulk->mergeWithNext($a->id, $a->id))->toThrow(StaleBulkImport::class)
+        ->and($bulk->fresh()->groups)->toBe($before);
+});
+
 test('merging the last card is stale', function () {
     $bulk = reviewBulk([1, 1]);
 
-    expect(fn () => $bulk->mergeWithNext($bulk->groupList()[1]->id))->toThrow(StaleBulkImport::class)
+    expect(fn () => $bulk->mergeWithNext($bulk->groupList()[1]->id, $bulk->groupList()[0]->id))->toThrow(StaleBulkImport::class)
         ->and($bulk->fresh()->groupList())->toHaveCount(2);
 });
 
@@ -164,7 +188,7 @@ test('an edit clears the AI mark of the cards it reshapes', function () {
     expect(array_map(fn (PhotoGroup $g) => $g->mark, $bulk->fresh()->groupList()))
         ->toBe([null, null, null, null, GroupMark::Split, GroupMark::Merged]);
 
-    $bulk->mergeWithNext($d->id);
+    $bulk->mergeWithNext($d->id, $e->id);
     expect(array_map(fn (PhotoGroup $g) => $g->mark, $bulk->fresh()->groupList()))
         ->toBe([null, null, null, null, null]);
 
@@ -183,7 +207,7 @@ test('an unknown group or path is stale and changes nothing', function () {
     expect(fn () => $bulk->movePhoto($forged, $b->id, 0))->toThrow(StaleBulkImport::class)
         ->and(fn () => $bulk->movePhoto($a->photos[0], (string) Str::uuid7(), 0))->toThrow(StaleBulkImport::class)
         ->and(fn () => $bulk->splitBefore($forged))->toThrow(StaleBulkImport::class)
-        ->and(fn () => $bulk->mergeWithNext($other->groupList()[0]->id))->toThrow(StaleBulkImport::class)
+        ->and(fn () => $bulk->mergeWithNext($other->groupList()[0]->id, $b->id))->toThrow(StaleBulkImport::class)
         ->and(fn () => $bulk->setDiscarded($forged, true))->toThrow(StaleBulkImport::class)
         ->and($bulk->fresh()->only(['groups', 'discarded']))->toBe($before);
 });

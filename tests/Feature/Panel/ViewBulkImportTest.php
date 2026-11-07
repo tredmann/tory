@@ -81,10 +81,18 @@ test('a ready bulk import shows its cards with counts and marks', function () {
         ->assertSeeHtml('wire:sort:group="bulk-photos"')
         ->assertSeeHtml('wire:sort:item="'.$bulkImport->groups[0]['photos'][0].'"')
         ->assertSeeHtml('wire:sort:group-id="'.$bulkImport->groups[1]['id'].'"')
+        ->assertSeeHtml("wire:click=\"mergeWithNext('{$bulkImport->groups[0]['id']}', '{$bulkImport->groups[1]['id']}')\"")
         ->assertDontSeeHtml('wire:poll')
         ->assertActionVisible('confirm')
         ->assertActionEnabled('confirm')
         ->assertActionHasLabel('confirm', '2 Importe anlegen');
+});
+
+test('the review page keeps no form data in its state', function () {
+    $bulkImport = readyBulkImport([2, 1]);
+
+    Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
+        ->assertSet('data', []);
 });
 
 test('the last card offers no merge and discarded photos do not count', function () {
@@ -140,7 +148,7 @@ test('moving, splitting, merging and discarding call through', function () {
     expect(array_map(fn (array $group): array => $group['photos'], $bulkImport->fresh()->groups))
         ->toBe([[$first['photos'][1]], [$second['photos'][0]], [$first['photos'][0], $second['photos'][1]]]);
 
-    $page->call('mergeWithNext', $bulkImport->fresh()->groups[1]['id']);
+    $page->call('mergeWithNext', $bulkImport->fresh()->groups[1]['id'], $bulkImport->fresh()->groups[2]['id']);
     expect($bulkImport->fresh()->groups[1]['photos'])->toBe([$second['photos'][0], $first['photos'][0], $second['photos'][1]]);
 
     $page->call('discard', $first['photos'][1]);
@@ -155,11 +163,11 @@ test('a stale edit shows the notice and the current cards', function () {
     $bulkImport = readyBulkImport([2, 2]);
     $page = Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
         ->assertSee('Gruppe 2 · 2 Fotos');
-    $lowerId = $bulkImport->groups[1]['id'];
-    $bulkImport->mergeWithNext($bulkImport->groups[0]['id']);
+    [$upper, $lower] = $bulkImport->groups;
+    $bulkImport->mergeWithNext($upper['id'], $lower['id']);
     $groups = $bulkImport->fresh()->groups;
 
-    $page->call('mergeWithNext', $lowerId)
+    $page->call('mergeWithNext', $upper['id'], $lower['id'])
         ->assertNotified('Die Gruppen wurden inzwischen geändert. Die Seite zeigt jetzt den aktuellen Stand.')
         ->assertSee('Gruppe 1 · 4 Fotos')
         ->assertDontSee('Gruppe 2');

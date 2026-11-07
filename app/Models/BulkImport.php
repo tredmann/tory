@@ -14,7 +14,6 @@ use App\Enums\ImportStatus;
 use App\Enums\ProviderFailureReason;
 use App\Jobs\ExtractImport;
 use App\Jobs\GroupBulkImport;
-use Carbon\CarbonImmutable;
 use Closure;
 use Database\Factories\BulkImportFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -166,18 +165,6 @@ class BulkImport extends Model
     }
 
     /**
-     * @return list<BulkPhoto>
-     */
-    public function photoList(): array
-    {
-        return array_map(fn (array $photo): BulkPhoto => new BulkPhoto(
-            $photo['path'],
-            $photo['taken_at'] === null ? null : new CarbonImmutable($photo['taken_at']),
-            $photo['name'],
-        ), $this->photos ?? []);
-    }
-
-    /**
      * @return list<PhotoGroup>
      */
     public function groupList(): array
@@ -209,7 +196,7 @@ class BulkImport extends Model
      */
     public function storeCuts(int $firstPair, array $decided): void
     {
-        $this->whileGrouping(function (BulkImport $row) use ($firstPair, $decided): void {
+        $this->whileStatus(BulkImportStatus::Grouping, throwOnMismatch: false, callback: function (BulkImport $row) use ($firstPair, $decided): void {
             $cuts = $row->cuts;
 
             foreach ($decided as $offset => $cut) {
@@ -227,7 +214,7 @@ class BulkImport extends Model
      */
     public function finishGrouping(bool $incomplete, ?ProviderFailure $failure = null): void
     {
-        $this->whileGrouping(function (BulkImport $row) use ($incomplete, $failure): void {
+        $this->whileStatus(BulkImportStatus::Grouping, throwOnMismatch: false, callback: function (BulkImport $row) use ($incomplete, $failure): void {
             $paths = array_column($row->photos, 'path');
             $cuts = $row->cuts;
             $timeCuts = $row->time_cuts;
@@ -273,26 +260,6 @@ class BulkImport extends Model
     }
 
     /**
-     * Runs the callback on the locked row while it is still grouping, then takes over its state.
-     *
-     * @param  Closure(BulkImport): void  $callback
-     */
-    private function whileGrouping(Closure $callback): void
-    {
-        DB::transaction(function () use ($callback): void {
-            $row = self::query()->whereKey($this->getKey())->lockForUpdate()->first();
-
-            if ($row === null || $row->status !== BulkImportStatus::Grouping) {
-                return;
-            }
-
-            $callback($row);
-
-            $this->setRawAttributes($row->getAttributes(), true);
-        });
-    }
-
-    /**
      * Moves a photo to $position (clamped) in another or the same card. A card left without
      * photos disappears.
      *
@@ -300,7 +267,7 @@ class BulkImport extends Model
      */
     public function movePhoto(string $path, string $groupId, int $position): void
     {
-        $this->whileReady(function (BulkImport $row) use ($path, $groupId, $position): void {
+        $this->whileStatus(BulkImportStatus::Ready, throwOnMismatch: true, callback: function (BulkImport $row) use ($path, $groupId, $position): void {
             $groups = $row->groups ?? [];
             $from = self::cardOf($groups, $path);
             $to = self::cardIndex($groups, $groupId);
@@ -330,7 +297,7 @@ class BulkImport extends Model
      */
     public function splitBefore(string $path): void
     {
-        $this->whileReady(function (BulkImport $row) use ($path): void {
+        $this->whileStatus(BulkImportStatus::Ready, throwOnMismatch: true, callback: function (BulkImport $row) use ($path): void {
             $groups = $row->groups ?? [];
             $index = self::cardOf($groups, $path);
             $photos = $groups[$index]['photos'];
@@ -354,17 +321,18 @@ class BulkImport extends Model
     }
 
     /**
-     * Appends the photos of the next card to this one.
+     * Appends the photos of the next card to this one. The page names the card it saw next, so a
+     * repeated click or a stale tab cannot swallow a card that has moved up meanwhile.
      *
      * @throws StaleBulkImport
      */
-    public function mergeWithNext(string $groupId): void
+    public function mergeWithNext(string $groupId, string $nextGroupId): void
     {
-        $this->whileReady(function (BulkImport $row) use ($groupId): void {
+        $this->whileStatus(BulkImportStatus::Ready, throwOnMismatch: true, callback: function (BulkImport $row) use ($groupId, $nextGroupId): void {
             $groups = $row->groups ?? [];
             $index = self::cardIndex($groups, $groupId);
 
-            if (! isset($groups[$index + 1])) {
+            if (($groups[$index + 1]['id'] ?? null) !== $nextGroupId) {
                 throw new StaleBulkImport;
             }
 
@@ -383,7 +351,7 @@ class BulkImport extends Model
      */
     public function setDiscarded(string $path, bool $discarded): void
     {
-        $this->whileReady(function (BulkImport $row) use ($path, $discarded): void {
+        $this->whileStatus(BulkImportStatus::Ready, throwOnMismatch: true, callback: function (BulkImport $row) use ($path, $discarded): void {
             self::cardOf($row->groups ?? [], $path);
 
             $others = array_values(array_diff($row->discarded ?? [], [$path]));
@@ -491,19 +459,24 @@ class BulkImport extends Model
     }
 
     /**
-     * Runs the callback on the locked row while it is ready for review, then takes over its state.
+     * Runs the callback on the locked row while it has $status, then takes over its state. A missing
+     * row or another status throws StaleBulkImport when $throwOnMismatch, otherwise nothing happens.
      *
      * @param  Closure(BulkImport): void  $callback
      *
      * @throws StaleBulkImport
      */
-    private function whileReady(Closure $callback): void
+    private function whileStatus(BulkImportStatus $status, bool $throwOnMismatch, Closure $callback): void
     {
-        DB::transaction(function () use ($callback): void {
+        DB::transaction(function () use ($status, $throwOnMismatch, $callback): void {
             $row = self::query()->whereKey($this->getKey())->lockForUpdate()->first();
 
-            if ($row === null || $row->status !== BulkImportStatus::Ready) {
-                throw new StaleBulkImport;
+            if ($row === null || $row->status !== $status) {
+                if ($throwOnMismatch) {
+                    throw new StaleBulkImport;
+                }
+
+                return;
             }
 
             $callback($row);

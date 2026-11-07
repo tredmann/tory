@@ -3,8 +3,6 @@ import '../css/bulk-import.css';
 import exifr from 'exifr';
 import { fitWithinLimit, isAcceptable } from './photo-shrink.js';
 
-const MAX_PHOTOS = 100;
-
 const changeUploadCount = (change) =>
     window.Alpine.store('toryPhotoUploads', window.Alpine.store('toryPhotoUploads') + change);
 
@@ -30,7 +28,7 @@ async function takenAt(file) {
  * The server counts a file only while its key is in `meta`. A key gets there once its upload
  * finished and leaves with ✕, so an upload that lands after its cancellation stays unused.
  */
-const bulkPhotos = ({ statePath }) => {
+const bulkPhotos = ({ statePath, maxPhotos }) => {
     // Uploads run one after the other, so a hundred photos never compete for the connection.
     let queue = Promise.resolve();
     let wire;
@@ -57,8 +55,8 @@ const bulkPhotos = ({ statePath }) => {
             event.target.value = '';
             this.message = null;
 
-            if (this.photoCount + files.filter(isAcceptable).length > MAX_PHOTOS) {
-                this.message = `Höchstens ${MAX_PHOTOS} Fotos pro Bulkimport.`;
+            if (this.photoCount + files.filter(isAcceptable).length > maxPhotos) {
+                this.message = `Höchstens ${maxPhotos} Fotos pro Bulkimport.`;
 
                 return;
             }

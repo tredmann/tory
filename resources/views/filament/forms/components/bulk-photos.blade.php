@@ -8,7 +8,7 @@
 >
     <div
         wire:ignore
-        x-data="bulkPhotos(@js(['statePath' => $statePath]))"
+        x-data="bulkPhotos(@js(['statePath' => $statePath, 'maxPhotos' => \App\Models\BulkImport::MAX_PHOTOS]))"
         x-on:bulk-photos-sync.window="syncMeta()"
         {{ $getExtraAttributeBag()->class(['tory-photo-picker', 'tory-bulk-photos']) }}
     >

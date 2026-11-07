@@ -28,32 +28,32 @@
 
         <div class="tory-review-cards">
             @foreach ($cards as $index => $card)
-                @php($groupId = $card['group']->id)
+                @php($groupId = $card->group->id)
 
                 <section
                     wire:key="card-{{ $groupId }}"
-                    @class(['tory-review-card', 'is-over-limit' => $card['overLimit']])
+                    @class(['tory-review-card', 'is-over-limit' => $card->overLimit])
                     aria-labelledby="card-heading-{{ $groupId }}"
                 >
                     <header class="tory-review-card-header">
                         <h2 id="card-heading-{{ $groupId }}" class="tory-review-card-title">
-                            Gruppe {{ $index + 1 }} · {{ $card['remaining'] }} {{ $card['remaining'] === 1 ? 'Foto' : 'Fotos' }}
+                            Gruppe {{ $index + 1 }} · {{ $card->remaining }} {{ $card->remaining === 1 ? 'Foto' : 'Fotos' }}
                         </h2>
 
-                        @if ($card['group']->mark !== null)
-                            <x-filament::badge color="info">{{ $card['group']->mark->getLabel() }}</x-filament::badge>
+                        @if ($card->group->mark !== null)
+                            <x-filament::badge color="info">{{ $card->group->mark->getLabel() }}</x-filament::badge>
                         @endif
 
                         @if (! $loop->last)
                             <button
                                 type="button"
                                 class="tory-review-merge"
-                                wire:click="mergeWithNext(@js($groupId))"
+                                wire:click="mergeWithNext(@js($groupId), @js($cards[$index + 1]->group->id))"
                             >Mit nächster zusammenlegen ↓</button>
                         @endif
                     </header>
 
-                    @if ($card['overLimit'])
+                    @if ($card->overLimit)
                         <p class="tory-review-limit">Höchstens {{ Import::MAX_PHOTOS }} Fotos pro Import. Bitte aufteilen.</p>
                     @endif
 
@@ -63,38 +63,38 @@
                         wire:sort:group="bulk-photos"
                         wire:sort:group-id="{{ $groupId }}"
                     >
-                        @foreach ($card['photos'] as $position => $photo)
+                        @foreach ($card->photos as $position => $photo)
                             <li
-                                wire:key="photo-{{ $photo['path'] }}"
-                                wire:sort:item="{{ $photo['path'] }}"
-                                @class(['tory-review-photo', 'is-discarded' => $photo['discarded']])
+                                wire:key="photo-{{ $photo->path }}"
+                                wire:sort:item="{{ $photo->path }}"
+                                @class(['tory-review-photo', 'is-discarded' => $photo->discarded])
                             >
-                                <img src="{{ $photo['url'] }}" alt="Foto {{ $position + 1 }}" loading="lazy" draggable="false">
+                                <img src="{{ $photo->url }}" alt="Foto {{ $position + 1 }}" loading="lazy" draggable="false">
 
                                 @if ($position > 0)
                                     <button
                                         type="button"
                                         class="tory-review-split"
                                         wire:sort:ignore
-                                        wire:click="splitBefore(@js($photo['path']))"
+                                        wire:click="splitBefore(@js($photo->path))"
                                         aria-label="Vor Foto {{ $position + 1 }} teilen"
                                         title="Hier teilen"
                                     >✂</button>
                                 @endif
 
-                                @if ($photo['discarded'])
+                                @if ($photo->discarded)
                                     <button
                                         type="button"
                                         class="tory-review-restore"
                                         wire:sort:ignore
-                                        wire:click="restore(@js($photo['path']))"
+                                        wire:click="restore(@js($photo->path))"
                                     >rückgängig</button>
                                 @else
                                     <button
                                         type="button"
                                         class="tory-review-discard"
                                         wire:sort:ignore
-                                        wire:click="discard(@js($photo['path']))"
+                                        wire:click="discard(@js($photo->path))"
                                         aria-label="Foto {{ $position + 1 }} verwerfen"
                                         title="Verwerfen"
                                     >✕</button>

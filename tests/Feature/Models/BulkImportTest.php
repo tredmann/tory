@@ -29,7 +29,7 @@ test('start stores the photos, sorts them and sets time cuts', function () {
     ]);
 
     expect($bulk->status)->toBe(BulkImportStatus::Grouping)
-        ->and(array_map(fn ($p) => $p->name, $bulk->photoList()))->toBe(['early.jpg', 'late.jpg'])
+        ->and(array_column($bulk->photos, 'name'))->toBe(['early.jpg', 'late.jpg'])
         ->and($bulk->time_cuts)->toBe([true])
         ->and($bulk->cuts)->toBe($bulk->time_cuts)
         ->and($bulk->groupList())->toBe([]);

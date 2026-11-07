@@ -1,8 +1,6 @@
 import '../css/photo-picker.css';
 import { fitWithinLimit, isAcceptable } from './photo-shrink.js';
 
-const MAX_PHOTOS = 20;
-
 const storedTiles = (photos) =>
     photos.map((photo) => ({
         id: photo.path,
@@ -25,7 +23,7 @@ const changeUploadCount = (change) =>
 // A finish request already under way can still store a cancelled upload on the server, so its key stays marked.
 const abandonedUploads = new Set();
 
-const itemPhotos = ({ statePath, photos }) => {
+const itemPhotos = ({ statePath, photos, maxPhotos }) => {
     // Uploads run one after the other: the server keeps new photos in the order they finish.
     let queue = Promise.resolve();
     let wire;
@@ -50,7 +48,7 @@ const itemPhotos = ({ statePath, photos }) => {
         },
 
         get canAdd() {
-            return this.photoCount < MAX_PHOTOS;
+            return this.photoCount < maxPhotos;
         },
 
         get photoCount() {
@@ -116,8 +114,8 @@ const itemPhotos = ({ statePath, photos }) => {
             event.target.value = '';
             this.message = null;
 
-            if (this.photoCount + files.filter(isAcceptable).length > MAX_PHOTOS) {
-                this.message = 'Höchstens 20 Fotos.';
+            if (this.photoCount + files.filter(isAcceptable).length > maxPhotos) {
+                this.message = `Höchstens ${maxPhotos} Fotos.`;
 
                 return;
             }
