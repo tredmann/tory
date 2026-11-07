@@ -1,47 +1,5 @@
 import '../css/photo-picker.css';
-
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_BYTES = 12288 * 1024;
-const MAX_SIDE = 2048;
-const MAX_PHOTOS = 6;
-
-const isAcceptable = (file) => ACCEPTED_TYPES.includes(file.type) && file.size <= MAX_BYTES;
-
-/**
- * Shrinks a photo to fit the limit, keeping its orientation and type. A GIF or a photo
- * within the limit stays the same file. Throws when the browser cannot read the photo.
- */
-async function fitWithinLimit(file) {
-    if (file.type === 'image/gif') {
-        return file;
-    }
-
-    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-
-    try {
-        const longestSide = Math.max(bitmap.width, bitmap.height);
-
-        if (longestSide <= MAX_SIDE) {
-            return file;
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round((bitmap.width * MAX_SIDE) / longestSide));
-        canvas.height = Math.max(1, Math.round((bitmap.height * MAX_SIDE) / longestSide));
-        canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-
-        const blob = await new Promise((resolve) => canvas.toBlob(resolve, file.type, 0.9));
-
-        if (!blob) {
-            throw new Error('The photo could not be exported.');
-        }
-
-        // Livewire's upload reads the name, which a plain Blob does not have.
-        return new File([blob], file.name, { type: blob.type });
-    } finally {
-        bitmap.close();
-    }
-}
+import { fitWithinLimit, isAcceptable } from './photo-shrink.js';
 
 const storedTiles = (photos) =>
     photos.map((photo) => ({
@@ -65,7 +23,7 @@ const changeUploadCount = (change) =>
 // A finish request already under way can still store a cancelled upload on the server, so its key stays marked.
 const abandonedUploads = new Set();
 
-const itemPhotos = ({ statePath, photos }) => {
+const itemPhotos = ({ statePath, photos, maxPhotos }) => {
     // Uploads run one after the other: the server keeps new photos in the order they finish.
     let queue = Promise.resolve();
     let wire;
@@ -90,7 +48,7 @@ const itemPhotos = ({ statePath, photos }) => {
         },
 
         get canAdd() {
-            return this.photoCount < MAX_PHOTOS;
+            return this.photoCount < maxPhotos;
         },
 
         get photoCount() {
@@ -156,8 +114,8 @@ const itemPhotos = ({ statePath, photos }) => {
             event.target.value = '';
             this.message = null;
 
-            if (this.photoCount + files.filter(isAcceptable).length > MAX_PHOTOS) {
-                this.message = 'Höchstens 6 Fotos.';
+            if (this.photoCount + files.filter(isAcceptable).length > maxPhotos) {
+                this.message = `Höchstens ${maxPhotos} Fotos.`;
 
                 return;
             }

@@ -27,6 +27,7 @@ class ItemInfolist
                             ->imageHeight(160)
                             ->wrap()
                             ->extraImgAttributes(fn (ImageEntry $entry, Item $record, string $state): array => PhotoSlideshow::imgAttributes($entry, $record->photos, $state)),
+                        RegenerationEntries::running(),
                         TextEntry::make('title')
                             ->label('Titel'),
                         TextEntry::make('description')
@@ -37,7 +38,7 @@ class ItemInfolist
                             ->label('Suchbegriffe')
                             ->badge()
                             ->placeholder('—'),
-                        ...RegenerationEntries::make(),
+                        ...RegenerationEntries::failures(),
                         TextEntry::make('spot.full_label')
                             ->label('Lagerplatz')
                             ->url(fn (Item $record): string => SpotResource::getUrl('view', ['record' => $record->spot])),

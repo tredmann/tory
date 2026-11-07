@@ -26,14 +26,17 @@ class ViewSpot extends ViewRecord
             EditAction::make(),
             DeleteAction::make()
                 ->before(function (DeleteAction $action, Spot $record): void {
-                    if (! $record->items()->exists()) {
+                    $reason = match (true) {
+                        $record->items()->exists() => 'Der Lagerplatz enthält noch Gegenstände und kann nicht gelöscht werden.',
+                        $record->bulkImports()->exists() => 'Dieser Lagerplatz wird noch von einem Bulkimport verwendet.',
+                        default => null,
+                    };
+
+                    if ($reason === null) {
                         return;
                     }
 
-                    Notification::make()
-                        ->title('Der Lagerplatz enthält noch Gegenstände und kann nicht gelöscht werden.')
-                        ->danger()
-                        ->send();
+                    Notification::make()->title($reason)->danger()->send();
 
                     $action->halt();
                 }),

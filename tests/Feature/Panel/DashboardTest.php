@@ -1,11 +1,14 @@
 <?php
 
 use App\Filament\Pages\Dashboard;
+use App\Filament\Resources\BulkImports\BulkImportResource;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Resources\Items\ItemResource;
 use App\Filament\Resources\Items\Pages\ListItems;
+use App\Filament\Widgets\OpenBulkImportsWidget;
 use App\Filament\Widgets\OpenImportsWidget;
 use App\Filament\Widgets\RecentItemsWidget;
+use App\Models\BulkImport;
 use App\Models\Import;
 use App\Models\Item;
 use App\Models\Location;
@@ -154,4 +157,34 @@ test('a location name is escaped', function () {
     $this->get('/')
         ->assertDontSee('<b>Keller</b>', false)
         ->assertSee(e('<b>Keller</b>'), false);
+});
+
+test('the dashboard offers Viele erfassen', function () {
+    Livewire::test(Dashboard::class)
+        ->assertActionHasUrl('captureMany', BulkImportResource::getUrl('create'))
+        ->assertActionHasLabel('captureMany', 'Viele erfassen');
+});
+
+test('the dashboard lists open bulk imports with their status', function () {
+    $bulk = BulkImport::factory()->grouping()->create();
+
+    $this->get('/')->assertSeeText('Offene Bulkimporte');
+
+    Livewire::test(OpenBulkImportsWidget::class)
+        ->assertCanSeeTableRecords([$bulk])
+        ->assertSee('3 Fotos')
+        ->assertSee($bulk->status->getLabel());
+});
+
+test('an open bulk import with one photo says "1 Foto"', function () {
+    $bulk = BulkImport::factory()->grouping()->create();
+    $bulk->update(['photos' => [$bulk->photos[0]]]);
+
+    Livewire::test(OpenBulkImportsWidget::class)
+        ->assertSee('1 Foto')
+        ->assertDontSee('1 Fotos');
+});
+
+test('the dashboard hides open bulk imports when there are none', function () {
+    $this->get('/')->assertDontSeeText('Offene Bulkimporte');
 });
