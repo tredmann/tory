@@ -108,6 +108,14 @@ class Spot extends Model
     }
 
     /**
+     * @return HasMany<BulkImport, $this>
+     */
+    public function bulkImports(): HasMany
+    {
+        return $this->hasMany(BulkImport::class);
+    }
+
+    /**
      * @return HasMany<Import, $this>
      */
     public function imports(): HasMany

@@ -176,6 +176,15 @@ test('the dashboard lists open bulk imports with their status', function () {
         ->assertSee($bulk->status->getLabel());
 });
 
+test('an open bulk import with one photo says "1 Foto"', function () {
+    $bulk = BulkImport::factory()->grouping()->create();
+    $bulk->update(['photos' => [$bulk->photos[0]]]);
+
+    Livewire::test(OpenBulkImportsWidget::class)
+        ->assertSee('1 Foto')
+        ->assertDontSee('1 Fotos');
+});
+
 test('the dashboard hides open bulk imports when there are none', function () {
     $this->get('/')->assertDontSeeText('Offene Bulkimporte');
 });

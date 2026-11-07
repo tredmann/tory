@@ -6,6 +6,7 @@ use App\Filament\Resources\Spots\Pages\ListSpots;
 use App\Filament\Resources\Spots\Pages\ViewSpot;
 use App\Filament\Resources\Spots\RelationManagers\ItemsRelationManager;
 use App\Filament\Resources\Spots\Schemas\SpotSelect;
+use App\Models\BulkImport;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\Spot;
@@ -104,6 +105,17 @@ test('a spot holding items is not deleted and says why', function () {
     Livewire::test(ViewSpot::class, ['record' => $spot->getRouteKey()])
         ->callAction('delete')
         ->assertNotified('Der Lagerplatz enthält noch Gegenstände und kann nicht gelöscht werden.');
+
+    expect($spot->fresh())->not->toBeNull();
+});
+
+test('a spot used by a bulk import is not deleted and says why', function () {
+    $spot = Spot::factory()->create();
+    BulkImport::factory()->grouping()->create(['spot_id' => $spot->id]);
+
+    Livewire::test(ViewSpot::class, ['record' => $spot->getRouteKey()])
+        ->callAction('delete')
+        ->assertNotified('Dieser Lagerplatz wird noch von einem Bulkimport verwendet.');
 
     expect($spot->fresh())->not->toBeNull();
 });

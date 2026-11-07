@@ -60,6 +60,9 @@ class CreateBulkImport extends CreateRecord
     {
         return parent::getCreateFormAction()
             ->label('Gruppieren')
-            ->extraAttributes(['x-bind:disabled' => 'isProcessing || $store.toryPhotoUploads > 0']);
+            ->extraAttributes([
+                'x-bind:disabled' => 'isProcessing || $store.toryPhotoUploads > 0',
+                'x-on:click.capture' => "\$dispatch('bulk-photos-sync')",
+            ]);
     }
 }

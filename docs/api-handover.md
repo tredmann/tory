@@ -234,7 +234,7 @@ One spot with `items_count`. The target of a scanned QR label (see Flow 4). `404
 
 `422` cases: no photos, more than 20, wrong type, over 12 MB, over 70 MB together ("Alle Fotos zusammen dürfen höchstens 70 MB groß sein.", so shrink photos before uploading), unknown spot.
 
-**Shrink before uploading.** The server stores what it gets and does not resize. The web panel shrinks every photo to fit 2048 × 2048 px (never enlarging, GIFs untouched); please do the same — it saves upload time, storage and AI cost, and keeps the whole request comfortably below the server's request size limit (64 MB on older images, 80 MB from the next deployment).
+**Shrink before uploading.** The server stores what it gets and does not resize. The web panel shrinks every photo to fit 2048 × 2048 px (never enlarging, GIFs untouched); please do the same — it saves upload time, storage and AI cost, and keeps the whole request comfortably below the server's request size limit (80 MB per request, of which the photos may use 70 MB together).
 
 #### `GET /imports`
 

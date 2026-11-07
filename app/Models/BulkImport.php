@@ -61,11 +61,23 @@ class BulkImport extends Model
         'failure_provider',
     ];
 
+    private bool $rowWasDeleted = false;
+
     protected static function booted(): void
     {
         static::deleted(function (BulkImport $bulkImport): void {
-            Storage::disk('local')->delete($bulkImport->allPaths());
+            // A confirm in another tab may have removed the row and handed the files to imports.
+            if ($bulkImport->rowWasDeleted) {
+                Storage::disk('local')->delete($bulkImport->allPaths());
+            }
         });
+    }
+
+    protected function performDeleteOnModel(): void
+    {
+        $this->rowWasDeleted = $this->setKeysForSaveQuery($this->newModelQuery())->delete() > 0;
+
+        $this->exists = false;
     }
 
     /**

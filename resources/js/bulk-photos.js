@@ -79,7 +79,7 @@ const bulkPhotos = ({ statePath }) => {
                     const tile = this.tiles[this.tiles.length - 1];
 
                     changeUploadCount(1);
-                    queue = queue.then(() => this.upload(tile, file));
+                    queue = queue.then(() => this.upload(tile, file)).catch(() => this.reject(tile, 'Hochladen fehlgeschlagen.'));
                 }
             });
         },

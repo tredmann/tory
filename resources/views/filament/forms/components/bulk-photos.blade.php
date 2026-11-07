@@ -9,6 +9,7 @@
     <div
         wire:ignore
         x-data="bulkPhotos(@js(['statePath' => $statePath]))"
+        x-on:bulk-photos-sync.window="syncMeta()"
         {{ $getExtraAttributeBag()->class(['tory-photo-picker', 'tory-bulk-photos']) }}
     >
         <div class="tory-bulk-photos-bar">

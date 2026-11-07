@@ -27,7 +27,7 @@ class OpenBulkImportsWidget extends TableWidget
             ->columns([
                 Split::make([
                     TextColumn::make('photos')
-                        ->state(fn (BulkImport $record): string => count($record->photos).' Fotos'),
+                        ->state(fn (BulkImport $record): string => count($record->photos).(count($record->photos) === 1 ? ' Foto' : ' Fotos')),
                     TextColumn::make('status')
                         ->badge()
                         ->grow(false),

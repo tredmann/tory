@@ -80,3 +80,17 @@ test('deleting a bulk import deletes all its photo files', function () {
         Storage::disk('local')->assertMissing($path);
     }
 });
+
+test('deleting a stale instance whose row was already confirmed keeps the files', function () {
+    Storage::fake('local');
+    Queue::fake();
+    $bulk = BulkImport::factory()->ready()->create();
+    $path = $bulk->photos[0]['path'];
+    Storage::disk('local')->put($path, 'x');
+    $stale = BulkImport::find($bulk->id);
+
+    $bulk->confirm();
+    $stale->delete();
+
+    Storage::disk('local')->assertExists($path);
+});
