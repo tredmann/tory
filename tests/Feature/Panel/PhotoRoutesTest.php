@@ -63,6 +63,10 @@ it('answers 404 outside the photo folders', function (string $url) {
     'thumbs folder' => '/photos/thumb/thumbs/imports/a.webp',
     'missing original' => '/photos/imports/missing.jpg',
     'missing thumbnail source' => '/photos/thumb/imports/missing.jpg',
+    'backslash traversal' => '/photos/imports/..%5Cevals%5Cx.json',
+    'backslash traversal thumbnail' => '/photos/thumb/imports/..%5Clivewire-tmp%5Cx.jpg',
+    'control character' => '/photos/imports/a%01b.jpg',
+    'trailing newline' => '/photos/imports/a.jpg%0A',
 ]);
 
 it('sends guests to the login', function () {
@@ -83,5 +87,6 @@ it('builds links to both routes', function () {
 
     expect(PhotoLinks::original('photos/2026/11/a.jpg'))->toEndWith('/photos/2026/11/a.jpg')
         ->and(PhotoLinks::thumbnail('imports/a.jpg'))->toEndWith('/photos/thumb/imports/a.jpg')
-        ->and(PhotoLinks::existing(['imports/missing.jpg', 'imports/b.jpg']))->toBe(['imports/b.jpg']);
+        ->and(PhotoLinks::existing(['imports/missing.jpg', 'imports/b.jpg']))->toBe(['imports/b.jpg'])
+        ->and(PhotoLinks::thumbnails(['imports/missing.jpg', 'imports/b.jpg']))->toBe([PhotoLinks::thumbnail('imports/b.jpg')]);
 });

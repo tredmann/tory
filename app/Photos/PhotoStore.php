@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 
 final class PhotoStore
 {
-    private const ROUTE_PATTERN = '#^(imports/[^/]+|photos/\d{4}/\d{2}/[^/]+)$#';
+    private const ROUTE_PATTERN = '#^(imports/[^/\\\\\p{C}]+|photos/\d{4}/\d{2}/[^/\\\\\p{C}]+)$#uD';
 
     public static function directory(): string
     {

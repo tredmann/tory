@@ -116,6 +116,16 @@ test('rejects photo paths outside the imports directory', function () {
     Queue::assertNothingPushed();
 });
 
+test('rejects photo paths with backslashes', function () {
+    Livewire::test(CreateImport::class)
+        ->fillForm(['photos' => ['imports/..\\livewire-tmp\\secret.jpg'], 'spot_id' => Spot::factory()->create()->id])
+        ->call('create')
+        ->assertHasFormErrors(['photos']);
+
+    expect(Import::count())->toBe(0);
+    Queue::assertNothingPushed();
+});
+
 test('a spot is required', function () {
     Livewire::test(CreateImport::class)
         ->fillForm(['photos' => [UploadedFile::fake()->image('a.jpg')], 'spot_id' => null])

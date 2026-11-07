@@ -14,9 +14,11 @@ final class Thumbnails
 {
     public const LOCK = 'photo-thumbnails';
 
+    public const MAX_PIXELS = 60_000_000;
+
     private const SIZE = 400;
 
-    public function __construct(private int $waitSeconds = 30) {}
+    public function __construct(private int $waitSeconds = 5) {}
 
     /**
      * The storage path of the thumbnail, created when missing; null when it cannot be made.
@@ -52,7 +54,13 @@ final class Thumbnails
 
         try {
             $contents = $disk->get($path);
-            $image = $contents === null ? false : @imagecreatefromstring($contents);
+            $dimensions = $contents === null ? false : @getimagesizefromstring($contents);
+
+            if ($dimensions === false || $dimensions[0] * $dimensions[1] > self::MAX_PIXELS) {
+                throw new RuntimeException("Photo {$path} is unreadable or too large to thumbnail.");
+            }
+
+            $image = @imagecreatefromstring($contents);
 
             if (! $image instanceof GdImage) {
                 throw new RuntimeException("Cannot decode photo {$path}.");
@@ -98,6 +106,7 @@ final class Thumbnails
             $image,
             (int) max(1, round($width * $ratio)),
             (int) max(1, round($height * $ratio)),
+            IMG_TRIANGLE,
         );
 
         if ($scaled === false) {

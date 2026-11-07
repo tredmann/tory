@@ -32,7 +32,7 @@ class ItemGrid
             ->columns([
                 Stack::make([
                     ImageColumn::make('photos')
-                        ->state(fn (Item $record): array => array_map(PhotoLinks::thumbnail(...), PhotoLinks::existing($record->photos ?? [])))
+                        ->state(fn (Item $record): array => PhotoLinks::thumbnails($record->photos ?? []))
                         ->imageWidth('100%')
                         ->imageHeight('auto')
                         ->limit(1)

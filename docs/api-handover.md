@@ -332,7 +332,7 @@ The URLs come ready-made in the `photos` arrays — never build them yourself. E
 
 #### `GET /imports/{id}/photos/{file}/thumb` and `GET /items/{id}/photos/{file}/thumb`
 
-The URLs come ready-made in the `thumbnails` arrays. Same rules as above; the body is a 400 px WebP. If a thumbnail cannot be made, the original is returned instead.
+The URLs come ready-made in the `thumbnails` arrays. Same rules as above; the body is a 400 px WebP. If a thumbnail cannot be made, the original is returned instead, with the original's content type (not WebP).
 
 ## 5. Flows
 

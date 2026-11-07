@@ -20,7 +20,7 @@ class ImportsTable
             ->columns([
                 ImageColumn::make('photos')
                     ->label('Foto')
-                    ->state(fn (Import $record): array => array_map(PhotoLinks::thumbnail(...), PhotoLinks::existing($record->photos ?? [])))
+                    ->state(fn (Import $record): array => PhotoLinks::thumbnails($record->photos ?? []))
                     ->imageHeight(80)
                     ->limit(1)
                     ->extraImgAttributes(fn (Import $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),

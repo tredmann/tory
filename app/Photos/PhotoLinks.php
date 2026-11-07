@@ -24,4 +24,13 @@ final class PhotoLinks
     {
         return array_values(array_filter($paths, fn (string $path): bool => Storage::disk('local')->exists($path)));
     }
+
+    /**
+     * @param  array<int, string>  $paths
+     * @return array<int, string>
+     */
+    public static function thumbnails(array $paths): array
+    {
+        return array_map(self::thumbnail(...), self::existing($paths));
+    }
 }

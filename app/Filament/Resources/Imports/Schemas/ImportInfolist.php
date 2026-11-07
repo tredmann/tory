@@ -25,7 +25,7 @@ class ImportInfolist
                     ->schema([
                         ImageEntry::make('photos')
                             ->label('Fotos')
-                            ->state(fn (Import $record): array => array_map(PhotoLinks::thumbnail(...), PhotoLinks::existing($record->photos ?? [])))
+                            ->state(fn (Import $record): array => PhotoLinks::thumbnails($record->photos ?? []))
                             ->imageHeight(160)
                             ->wrap()
                             ->extraImgAttributes(fn (Import $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),

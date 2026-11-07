@@ -94,3 +94,18 @@ it('leaves no temporary file behind', function () {
 
     expect(Storage::disk('local')->allFiles('thumbs'))->toBe(['thumbs/imports/a.webp']);
 });
+
+it('refuses a photo above the pixel limit without decoding it', function () {
+    Exceptions::fake();
+    $image = imagecreate(8000, 8000);
+    imagecolorallocate($image, 255, 255, 255);
+    ob_start();
+    imagepng($image, null, 9);
+    $png = (string) ob_get_clean();
+    Storage::disk('local')->put('imports/huge.png', $png);
+
+    expect((new Thumbnails(0))->for('imports/huge.png'))->toBeNull();
+
+    Exceptions::assertReportedCount(1);
+    Storage::disk('local')->assertMissing('thumbs/imports/huge.webp');
+});
