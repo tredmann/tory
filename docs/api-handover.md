@@ -6,7 +6,7 @@ This document is for whoever builds the mobile client for Tory. It explains what
 
 | Term | Meaning |
 |---|---|
-| **Item** (`Gegenstand`) | A thing the household owns: title, description, search terms, 0–6 photos, and the spot where it lies. |
+| **Item** (`Gegenstand`) | A thing the household owns: title, description, search terms, 0–20 photos, and the spot where it lies. |
 | **Spot** (`Lagerplatz`) | A concrete place: a box, a shelf, a drawer. Identified by a 4-character **code** such as `K7XM`, printed as a QR label. |
 | **Location** (`Lagerort`) | A group of spots, e.g. "Keller" or "Dachboden". Has a UUID and a unique name. |
 | **Import** | A photo upload waiting to become an item. A worker sends the photos to an AI model, which suggests title, description and search terms. The user then reviews and **converts** it into an item. |
@@ -227,12 +227,12 @@ One spot with `items_count`. The target of a scanned QR label (see Flow 4). `404
 
 | Field | Value |
 |---|---|
-| `photos[]` | 1 to 6 files, JPEG, PNG, WebP or GIF, each at most 12 MB; repeat the field once per file, in the order you want them |
+| `photos[]` | 1 to 20 files, JPEG, PNG, WebP or GIF, each at most 12 MB and at most 70 MB together; repeat the field once per file, in the order you want them |
 | `spot` | spot code (any case) where the thing will go |
 
 `201` with the import in status `pending`. The order of `photos[]` is kept; the first becomes the overview photo. The user's `last_spot` becomes this spot.
 
-`422` cases: no photos, more than 6, wrong type, over 12 MB, unknown spot.
+`422` cases: no photos, more than 20, wrong type, over 12 MB, over 70 MB together ("Alle Fotos zusammen dürfen höchstens 70 MB groß sein.", so shrink photos before uploading), unknown spot.
 
 **Shrink before uploading.** The server stores what it gets and does not resize. The web panel shrinks every photo to fit 2048 × 2048 px (never enlarging, GIFs untouched); please do the same — it saves upload time, storage and AI cost, and keeps the whole request comfortably below the server's request size limit (64 MB on older images, 80 MB from the next deployment).
 
@@ -346,7 +346,7 @@ Login screen ──► POST /login {email, password, device_name}
 ### Flow 2: Capture a thing (the main loop)
 
 ```
-Camera / gallery: 1–6 photos
+Camera / gallery: 1–20 photos (70 MB together)
  ► shrink each to fit 2048 × 2048
  ► pick spot (preselect last_spot; list from GET /spots; optional "new spot" via POST /spots,
    which may need "new location" via POST /locations)

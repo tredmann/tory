@@ -32,6 +32,10 @@ _Avoid_: Object, article, Artikel
 The 1–20 photos of one thing on their way to becoming an item, together with the texts the AI suggested for them.
 _Avoid_: Upload, capture, Erfassung
 
+**Bulk import** (Bulkimport):
+Many photos of several things on their way to becoming imports. The AI groups them, the user reviews the groups and confirms, and each group becomes an import.
+_Avoid_: batch, Sammelimport
+
 **Search term** (Suchbegriff):
 A word or phrase attached to an item or import so that it can be found by words that its title and description do not contain.
 _Avoid_: Tag, keyword

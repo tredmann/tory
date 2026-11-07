@@ -2,9 +2,11 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\BulkImports\BulkImportResource;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Widgets\ItemSearchWidget;
 use App\Filament\Widgets\LocationsWidget;
+use App\Filament\Widgets\OpenBulkImportsWidget;
 use App\Filament\Widgets\OpenImportsWidget;
 use App\Filament\Widgets\RecentItemsWidget;
 use Filament\Actions\Action;
@@ -25,15 +27,23 @@ class Dashboard extends BaseDashboard
             Action::make('capture')
                 ->label('Erfassen')
                 ->url(ImportResource::getUrl('create')),
+            Action::make('captureMany')
+                ->label('Viele erfassen')
+                ->color('gray')
+                ->url(BulkImportResource::getUrl('create')),
         ];
     }
 
     /**
-     * Search, then open imports and locations side by side (one fills the row alone), then the recent items.
+     * Search, then open (bulk) imports stacked in one column and locations side by side (one fills the row alone), then the recent items.
      */
     public function getWidgetsContentComponent(): Component
     {
-        $overview = $this->getWidgetsSchemaComponents([OpenImportsWidget::class, LocationsWidget::class]);
+        $imports = $this->getWidgetsSchemaComponents([OpenBulkImportsWidget::class, OpenImportsWidget::class]);
+        $overview = [
+            ...($imports === [] ? [] : [Grid::make(1)->schema($imports)]),
+            ...$this->getWidgetsSchemaComponents([LocationsWidget::class]),
+        ];
 
         return Grid::make(1)
             ->schema([

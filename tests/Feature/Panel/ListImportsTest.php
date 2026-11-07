@@ -1,6 +1,8 @@
 <?php
 
+use App\Filament\Resources\BulkImports\BulkImportResource;
 use App\Filament\Resources\Imports\Pages\ListImports;
+use App\Models\BulkImport;
 use App\Models\Import;
 use App\Models\Location;
 use App\Models\Spot;
@@ -51,4 +53,13 @@ test('the list shows the location of the spot', function () {
     Livewire::test(ListImports::class)
         ->assertCanSeeTableRecords([$with, $without])
         ->assertSee('Keller → ');
+});
+
+test('the list offers Viele erfassen and shows open bulk imports', function () {
+    $bulk = BulkImport::factory()->ready()->create();
+
+    Livewire::test(ListImports::class)
+        ->assertActionHasUrl('captureMany', BulkImportResource::getUrl('create'));
+
+    $this->get('/imports')->assertSeeText('Offene Bulkimporte');
 });
