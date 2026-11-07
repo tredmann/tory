@@ -154,11 +154,17 @@ test('view page thumbnails are large and side by side', function (string $surfac
         ->assertDontSeeHtml('fi-stacked');
 })->with('view pages');
 
-test('list thumbnails are large', function (string $surface) {
+test('import list thumbnails are large', function () {
     storePhotos(['imports/a.jpg']);
 
-    photoSurface($surface, ['imports/a.jpg'])->assertSeeHtml('height: 80px');
-})->with('lists');
+    photoSurface('imports list', ['imports/a.jpg'])->assertSeeHtml('height: 80px');
+});
+
+test('item lists show their photo across the whole tile', function (string $surface) {
+    storePhotos(['imports/a.jpg']);
+
+    photoSurface($surface, ['imports/a.jpg'])->assertSeeHtml('width: 100%');
+})->with(['items list', 'spot items list']);
 
 test('list rows still link to the detail page', function () {
     $item = Item::factory()->create();

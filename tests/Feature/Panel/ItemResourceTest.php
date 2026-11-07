@@ -30,8 +30,27 @@ test('the list shows items newest first with their spot', function () {
 
     Livewire::test(ListItems::class)
         ->assertCanSeeTableRecords([$new, $old], inOrder: true)
-        ->assertSee("{$spot->code} · Elektronik-Kiste")
+        ->assertSee($spot->code)
+        ->assertSee('· Elektronik-Kiste')
         ->assertSeeHtml("/spots/{$spot->code}");
+});
+
+test('the list can still be sorted by date', function () {
+    $old = Item::factory()->create(['created_at' => now()->subDay()]);
+    $new = Item::factory()->create();
+
+    Livewire::test(ListItems::class)
+        ->sortTable('created_at', 'asc')
+        ->assertCanSeeTableRecords([$old, $new], inOrder: true)
+        ->assertSeeText('Angelegt');
+});
+
+test('the list pages in full rows of tiles', function () {
+    $items = collect(range(1, 13))->map(fn (int $age): Item => Item::factory()->create(['created_at' => now()->subDays($age)]));
+
+    Livewire::test(ListItems::class)
+        ->assertCanSeeTableRecords($items->take(12)->all())
+        ->assertCanNotSeeTableRecords([$items->last()]);
 });
 
 test('items cannot be created directly', function () {
@@ -132,7 +151,7 @@ test('the list and view page show the location', function () {
     $item = Item::factory()->create(['spot_id' => $spot->id]);
 
     Livewire::test(ListItems::class)
-        ->assertSee('Keller → ')
+        ->assertSee('Keller · ')
         ->assertSeeHtml("/spots/{$spot->code}");
 
     Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])

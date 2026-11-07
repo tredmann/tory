@@ -3,12 +3,9 @@
 namespace App\Filament\Resources\Items\Tables;
 
 use App\Ai\ItemSearch;
-use App\Filament\Resources\Items\ItemResource;
-use App\Filament\Resources\Spots\SpotResource;
-use App\Filament\Schemas\PhotoSlideshow;
+use App\Filament\Schemas\ItemGrid;
 use App\Models\Item;
 use App\Models\Location;
-use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -26,26 +23,13 @@ class ItemsTable
 
     public static function configure(Table $table): Table
     {
-        return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('spot.location'))
-            ->columns([
-                ImageColumn::make('photos')
-                    ->label('Foto')
-                    ->disk('local')
-                    ->visibility('private')
-                    ->imageHeight(80)
-                    ->limit(1)
-                    ->extraImgAttributes(fn (ImageColumn $column, Item $record, string $state): array => PhotoSlideshow::imgAttributes($column, $record->photos, $state)),
-                TextColumn::make('title')
-                    ->label('Titel'),
-                TextColumn::make('spot.full_label')
-                    ->label('Lagerplatz')
-                    ->url(fn (Item $record): string => SpotResource::getUrl('view', ['record' => $record->spot])),
-                TextColumn::make('created_at')
-                    ->label('Angelegt')
-                    ->dateTime()
-                    ->sortable(),
-            ])
+        return ItemGrid::configure($table, [
+            TextColumn::make('created_at')
+                ->label('Angelegt')
+                ->dateTime()
+                ->sortable()
+                ->extraAttributes(['class' => 'tory-visually-hidden']),
+        ])
             ->filters([
                 SelectFilter::make('location')
                     ->label('Lagerort')
@@ -57,7 +41,6 @@ class ItemsTable
             ->searchable()
             ->searchPlaceholder('Suchen …')
             ->searchUsing(self::search(...))
-            ->defaultSort('created_at', 'desc')
-            ->recordUrl(fn (Item $record): string => ItemResource::getUrl('view', ['record' => $record]));
+            ->defaultSort('created_at', 'desc');
     }
 }

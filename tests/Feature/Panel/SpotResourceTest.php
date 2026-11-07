@@ -268,3 +268,14 @@ test('a new location from the edit page may share its name with another spot', f
 
     expect(Location::where('name', 'Keller')->count())->toBe(1);
 });
+
+test('the items of a spot show where they lie, like every item tile', function () {
+    $spot = Spot::factory()->create(['name' => 'Regal 3', 'location_id' => Location::factory()->create(['name' => 'Keller'])->id]);
+    $item = Item::factory()->create(['spot_id' => $spot->id, 'title' => 'Bohrmaschine']);
+
+    Livewire::test(ItemsRelationManager::class, ['ownerRecord' => $spot, 'pageClass' => ViewSpot::class])
+        ->assertCanSeeTableRecords([$item])
+        ->assertSeeText('Bohrmaschine')
+        ->assertSeeText($spot->code)
+        ->assertSeeText('Keller · Regal 3');
+});

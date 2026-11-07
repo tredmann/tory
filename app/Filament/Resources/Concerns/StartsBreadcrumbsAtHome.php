@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Concerns;
 
-use Filament\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
 use Filament\Support\Components\Attributes\Unexposed;
 use Filament\Support\Enums\IconSize;
 use Filament\Support\Icons\Heroicon;
@@ -27,7 +27,7 @@ trait StartsBreadcrumbsAtHome
         $icon = generate_icon_html(Heroicon::Home, size: IconSize::Small)?->toHtml();
 
         return [
-            Dashboard::getUrl() => new HtmlString($icon.'<span class="tory-visually-hidden">Dashboard</span>'),
+            Dashboard::getUrl() => new HtmlString($icon.'<span class="tory-visually-hidden">Übersicht</span>'),
             ...parent::getResourceBreadcrumbs(),
         ];
     }

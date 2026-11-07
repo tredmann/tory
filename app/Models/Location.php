@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * @property string $id
@@ -29,5 +30,13 @@ class Location extends Model
     public function spots(): HasMany
     {
         return $this->hasMany(Spot::class);
+    }
+
+    /**
+     * @return HasManyThrough<Item, Spot, $this>
+     */
+    public function items(): HasManyThrough
+    {
+        return $this->hasManyThrough(Item::class, Spot::class);
     }
 }

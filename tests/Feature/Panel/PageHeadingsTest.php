@@ -1,5 +1,6 @@
 <?php
 
+use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\AiProviders\Pages\ManageAiProviders;
 use App\Filament\Resources\Imports\Pages\CreateImport;
 use App\Filament\Resources\Imports\Pages\ListImports;
@@ -16,7 +17,6 @@ use App\Models\Import;
 use App\Models\Item;
 use App\Models\Spot;
 use App\Models\User;
-use Filament\Pages\Dashboard;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -39,7 +39,7 @@ function assertHeading(string $page, array $parameters, string $title, array $br
 
     expect($instance->getTitle())->toBe($title)
         ->and(array_key_first($actual))->toBe(Dashboard::getUrl())
-        ->and((string) $actual[array_key_first($actual)])->toContain('Dashboard')
+        ->and((string) $actual[array_key_first($actual)])->toContain('Übersicht')
         ->and(array_values(array_slice($actual, 1)))->toBe($breadcrumbs);
 }
 
@@ -102,7 +102,7 @@ test('the house is drawn as a link to the dashboard with a text for screen reade
         ->assertSeeInOrder([
             'href="'.Dashboard::getUrl().'"',
             '<svg',
-            '<span class="tory-visually-hidden">Dashboard</span>',
+            '<span class="tory-visually-hidden">Übersicht</span>',
             'Gegenstände',
         ], false)
         ->assertSee('.tory-visually-hidden { position: absolute;', false);
