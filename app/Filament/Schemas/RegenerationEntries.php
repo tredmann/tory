@@ -10,18 +10,27 @@ use Illuminate\Contracts\Foundation\Application;
 
 class RegenerationEntries
 {
+    public const string RUNNING_LABEL = 'Wird neu generiert …';
+
+    /**
+     * The running state, for a page without a status field of its own.
+     */
+    public static function running(): TextEntry
+    {
+        return TextEntry::make('regenerating_at')
+            ->label('Neu generieren')
+            ->badge()
+            ->color('warning')
+            ->state(self::RUNNING_LABEL)
+            ->visible(fn (Import|Item $record): bool => $record->isRegenerating());
+    }
+
     /**
      * @return array<TextEntry>
      */
-    public static function make(): array
+    public static function failures(): array
     {
         return [
-            TextEntry::make('regenerating_at')
-                ->label('Neu generieren')
-                ->badge()
-                ->color('warning')
-                ->state('Wird neu generiert …')
-                ->visible(fn (Import|Item $record): bool => $record->isRegenerating()),
             TextEntry::make('regeneration_failure_message')
                 ->label('Fehler beim Neu generieren')
                 ->color('danger')

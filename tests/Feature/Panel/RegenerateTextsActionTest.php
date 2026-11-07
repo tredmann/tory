@@ -37,6 +37,35 @@ test('the action starts the job on a completed import', function () {
     expect($import->fresh()->isRegenerating())->toBeTrue();
 });
 
+test('right after starting, the page shows the running state and polls', function () {
+    $import = Import::factory()->completed()->create();
+    $item = Item::factory()->create();
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->callAction('regenerate')
+        ->assertSee('Wird neu generiert …')
+        ->assertSeeHtml('wire:poll.5s');
+    Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
+        ->callAction('regenerate')
+        ->assertSee('Wird neu generiert …')
+        ->assertSeeHtml('wire:poll.5s');
+});
+
+test('while regenerating, the import status itself says so', function () {
+    $import = Import::factory()->completed()->create(['regenerating_at' => now()]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertSeeInOrder(['Status', 'Wird neu generiert …', 'Titel'])
+        ->assertDontSee('Fertig');
+});
+
+test('while regenerating, an item shows the state right below its photos', function () {
+    $item = Item::factory()->create(['regenerating_at' => now()]);
+
+    Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
+        ->assertSeeInOrder(['Fotos', 'Wird neu generiert …', 'Titel']);
+});
+
 test('the action is hidden on pending, running and failed imports', function (string $state) {
     $import = Import::factory()->{$state}()->create();
 

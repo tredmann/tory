@@ -34,7 +34,9 @@ class ImportInfolist
                             ->placeholder('—'),
                         TextEntry::make('status')
                             ->label('Status')
-                            ->badge(),
+                            ->badge()
+                            ->state(fn (Import $record): ImportStatus|string => $record->isRegenerating() ? RegenerationEntries::RUNNING_LABEL : $record->status)
+                            ->color(fn (Import $record): ?string => $record->isRegenerating() ? 'warning' : null),
                         TextEntry::make('title')
                             ->label('Titel')
                             ->visible(fn (Import $record): bool => filled($record->title)),
@@ -60,7 +62,7 @@ class ImportInfolist
                             ->state(fn (Import $record, Application $app): ?string => $app->hasDebugModeEnabled()
                                 ? $record->error
                                 : 'Die Analyse ist fehlgeschlagen. Bitte erneut versuchen.'),
-                        ...RegenerationEntries::make(),
+                        ...RegenerationEntries::failures(),
                         TextEntry::make('created_at')
                             ->label('Angelegt')
                             ->dateTime(),
