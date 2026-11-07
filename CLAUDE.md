@@ -18,7 +18,7 @@ Laravel 13 + Filament 5 on FrankenPHP (PHP 8.5) with Postgres 18 and pgvector, d
 
 ## Production and releases
 
-- The `prod` target of `docker/Dockerfile` runs as `www-data`, refuses to start without `APP_KEY`, has no `.env`, logs to stderr and needs `DB_*`, `APP_URL`, optionally `AUTO_MIGRATE=true`, and a volume on `/app/storage` (uid 33). It sets `AUTH_SELF_SERVICE=false` (no registration or password reset). Behind a TLS-terminating proxy set `TRUSTED_PROXIES`, otherwise URLs come out as `http`. The database needs the `vector` extension.
+- The `prod` target of `docker/Dockerfile` runs as `www-data`, refuses to start without `APP_KEY`, has no `.env`, logs to stderr and needs `DB_*`, `APP_URL`, optionally `AUTO_MIGRATE=true`, and a volume on `/app/storage` (uid 33). It sets `AUTH_SELF_SERVICE=false` (no registration or password reset). Behind a TLS-terminating proxy set `TRUSTED_PROXIES`, otherwise URLs come out as `http`. The database needs the `vector` extension. `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` (PEM contents, from `passport:keys`) are required for the MCP server and the image refuses to start without them; dev and `composer setup` generate keys into `storage/` (gitignored).
 - Pushing a tag like `1.0.0` runs `.github/workflows/release.yml`: an arm64-only build on a native arm64 runner (the server is arm64), pushed as `tory:{tag}` and `tory:latest` to `registry.digitalocean.com/$DIGITALOCEAN_REGISTRY`. It does not wait for the tests.
 
 ## Running commands
@@ -56,6 +56,7 @@ docker compose exec db psql -U tory -d tory
 - **Neu generieren:** `RegenerateTexts` with the `RegeneratesTexts` trait on imports and items.
 - **AI providers** ("Eigene KI", specs ai-provider-settings, selectable-embedding-provider): `AiProvider` on `/ai-providers`, one active for object recognition and one for search (may differ); `SearchProviderSwitch`, `ProviderTester`, `ProviderFailure`, `ProviderTransfer`. With no active provider the `.env` fallback `config('ai.inventory.*')` applies; for local Ollama set `INVENTORY_AI_PROVIDER=ollama`, `INVENTORY_AI_MODEL=gemma4:e4b-mlx`, `OLLAMA_URL=http://host.docker.internal:11434`.
 - **REST API** (spec rest-api, `docs/api-handover.md`): `routes/api.php`, controllers, Form Requests and Resources under `Api/V1/`; Sanctum tokens only; OpenAPI by `dedoc/scramble` at `/docs/api`, gated by `Gate viewApiDocs`.
+- **MCP server** (spec mcp-server, "Tory in Claude"): `routes/ai.php` registers `/mcp` (`ToryServer`, tools in `app/Mcp/Tools/`) behind Passport `auth:api` and email verification, plus `Mcp::oauthRoutes()`. `ClaudeConnections` lists and ends connections, `TorySetup` is the panel page (`resources/css/tory-setup.css`, a direct Vite entry in the `HEAD_END` hook). Tools reuse the rules of the panel and API.
 - **Theme:** `users.theme_mode`, written to `localStorage` by `resources/views/filament/theme-mode.blade.php` before Filament reads it, saved through `POST /theme`.
 - **Assets:** Filament's precompiled theme. A `HEAD_END` render hook loads the panel's JS and CSS from `resources/js/` and `resources/css/` with `@vite`; they are plain CSS because uncompiled Tailwind classes do not exist in the panel. `resources/css/app.css` and `resources/js/app.js` are unused entries.
 
@@ -69,10 +70,13 @@ docker compose exec db psql -U tory -d tory
 - **Provider keys** are encrypted with `APP_KEY`, so changing it makes them unreadable (`KeyUnreadable`). Never render, log or assert a key; `ProviderFailure` scrubs it. The export file holds plain keys.
 - **Upload limits** are the same everywhere: 1 to 20 photos (`Import::MAX_PHOTOS`), JPEG/PNG/WebP/GIF, 12 MB each; in the API also 70 MB in total (`ValidatesPhotoUploads`).
 - **Each AI call may cost money:** "Neu generieren" has no bulk variant and no backfill.
+- **MCP connections:** dynamic client registration is open on purpose, so the consent page names the client by registered name and redirect host. Tokens last 100 years; a connection ends only by "Trennen", which revokes that user's access and refresh tokens for that client (`connectedAt` = oldest token).
 
 ## Gotchas
 
 - `routes/web.php` must never define `/`.
+- `User` keeps only Sanctum's `HasApiTokens` and does not implement Passport's `OAuthenticatable` (the traits clash); it defines `oauthApps()` and `oauthTokens()` itself. Never use `$user->tokens()` for Passport tokens. A Passport upgrade that adds a runtime `instanceof OAuthenticatable` check would break MCP auth.
+- `/mcp` is exempt from the guest redirect to the panel login (it must answer 401 with `WWW-Authenticate`); `/oauth/authorize` redirects guests to it. MCP tests get tokens with `issueMcpTokens()` (real OAuth flow); a test with several requests must reset guards, as that helper does, because the app instance persists.
 - `php artisan make:enum` writes to `app/`; move the file to `app/Enums/`.
 - A Select without a relationship needs `->actionSchemaModel(...)` when its create form has a `unique()` field.
 - `gemma4` ignores Ollama's `format` schema and prefixes `json`, so the extractor's instructions ask for a bare JSON object.
