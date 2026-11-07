@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterval;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +36,17 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureTrustedProxies();
         $this->configureApiDocs();
+        $this->configurePassport();
+    }
+
+    /**
+     * Connected Claude access lasts until the user disconnects it; consent is asked on a German page.
+     */
+    protected function configurePassport(): void
+    {
+        Passport::authorizationView('mcp.authorize');
+        Passport::tokensExpireIn(CarbonInterval::years(100));
+        Passport::refreshTokensExpireIn(CarbonInterval::years(100));
     }
 
     /**

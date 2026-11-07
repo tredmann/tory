@@ -8,6 +8,11 @@ if [ "${APP_ENV:-local}" = "production" ] && [ -z "${APP_KEY:-}" ]; then
     exit 1
 fi
 
+if [ "${APP_ENV:-local}" = "production" ] && { [ -z "${PASSPORT_PRIVATE_KEY:-}" ] || [ -z "${PASSPORT_PUBLIC_KEY:-}" ]; }; then
+    echo "[entrypoint] PASSPORT_PRIVATE_KEY or PASSPORT_PUBLIC_KEY is not set; refusing to start" >&2
+    exit 1
+fi
+
 if [ "${APP_ENV:-local}" = "production" ]; then
     # A bind mount on storage/ starts empty and hides the directories from the image.
     mkdir -p storage/app/private storage/app/public storage/logs \
@@ -30,6 +35,11 @@ if [ -f artisan ]; then
     if [ -f .env ] && grep -qE '^APP_KEY=$' .env; then
         echo "[entrypoint] generating APP_KEY"
         php artisan key:generate --force --no-interaction
+    fi
+
+    if [ "${APP_ENV:-local}" != "production" ] && { [ ! -f storage/oauth-private.key ] || [ ! -f storage/oauth-public.key ]; }; then
+        echo "[entrypoint] generating Passport keys"
+        php artisan passport:keys --force --no-interaction
     fi
 
     if [ "${AUTO_MIGRATE:-false}" = "true" ]; then

@@ -47,3 +47,7 @@ _Avoid_: Session, API key (that is a provider's credential)
 **Provider** ("Eigene KI"):
 An AI service configured in the app, with its vendor, model(s) and credentials. It can serve object recognition, search or both. At most one is active for each role, and they may differ.
 _Avoid_: Model, vendor (for the configured service)
+
+**Claude connection** (Claude-Zugang):
+One program (Claude in the browser, the app, Desktop or Code) that a user has allowed to act as them on Tory's MCP server. It lasts until the user ends it with "Trennen".
+_Avoid_: Session, login, API token (that is the mobile app's secret)

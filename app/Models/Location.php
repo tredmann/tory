@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Database\Factories\LocationFactory;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +25,17 @@ class Location extends Model
     protected $fillable = [
         'name',
     ];
+
+    /**
+     * Locations whose name equals the given one, ignoring case and surrounding spaces.
+     *
+     * @param  Builder<Location>  $query
+     */
+    #[Scope]
+    protected function named(Builder $query, string $name): void
+    {
+        $query->whereRaw('lower(name) = lower(?)', [trim($name)]);
+    }
 
     /**
      * @return HasMany<Spot, $this>
