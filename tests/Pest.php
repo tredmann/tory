@@ -81,3 +81,41 @@ function breakLocalDisk(int $writesBeforeFailure = 0, bool $truncatesWrites = fa
 
     Storage::set('local', $disk);
 }
+
+function jpeg(int $width, int $height): string
+{
+    $image = imagecreatetruecolor($width, $height);
+    ob_start();
+    imagejpeg($image);
+    imagedestroy($image);
+
+    return ob_get_clean();
+}
+
+function png(int $width, int $height): string
+{
+    $image = imagecreatetruecolor($width, $height);
+    ob_start();
+    imagepng($image);
+    imagedestroy($image);
+
+    return ob_get_clean();
+}
+
+function gif(int $width, int $height): string
+{
+    $image = imagecreatetruecolor($width, $height);
+    ob_start();
+    imagegif($image);
+    imagedestroy($image);
+
+    return ob_get_clean();
+}
+
+function jpegWithOrientationSix(int $width, int $height): string
+{
+    $jpeg = jpeg($width, $height);
+    $app1 = "\xFF\xE1\x00\x22"."Exif\x00\x00"."MM\x00\x2A\x00\x00\x00\x08"."\x00\x01"."\x01\x12\x00\x03\x00\x00\x00\x01\x00\x06\x00\x00"."\x00\x00\x00\x00";
+
+    return substr($jpeg, 0, 2).$app1.substr($jpeg, 2);
+}
