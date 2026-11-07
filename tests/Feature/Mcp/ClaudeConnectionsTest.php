@@ -75,3 +75,17 @@ it('shows and disconnects only the own connections', function () {
     pingMcp($tokensB['access_token'])->assertOk();
     refreshMcpToken($tokensB['client_id'], $tokensB['refresh_token'])->assertOk();
 });
+
+it('dates a connection from the first token, not from a refresh', function () {
+    $user = User::factory()->create();
+    $tokens = issueMcpTokens($user);
+    $connectedAt = (new ClaudeConnections)->for($user)->first()->connectedAt;
+
+    $this->travel(1)->days();
+    refreshMcpToken($tokens['client_id'], $tokens['refresh_token'])->assertOk();
+
+    $connections = (new ClaudeConnections)->for($user);
+
+    expect($connections)->toHaveCount(1)
+        ->and($connections->first()->connectedAt->equalTo($connectedAt))->toBeTrue();
+});

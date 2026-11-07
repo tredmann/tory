@@ -11,18 +11,20 @@ use Laravel\Passport\Token;
 class ClaudeConnections
 {
     /**
-     * One connection per client with a live access token of the user, newest first.
+     * One connection per client for which the user holds a non-revoked access token, newest first.
+     * The connection date is the user's oldest token for the client, revoked or not, because a
+     * refresh revokes the previous token.
      *
      * @return Collection<int, ClaudeConnection>
      */
     public function for(User $user): Collection
     {
         return $user->oauthTokens()
-            ->where('revoked', false)
             ->with('client')
             ->get()
             ->filter(fn (Token $token): bool => $token->client !== null)
             ->groupBy('client_id')
+            ->filter(fn (Collection $tokens): bool => $tokens->contains('revoked', false))
             ->map(function (Collection $tokens): ClaudeConnection {
                 $first = $tokens->sortBy('created_at')->first();
                 $redirect = $first->client->redirect_uris[0] ?? null;
