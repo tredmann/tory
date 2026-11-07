@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Filament\Enums\ThemeMode;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -23,6 +24,7 @@ use Illuminate\Support\Str;
  * @property string $password
  * @property string|null $remember_token
  * @property int|null $last_spot_id
+ * @property ThemeMode|null $theme_mode
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -43,6 +45,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'theme_mode' => ThemeMode::class,
         ];
     }
 

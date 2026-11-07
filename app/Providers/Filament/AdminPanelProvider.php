@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Controllers\SaveThemeMode;
 use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
 use Filament\Auth\Pages\PasswordReset\ResetPassword;
 use Filament\Auth\Pages\Register;
@@ -16,12 +17,14 @@ use Filament\Support\Colors\Color;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
+use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
@@ -41,6 +44,13 @@ class AdminPanelProvider extends PanelProvider
             ->emailVerification()
             ->profile()
             ->globalSearch(false)
+            ->authenticatedRoutes(function (): void {
+                Route::post('/theme', SaveThemeMode::class)->name('theme');
+            })
+            ->renderHook(
+                PanelsRenderHook::HEAD_START,
+                fn (): View => view('filament.theme-mode'),
+            )
             ->renderHook(
                 PanelsRenderHook::STYLES_AFTER,
                 fn (): HtmlString => new HtmlString('<style>.tory-active-provider { outline: 2px solid var(--success-500); }</style>'),
