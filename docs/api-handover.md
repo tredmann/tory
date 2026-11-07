@@ -107,6 +107,10 @@ Validation keys for array fields are indexed, e.g. `photos.2` or `search_terms.0
     "https://tory.example.com/api/v1/items/0193…/photos/aB3x…jpg",
     "https://tory.example.com/api/v1/items/0193…/photos/Zk9q…png"
   ],
+  "thumbnails": [
+    "https://tory.example.com/api/v1/items/0193…/photos/aB3x…jpg/thumb",
+    "https://tory.example.com/api/v1/items/0193…/photos/Zk9q…png/thumb"
+  ],
   "regenerating": false,
   "created_at": "2026-11-07T09:32:33.000000Z",
   "updated_at": "2026-11-07T10:01:12.000000Z"
@@ -115,6 +119,7 @@ Validation keys for array fields are indexed, e.g. `photos.2` or `search_terms.0
 
 - `description` may be null. `search_terms` is always a list, possibly empty.
 - `photos` is ordered; the **first is the overview photo** (use it for tiles). It may be empty for old items — show a placeholder.
+- `thumbnails` matches `photos` one to one, 400 px WebP; use it for tiles and lists.
 - `regenerating: true` means someone pressed "Neu generieren" in the web panel and new texts are being written. Show the item read-only and offer no edit until it is false again (an edit would answer `409`).
 
 ### Import
@@ -129,6 +134,7 @@ Validation keys for array fields are indexed, e.g. `photos.2` or `search_terms.0
   "search_terms": ["Bohrmaschine", "Werkzeug"],
   "spot": { "code": "K7XM", … },
   "photos": ["https://…/api/v1/imports/0193…/photos/aB3x…jpg"],
+  "thumbnails": ["https://…/api/v1/imports/0193…/photos/aB3x…jpg/thumb"],
   "failure_message": null,
   "error": null,
   "regenerating": false,
@@ -323,6 +329,10 @@ The URLs come ready-made in the `photos` arrays — never build them yourself. E
 - The URL of a photo stays the same as long as the photo belongs to that record, even when the order changes, so the URL is a good cache key. Cache to disk.
 - After convert, an import's photo URLs answer `404`; the item has new URLs for the same files. After deleting a record, all its URLs answer `404`.
 - A `401` here means the token is gone: go to login, as with any other call.
+
+#### `GET /imports/{id}/photos/{file}/thumb` and `GET /items/{id}/photos/{file}/thumb`
+
+The URLs come ready-made in the `thumbnails` arrays. Same rules as above; the body is a 400 px WebP. If a thumbnail cannot be made, the original is returned instead, with the original's content type (not WebP).
 
 ## 5. Flows
 

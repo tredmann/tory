@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Imports\Schemas;
 
 use App\Filament\Resources\Spots\Schemas\SpotSelect;
 use App\Models\Import;
+use App\Photos\PhotoStore;
 use Filament\Forms\Components\FileUpload;
 use Filament\Schemas\Schema;
 
@@ -18,7 +19,7 @@ class ImportForm
                 FileUpload::make('photos')
                     ->label('Fotos')
                     ->disk('local')
-                    ->directory('imports')
+                    ->directory(fn (): string => PhotoStore::directory())
                     ->visibility('private')
                     ->image()
                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])

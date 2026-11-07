@@ -10,6 +10,7 @@ use App\Models\Item;
 use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
+use App\Photos\PhotoLinks;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
@@ -202,13 +203,12 @@ test('a location can be created inside the spot picker on the edit page', functi
 
 test('the edit page shows the photos field with the first photo as overview', function () {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
-    $url = parse_url(Storage::disk('local')->temporaryUrl('imports/a.jpg', now()->addMinutes(5)), PHP_URL_PATH);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
         ->assertFormFieldVisible('photo_edits')
         ->assertFormSet(['photo_edits.overview' => 'imports/a.jpg'])
         ->assertSee('Fotos')
-        ->assertSeeHtml($url);
+        ->assertSeeHtml(PhotoLinks::thumbnail('imports/a.jpg'));
 });
 
 test('the photos field renders real buttons and the add tile', function () {
@@ -362,7 +362,7 @@ test('saving twice stores an added photo once', function () {
         ->assertHasNoFormErrors();
 
     expect($item->fresh()->photos)->toHaveCount(2)
-        ->and(Storage::disk('local')->allFiles('imports'))->toHaveCount(1);
+        ->and(Storage::disk('local')->allFiles('photos'))->toHaveCount(1);
 });
 
 test('a file of the wrong type is rejected', function () {

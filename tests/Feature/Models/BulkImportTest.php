@@ -6,6 +6,7 @@ use App\Jobs\GroupBulkImport;
 use App\Models\BulkImport;
 use App\Models\Spot;
 use App\Models\User;
+use App\Photos\PhotoStore;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
@@ -35,7 +36,7 @@ test('start stores the photos, sorts them and sets time cuts', function () {
         ->and($bulk->groupList())->toBe([]);
 
     foreach ($bulk->allPaths() as $path) {
-        expect($path)->toStartWith('imports/');
+        expect($path)->toMatch('#^photos/\d{4}/\d{2}/[^/]+$#');
         Storage::disk('local')->assertExists($path);
     }
 });
@@ -93,4 +94,19 @@ test('deleting a stale instance whose row was already confirmed keeps the files'
     $stale->delete();
 
     Storage::disk('local')->assertExists($path);
+});
+
+test('deleting a bulk import deletes the thumbnails with the photos', function () {
+    Storage::fake('local');
+    $bulk = BulkImport::factory()->grouping()->create();
+    $paths = $bulk->allPaths();
+    foreach ($paths as $path) {
+        Storage::disk('local')->put(PhotoStore::thumbnailPath($path), 'thumb');
+    }
+
+    $bulk->delete();
+
+    foreach ($paths as $path) {
+        Storage::disk('local')->assertMissing(PhotoStore::thumbnailPath($path));
+    }
 });

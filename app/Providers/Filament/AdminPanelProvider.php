@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SaveThemeMode;
 use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
 use Filament\Auth\Pages\PasswordReset\ResetPassword;
@@ -41,8 +42,18 @@ class AdminPanelProvider extends PanelProvider
             ->emailVerification()
             ->profile()
             ->globalSearch(false)
-            ->authenticatedRoutes(function (): void {
-                Route::post('/theme', SaveThemeMode::class)->name('theme');
+            ->authenticatedRoutes(function (Panel $panel): void {
+                Route::post('/theme', SaveThemeMode::class)
+                    ->middleware($panel->getEmailVerifiedMiddleware())
+                    ->name('theme');
+                Route::get('/photos/thumb/{path}', [PhotoController::class, 'thumbnail'])
+                    ->where('path', '.+')
+                    ->middleware($panel->getEmailVerifiedMiddleware())
+                    ->name('photos.thumbnail');
+                Route::get('/photos/{path}', [PhotoController::class, 'original'])
+                    ->where('path', '(?!thumb/).+')
+                    ->middleware($panel->getEmailVerifiedMiddleware())
+                    ->name('photos.original');
             })
             ->renderHook(
                 PanelsRenderHook::HEAD_START,

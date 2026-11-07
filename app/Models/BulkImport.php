@@ -14,6 +14,7 @@ use App\Enums\ImportStatus;
 use App\Enums\ProviderFailureReason;
 use App\Jobs\ExtractImport;
 use App\Jobs\GroupBulkImport;
+use App\Photos\PhotoStore;
 use Closure;
 use Database\Factories\BulkImportFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -67,7 +68,7 @@ class BulkImport extends Model
         static::deleted(function (BulkImport $bulkImport): void {
             // A confirm in another tab may have removed the row and handed the files to imports.
             if ($bulkImport->rowWasDeleted) {
-                Storage::disk('local')->delete($bulkImport->allPaths());
+                PhotoStore::delete($bulkImport->allPaths());
             }
         });
     }
@@ -118,7 +119,7 @@ class BulkImport extends Model
 
             try {
                 foreach ($photos as $photo) {
-                    $path = $photo->file->store('imports', 'local');
+                    $path = PhotoStore::store($photo->file);
 
                     if ($path === false) {
                         throw new RuntimeException('Photo could not be stored.');
@@ -153,7 +154,7 @@ class BulkImport extends Model
                     'discarded' => [],
                 ]);
             } catch (Throwable $e) {
-                Storage::disk('local')->delete($stored);
+                PhotoStore::delete($stored);
 
                 throw $e;
             }
@@ -446,7 +447,7 @@ class BulkImport extends Model
                 }
 
                 try {
-                    if (! Storage::disk('local')->delete($discarded)) {
+                    if (! PhotoStore::delete($discarded)) {
                         report(new RuntimeException('Photo files could not be deleted: '.implode(', ', $discarded)));
                     }
                 } catch (Throwable $e) {

@@ -7,6 +7,7 @@ use App\Enums\ImportStatus;
 use App\Jobs\ExtractImport;
 use App\Models\BulkImport;
 use App\Models\Import;
+use App\Photos\PhotoStore;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -298,4 +299,19 @@ test('a second confirm answers not found and creates nothing', function () {
 
     expect(fn () => $second->confirm())->toThrow(ModelNotFoundException::class)
         ->and(Import::count())->toBe(2);
+});
+
+test('confirm deletes the thumbnails of discarded photos and keeps the others', function () {
+    $bulk = reviewBulk([3]);
+    $photos = $bulk->groupList()[0]->photos;
+    foreach ($photos as $photo) {
+        Storage::disk('local')->put(PhotoStore::thumbnailPath($photo), 'thumb');
+    }
+    $bulk->setDiscarded($photos[1], true);
+
+    $bulk->fresh()->confirm();
+
+    Storage::disk('local')->assertMissing(PhotoStore::thumbnailPath($photos[1]));
+    Storage::disk('local')->assertExists(PhotoStore::thumbnailPath($photos[0]));
+    Storage::disk('local')->assertExists(PhotoStore::thumbnailPath($photos[2]));
 });

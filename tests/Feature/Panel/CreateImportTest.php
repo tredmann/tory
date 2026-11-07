@@ -94,7 +94,7 @@ test('a valid upload stores the photos, creates a pending import, dispatches the
         ->and($import->title)->toBeNull();
 
     foreach ($import->photos as $path) {
-        expect($path)->toStartWith('imports/');
+        expect($path)->toMatch('#^photos/\d{4}/\d{2}/[^/]+$#');
         Storage::disk('local')->assertExists($path);
     }
 
@@ -109,6 +109,26 @@ test('the old synchronous page is gone', function () {
 test('rejects photo paths outside the imports directory', function () {
     Livewire::test(CreateImport::class)
         ->fillForm(['photos' => ['livewire-tmp/secret.jpg'], 'spot_id' => Spot::factory()->create()->id])
+        ->call('create')
+        ->assertHasFormErrors(['photos']);
+
+    expect(Import::count())->toBe(0);
+    Queue::assertNothingPushed();
+});
+
+test('rejects photo paths with backslashes', function () {
+    Livewire::test(CreateImport::class)
+        ->fillForm(['photos' => ['imports/..\\livewire-tmp\\secret.jpg'], 'spot_id' => Spot::factory()->create()->id])
+        ->call('create')
+        ->assertHasFormErrors(['photos']);
+
+    expect(Import::count())->toBe(0);
+    Queue::assertNothingPushed();
+});
+
+test('rejects the path of an existing import photo', function () {
+    Livewire::test(CreateImport::class)
+        ->fillForm(['photos' => ['imports/other.jpg'], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 

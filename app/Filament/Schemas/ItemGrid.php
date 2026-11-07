@@ -5,6 +5,7 @@ namespace App\Filament\Schemas;
 use App\Filament\Resources\Items\ItemResource;
 use App\Filament\Resources\Spots\SpotResource;
 use App\Models\Item;
+use App\Photos\PhotoLinks;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\Column;
@@ -31,13 +32,12 @@ class ItemGrid
             ->columns([
                 Stack::make([
                     ImageColumn::make('photos')
-                        ->disk('local')
-                        ->visibility('private')
+                        ->state(fn (Item $record): array => PhotoLinks::thumbnails($record->photos ?? []))
                         ->imageWidth('100%')
                         ->imageHeight('auto')
                         ->limit(1)
                         ->placeholder('Kein Foto')
-                        ->extraImgAttributes(fn (ImageColumn $column, Item $record, string $state): array => PhotoSlideshow::imgAttributes($column, $record->photos, $state)),
+                        ->extraImgAttributes(fn (Item $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),
                     TextColumn::make('title')
                         ->weight(FontWeight::Medium)
                         ->lineClamp(1),

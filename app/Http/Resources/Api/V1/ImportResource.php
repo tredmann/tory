@@ -26,6 +26,7 @@ class ImportResource extends JsonResource
             'search_terms' => $this->search_terms ?? [],
             'spot' => $this->spot_id === null ? null : new SpotResource($this->spot),
             'photos' => PhotoUrls::for('api.v1.imports.photos.show', $this->resource),
+            'thumbnails' => PhotoUrls::for('api.v1.imports.photos.thumbnail', $this->resource),
             'failure_message' => $this->failureMessage()
                 ?? ($this->status === ImportStatus::Failed ? 'Die Analyse ist fehlgeschlagen. Bitte erneut versuchen.' : null),
             'error' => config('app.debug') ? $this->error : null,

@@ -3,10 +3,10 @@
 namespace App\Filament\Forms\Components;
 
 use App\Models\Item;
+use App\Photos\PhotoLinks;
 use Closure;
 use Filament\Forms\Components\Field;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -67,7 +67,7 @@ class ItemPhotos extends Field
     }
 
     /**
-     * The photos stored on the item, with links that stay the same within the hour.
+     * The photos stored on the item, with links to their thumbnails.
      *
      * @return list<array{path: string, url: string}>
      */
@@ -78,7 +78,7 @@ class ItemPhotos extends Field
 
         return array_map(fn (string $path): array => [
             'path' => $path,
-            'url' => Storage::disk('local')->temporaryUrl($path, now()->addMinutes(30)->endOfHour()),
+            'url' => PhotoLinks::thumbnail($path),
         ], array_values($photos));
     }
 }

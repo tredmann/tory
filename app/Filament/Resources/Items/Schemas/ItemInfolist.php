@@ -6,6 +6,7 @@ use App\Filament\Resources\Spots\SpotResource;
 use App\Filament\Schemas\PhotoSlideshow;
 use App\Filament\Schemas\RegenerationEntries;
 use App\Models\Item;
+use App\Photos\PhotoLinks;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -22,11 +23,10 @@ class ItemInfolist
                     ->schema([
                         ImageEntry::make('photos')
                             ->label('Fotos')
-                            ->disk('local')
-                            ->visibility('private')
+                            ->state(fn (Item $record): array => PhotoLinks::thumbnails($record->photos ?? []))
                             ->imageHeight(160)
                             ->wrap()
-                            ->extraImgAttributes(fn (ImageEntry $entry, Item $record, string $state): array => PhotoSlideshow::imgAttributes($entry, $record->photos, $state)),
+                            ->extraImgAttributes(fn (Item $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),
                         RegenerationEntries::running(),
                         TextEntry::make('title')
                             ->label('Titel'),

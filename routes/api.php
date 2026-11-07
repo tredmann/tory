@@ -29,6 +29,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::patch('items/{item}', [ItemController::class, 'update'])->name('items.update');
 
         Route::get('imports/{import}/photos/{photo}', [PhotoController::class, 'import'])->name('imports.photos.show');
+        Route::get('imports/{import}/photos/{photo}/thumb', [PhotoController::class, 'importThumbnail'])->name('imports.photos.thumbnail');
         Route::get('items/{item}/photos/{photo}', [PhotoController::class, 'item'])->name('items.photos.show');
+        Route::get('items/{item}/photos/{photo}/thumb', [PhotoController::class, 'itemThumbnail'])->name('items.photos.thumbnail');
     });
 });

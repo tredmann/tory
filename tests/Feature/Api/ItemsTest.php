@@ -215,7 +215,7 @@ it('creates an item with photos and texts without extraction', function () {
         ->and(Import::count())->toBe(0);
     foreach ($item->photos as $path) {
         Storage::disk('local')->assertExists($path);
-        expect($path)->toStartWith('imports/');
+        expect($path)->toMatch('#^photos/\d{4}/\d{2}/[^/]+$#');
     }
     expect(Storage::disk('local')->get($item->photos[0]))->toBe($front->getContent())
         ->and(Storage::disk('local')->get($item->photos[1]))->toBe($back->getContent());
@@ -283,4 +283,14 @@ it('requires a token to create an item', function () {
     ])->assertUnauthorized();
 
     expect(Item::count())->toBe(0);
+});
+
+it('lists thumbnail urls in photo order', function () {
+    $item = Item::factory()->create(['photos' => ['imports/b.jpg', 'photos/2026/11/a.png']]);
+
+    $urls = $this->getJson("/api/v1/items/{$item->id}")->assertOk()->json('data.thumbnails');
+
+    expect($urls)->toHaveCount(2)
+        ->and($urls[0])->toEndWith('/photos/b.jpg/thumb')
+        ->and($urls[1])->toEndWith('/photos/a.png/thumb');
 });

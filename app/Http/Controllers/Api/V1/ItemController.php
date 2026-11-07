@@ -9,12 +9,12 @@ use App\Http\Requests\Api\V1\UpdateItemRequest;
 use App\Http\Resources\Api\V1\ItemResource;
 use App\Models\Item;
 use App\Models\Spot;
+use App\Photos\PhotoStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
@@ -70,7 +70,7 @@ class ItemController extends Controller
         try {
             /** @var UploadedFile $file */
             foreach ($request->file('photos') as $file) {
-                $path = $file->store('imports', 'local');
+                $path = PhotoStore::store($file);
 
                 if ($path === false) {
                     throw new RuntimeException('Photo could not be stored.');
@@ -87,7 +87,7 @@ class ItemController extends Controller
                 'photos' => $paths,
             ]);
         } catch (Throwable $e) {
-            Storage::disk('local')->delete($paths);
+            PhotoStore::delete($paths);
 
             throw $e;
         }
