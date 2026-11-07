@@ -213,3 +213,22 @@ test('the panel loads the slideshow script', function () {
 
     unlink($hotFile);
 });
+
+test('a view page checks each photo file only once', function () {
+    $photos = ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg'];
+    storePhotos($photos);
+    $record = Item::factory()->create(['photos' => $photos])->getKey();
+
+    $checks = 0;
+    $disk = Mockery::mock(Storage::disk('local'))->makePartial();
+    $disk->shouldReceive('exists')->andReturnUsing(function (string $path) use (&$checks): bool {
+        $checks++;
+
+        return true;
+    });
+    Storage::set('local', $disk);
+
+    Livewire::test(ViewItem::class, ['record' => $record]);
+
+    expect($checks)->toBeLessThanOrEqual(count($photos));
+});

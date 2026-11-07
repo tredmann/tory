@@ -6,16 +6,18 @@ use App\Photos\PhotoResponder;
 use App\Photos\PhotoStore;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class PhotoController
+class PhotoController extends Controller
 {
-    public function original(string $path, PhotoResponder $responder): StreamedResponse
+    public function __construct(private PhotoResponder $photos) {}
+
+    public function original(string $path): StreamedResponse
     {
-        return $responder->original($this->storagePath($path));
+        return $this->photos->original($this->storagePath($path));
     }
 
-    public function thumbnail(string $path, PhotoResponder $responder): StreamedResponse
+    public function thumbnail(string $path): StreamedResponse
     {
-        return $responder->thumbnail($this->storagePath($path));
+        return $this->photos->thumbnail($this->storagePath($path));
     }
 
     private function storagePath(string $path): string

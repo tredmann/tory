@@ -15,16 +15,16 @@ class PhotoSlideshow
      */
     public static function imgAttributes(array $paths, string $clickedUrl): array
     {
-        $existing = PhotoLinks::existing($paths);
+        $links = PhotoLinks::forRecord($paths);
 
-        $clickedIndex = array_search($clickedUrl, array_map(PhotoLinks::thumbnail(...), $existing), strict: true);
+        $clickedIndex = array_search($clickedUrl, $links['thumbnails'], strict: true);
 
         if ($clickedIndex === false) {
             return [];
         }
 
         return [
-            'data-slideshow' => e(json_encode(array_map(PhotoLinks::original(...), $existing), JSON_THROW_ON_ERROR)),
+            'data-slideshow' => e(json_encode($links['originals'], JSON_THROW_ON_ERROR)),
             'data-slideshow-index' => $clickedIndex,
         ];
     }

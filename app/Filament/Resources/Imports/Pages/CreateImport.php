@@ -28,7 +28,7 @@ class CreateImport extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         foreach ($data['photos'] ?? [] as $path) {
-            if (! is_string($path) || PhotoStore::storagePath(PhotoStore::routePath($path)) !== $path) {
+            if (! is_string($path) || ! PhotoStore::isUploadPath($path)) {
                 throw ValidationException::withMessages(['data.photos' => 'Ungültiger Foto-Pfad.']);
             }
         }

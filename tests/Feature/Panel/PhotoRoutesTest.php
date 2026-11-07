@@ -33,7 +33,7 @@ it('serves a webp thumbnail', function () {
 
     $response->assertOk()->assertHeader('Content-Type', 'image/webp');
     expect($response->headers->hasCacheControlDirective('immutable'))->toBeTrue();
-    Storage::disk('local')->assertExists('thumbs/photos/2026/11/a.webp');
+    Storage::disk('local')->assertExists('thumbs/photos/2026/11/a.jpg.webp');
 });
 
 it('falls back to the original without caching', function () {
@@ -60,7 +60,7 @@ it('answers 404 outside the photo folders', function (string $url) {
     'encoded traversal' => '/photos/imports/%2e%2e/evals/x.json',
     'nested in imports' => '/photos/imports/sub/x.jpg',
     'bad month' => '/photos/2026/1/a.jpg',
-    'thumbs folder' => '/photos/thumb/thumbs/imports/a.webp',
+    'thumbs folder' => '/photos/thumb/thumbs/imports/a.jpg.webp',
     'missing original' => '/photos/imports/missing.jpg',
     'missing thumbnail source' => '/photos/thumb/imports/missing.jpg',
     'backslash traversal' => '/photos/imports/..%5Cevals%5Cx.json',

@@ -3,7 +3,6 @@
 namespace App\Photos;
 
 use GdImage;
-use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -18,8 +17,6 @@ final class Thumbnails
 
     private const SIZE = 400;
 
-    public function __construct(private int $waitSeconds = 5) {}
-
     /**
      * The storage path of the thumbnail, created when missing; null when it cannot be made.
      */
@@ -30,17 +27,15 @@ final class Thumbnails
             return $thumbnail;
         }
 
-        try {
-            return Cache::lock(self::LOCK, 60)->block($this->waitSeconds, function () use ($path, $thumbnail): ?string {
-                if ($this->exists($thumbnail)) {
-                    return $thumbnail;
-                }
+        $made = Cache::lock(self::LOCK, 60)->get(function () use ($path, $thumbnail): ?string {
+            if ($this->exists($thumbnail)) {
+                return $thumbnail;
+            }
 
-                return $this->generate($path, $thumbnail) ? $thumbnail : null;
-            });
-        } catch (LockTimeoutException) {
-            return null;
-        }
+            return $this->generate($path, $thumbnail) ? $thumbnail : null;
+        });
+
+        return $made === false ? null : $made;
     }
 
     private function exists(string $thumbnail): bool
@@ -53,12 +48,13 @@ final class Thumbnails
         $disk = Storage::disk('local');
 
         try {
-            $contents = $disk->get($path);
-            $dimensions = $contents === null ? false : @getimagesizefromstring($contents);
+            $dimensions = @getimagesize($disk->path($path));
 
             if ($dimensions === false || $dimensions[0] * $dimensions[1] > self::MAX_PIXELS) {
                 throw new RuntimeException("Photo {$path} is unreadable or too large to thumbnail.");
             }
+
+            $contents = $disk->get($path);
 
             $image = @imagecreatefromstring($contents);
 
@@ -67,7 +63,7 @@ final class Thumbnails
             }
 
             imagepalettetotruecolor($image);
-            $image = $this->orient($this->scale($image), $disk->path($path), $contents);
+            $image = $this->orient($this->scale($image), $contents);
 
             imagealphablending($image, false);
             imagesavealpha($image, true);
@@ -116,13 +112,13 @@ final class Thumbnails
         return $scaled;
     }
 
-    private function orient(GdImage $image, string $file, string $contents): GdImage
+    private function orient(GdImage $image, string $contents): GdImage
     {
         if (! str_starts_with($contents, "\xFF\xD8")) {
             return $image;
         }
 
-        $exif = @exif_read_data($file);
+        $exif = @exif_read_data('data://image/jpeg;base64,'.base64_encode($contents));
         $orientation = is_array($exif) ? (int) ($exif['Orientation'] ?? 1) : 1;
 
         if (in_array($orientation, [2, 5, 7], true)) {

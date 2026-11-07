@@ -85,7 +85,7 @@ it('streams an item thumbnail as webp', function () {
     $this->get("/api/v1/items/{$item->id}/photos/abc.jpg/thumb")
         ->assertOk()
         ->assertHeader('Content-Type', 'image/webp');
-    Storage::disk('local')->assertExists('thumbs/photos/2026/11/abc.webp');
+    Storage::disk('local')->assertExists('thumbs/photos/2026/11/abc.jpg.webp');
 });
 
 it('streams an import thumbnail as webp', function () {

@@ -21,7 +21,7 @@ final class PhotoStore
 
     public static function thumbnailPath(string $path): string
     {
-        return 'thumbs/'.pathinfo($path, PATHINFO_DIRNAME).'/'.pathinfo($path, PATHINFO_FILENAME).'.webp';
+        return 'thumbs/'.pathinfo($path, PATHINFO_DIRNAME).'/'.basename($path).'.webp';
     }
 
     /**
@@ -38,6 +38,12 @@ final class PhotoStore
         }
 
         return Storage::disk('local')->delete($files);
+    }
+
+    public static function isUploadPath(string $path): bool
+    {
+        return (bool) preg_match('#^photos/\d{4}/\d{2}/[^/\\\\\p{C}]+$#uD', $path)
+            && ! in_array(basename($path), ['.', '..'], true);
     }
 
     public static function routePath(string $path): string

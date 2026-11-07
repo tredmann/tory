@@ -44,7 +44,7 @@ New photos should also stop piling up in one flat folder: they go into year and 
 ### Storage layout
 
 - New originals: `photos/YYYY/MM/<random>.<ext>` on the `local` disk, where `YYYY/MM` is the upload date. File names stay Laravel's random hash names, so a file name is unique across all folders (the API relies on that).
-- Thumbnails: `thumbs/<original path without extension>.webp`, e.g. `thumbs/photos/2026/11/abc.webp`, `thumbs/imports/abc.webp`. A thumbnail belongs to its original's path, so hand-over needs no change.
+- Thumbnails: `thumbs/<original path>.webp`, the original's extension kept so `a.jpg` and `a.png` never share one, e.g. `thumbs/photos/2026/11/abc.jpg.webp`, `thumbs/imports/abc.png.webp`. A thumbnail belongs to its original's path, so hand-over needs no change.
 - One small class owns the layout (working name `App\Photos\PhotoStore`, builder's call): the directory for new photos, the thumbnail path for an original, creating a thumbnail, and deleting originals together with their thumbnails. Every writer and deleter listed above goes through it instead of naming `imports` or calling `Storage::delete()` on photo paths itself.
 
 ### Panel route
@@ -63,7 +63,7 @@ New photos should also stop piling up in one flat folder: they go into year and 
 - 400 px on the longest edge, never upscaled, WebP. GIFs use their first frame.
 - EXIF orientation is applied before scaling (API uploads are not resized by the browser and may carry a rotation flag). The `exif` extension is present in the image.
 - Written to a temporary name and renamed into place, so two parallel first requests cannot serve a half-written file.
-- Only one thumbnail is generated at a time across the server (a Laravel cache lock; the other requests wait for it and then check again whether the file now exists). The user accepted that the first visit of a list with many photos without thumbnails is slower in exchange for bounded memory: each generation decodes a full original, about 16 MB in GD for a browser-resized 2048 px photo and 200 MB or more for a large API upload.
+- Only one thumbnail is generated at a time across the server (a Laravel cache lock; requests that find the lock busy do not wait: they get the original right away (`private, no-cache`) and the thumbnail is made on a later request). The user accepted that the first visits of a list with many photos without thumbnails show originals for the photos still missing a thumbnail, in exchange for bounded memory and no request holding a thread while it waits: each generation decodes a full original, about 16 MB in GD for a browser-resized 2048 px photo and 200 MB or more for a large API upload.
 - GD with the 512 MB memory limit handles the 12 MB upload limit; the builder confirms this with a large test image.
 - If generating fails (corrupt file, unsupported data), the route serves the original with `Cache-Control: private, no-cache` and reports the exception. Nothing is stored, so the next request tries again; a fixed cause takes effect without clearing caches. (Writer's call: corrupt photos are rare, so retrying costs little.)
 

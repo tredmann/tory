@@ -87,7 +87,6 @@ function jpeg(int $width, int $height): string
     $image = imagecreatetruecolor($width, $height);
     ob_start();
     imagejpeg($image);
-    imagedestroy($image);
 
     return ob_get_clean();
 }
@@ -97,7 +96,6 @@ function png(int $width, int $height): string
     $image = imagecreatetruecolor($width, $height);
     ob_start();
     imagepng($image);
-    imagedestroy($image);
 
     return ob_get_clean();
 }
@@ -107,7 +105,6 @@ function gif(int $width, int $height): string
     $image = imagecreatetruecolor($width, $height);
     ob_start();
     imagegif($image);
-    imagedestroy($image);
 
     return ob_get_clean();
 }

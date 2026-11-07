@@ -8,8 +8,12 @@ it('stores into the month folder', function () {
 });
 
 it('names the thumbnail after the original', function () {
-    expect(PhotoStore::thumbnailPath('photos/2026/11/abc.jpg'))->toBe('thumbs/photos/2026/11/abc.webp')
-        ->and(PhotoStore::thumbnailPath('imports/abc.png'))->toBe('thumbs/imports/abc.webp');
+    expect(PhotoStore::thumbnailPath('photos/2026/11/abc.jpg'))->toBe('thumbs/photos/2026/11/abc.jpg.webp')
+        ->and(PhotoStore::thumbnailPath('imports/abc.png'))->toBe('thumbs/imports/abc.png.webp');
+});
+
+it('keeps the original extension so two files of one name stay apart', function () {
+    expect(PhotoStore::thumbnailPath('imports/a.jpg'))->not->toBe(PhotoStore::thumbnailPath('imports/a.png'));
 });
 
 it('maps storage paths to route paths and back', function (string $storage, string $route) {
