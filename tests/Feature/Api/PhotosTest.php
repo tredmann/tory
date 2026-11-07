@@ -62,3 +62,17 @@ it('lists photo urls in photo order', function () {
         route('api.v1.items.photos.show', [$item, 'a.png']),
     ]);
 });
+
+it('answers 401 to an image request without a token', function () {
+    $item = Item::factory()->create(['photos' => ['imports/abc.jpg']]);
+
+    $this->get("/api/v1/items/{$item->id}/photos/abc.jpg", ['Accept' => 'image/*'])
+        ->assertUnauthorized();
+});
+
+it('answers 404 when the file is missing on disk', function () {
+    Sanctum::actingAs(User::factory()->create());
+    $item = Item::factory()->create(['photos' => ['imports/gone.jpg']]);
+
+    $this->get("/api/v1/items/{$item->id}/photos/gone.jpg")->assertNotFound();
+});

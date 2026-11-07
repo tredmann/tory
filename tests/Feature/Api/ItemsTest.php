@@ -153,3 +153,34 @@ it('deletes an item with its photos', function () {
     expect(Item::find($item->id))->toBeNull();
     Storage::disk('local')->assertMissing('imports/abc.jpg');
 });
+
+it('answers 405 to PUT on an item', function () {
+    $item = Item::factory()->create();
+
+    $this->putJson("/api/v1/items/{$item->id}", ['title' => 'Neu'])->assertStatus(405);
+});
+
+it('treats an empty spot or location as no filter', function (string $query) {
+    Item::factory()->count(2)->create();
+
+    $this->getJson("/api/v1/items?{$query}")->assertOk()->assertJsonCount(2, 'data');
+})->with(['spot=', 'location=', 'search=']);
+
+it('does not fail on array filters', function (string $query, int $count) {
+    Item::factory()->count(2)->create();
+
+    $this->getJson("/api/v1/items?{$query}")->assertOk()->assertJsonCount($count, 'data');
+})->with([
+    'spot' => ['spot[]=x', 0],
+    'location' => ['location[]=x', 0],
+    'search' => ['search[]=x', 2],
+]);
+
+it('orders items created at the same moment by id descending', function () {
+    $at = now();
+    $first = Item::factory()->create(['created_at' => $at]);
+    $second = Item::factory()->create(['created_at' => $at]);
+    $expected = collect([$first, $second])->sortByDesc('id')->pluck('id')->all();
+
+    expect(collect($this->getJson('/api/v1/items')->json('data'))->pluck('id')->all())->toBe($expected);
+});

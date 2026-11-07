@@ -93,5 +93,19 @@ it('requests without a token are unauthorized', function () {
 it('an unverified user with a token is forbidden', function () {
     Sanctum::actingAs(User::factory()->unverified()->create());
 
-    $this->getJson('/api/v1/user')->assertForbidden();
+    $this->getJson('/api/v1/user')
+        ->assertForbidden()
+        ->assertJson(['message' => 'Bitte bestätige zuerst deine E-Mail-Adresse.']);
+});
+
+it('answers 401 as JSON without an Accept header', function () {
+    $this->get('/api/v1/user')->assertUnauthorized();
+});
+
+it('answers 403 as JSON to an unverified token holder without an Accept header', function () {
+    Sanctum::actingAs(User::factory()->unverified()->create());
+
+    $this->get('/api/v1/user')
+        ->assertForbidden()
+        ->assertJson(['message' => 'Bitte bestätige zuerst deine E-Mail-Adresse.']);
 });

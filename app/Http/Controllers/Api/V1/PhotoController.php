@@ -24,7 +24,7 @@ class PhotoController extends Controller
     private function stream(Model $record, string $photo): StreamedResponse
     {
         foreach ($record->photos ?? [] as $path) {
-            if (basename($path) === $photo) {
+            if (basename($path) === $photo && Storage::disk('local')->exists($path)) {
                 return Storage::disk('local')->response($path);
             }
         }

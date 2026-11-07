@@ -19,7 +19,7 @@ class ItemController extends Controller
     {
         $query = Item::query()->with('spot.location');
 
-        if ($request->query->has('location')) {
+        if ($request->filled('location') || is_array($request->query('location'))) {
             $location = $request->query('location');
 
             if (is_string($location) && Str::isUuid($location)) {
@@ -29,8 +29,9 @@ class ItemController extends Controller
             }
         }
 
-        if ($request->query->has('spot')) {
-            $code = Spot::normalizeCode((string) $request->query('spot'));
+        if ($request->filled('spot') || is_array($request->query('spot'))) {
+            $spotQuery = $request->query('spot');
+            $code = is_string($spotQuery) ? Spot::normalizeCode($spotQuery) : null;
 
             if ($code === null) {
                 $query->whereRaw('false');
@@ -39,9 +40,10 @@ class ItemController extends Controller
             }
         }
 
-        $search->apply($query, (string) $request->query('search', ''));
+        $term = $request->query('search', '');
+        $search->apply($query, is_string($term) ? $term : '');
 
-        return ItemResource::collection($query->latest()->paginate(24)->withQueryString());
+        return ItemResource::collection($query->latest()->latest('id')->paginate(24)->withQueryString());
     }
 
     public function show(Item $item): ItemResource
