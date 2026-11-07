@@ -63,7 +63,7 @@ final class Thumbnails
             }
 
             imagepalettetotruecolor($image);
-            $image = $this->orient($this->scale($image), $contents);
+            $image = $this->orient($this->scale($image), $disk->path($path), $contents);
 
             imagealphablending($image, false);
             imagesavealpha($image, true);
@@ -112,13 +112,13 @@ final class Thumbnails
         return $scaled;
     }
 
-    private function orient(GdImage $image, string $contents): GdImage
+    private function orient(GdImage $image, string $file, string $contents): GdImage
     {
         if (! str_starts_with($contents, "\xFF\xD8")) {
             return $image;
         }
 
-        $exif = @exif_read_data('data://image/jpeg;base64,'.base64_encode($contents));
+        $exif = @exif_read_data($file);
         $orientation = is_array($exif) ? (int) ($exif['Orientation'] ?? 1) : 1;
 
         if (in_array($orientation, [2, 5, 7], true)) {
