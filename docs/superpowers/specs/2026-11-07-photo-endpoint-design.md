@@ -1,6 +1,6 @@
 # Photo endpoint and thumbnails — design
 
-Date: 2026-11-07. Status: draft. Ticket: TOR-13. Vocabulary: `CONTEXT.md`.
+Date: 2026-11-07. Status: approved. Ticket: TOR-13. Vocabulary: `CONTEXT.md`.
 
 ## Intent
 
