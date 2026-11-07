@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ImportStatus;
 use App\Enums\ProviderFailureReason;
+use App\Jobs\ExtractImport;
 use App\Models\Concerns\RegeneratesTexts;
 use Database\Factories\ImportFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -67,6 +68,29 @@ class Import extends Model
     public function failureMessage(): ?string
     {
         return $this->failure_reason?->message($this->failure_provider ?? 'Der KI-Provider');
+    }
+
+    public function isFinished(): bool
+    {
+        return in_array($this->status, [ImportStatus::Completed, ImportStatus::Failed], true);
+    }
+
+    /**
+     * Clears the result and the failure of a finished import and extracts it again.
+     */
+    public function restart(): void
+    {
+        $this->update([
+            'status' => ImportStatus::Pending,
+            'error' => null,
+            'failure_reason' => null,
+            'failure_provider' => null,
+            'title' => null,
+            'description' => null,
+            'search_terms' => [],
+        ]);
+
+        ExtractImport::dispatch($this);
     }
 
     /**

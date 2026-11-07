@@ -9,7 +9,6 @@ use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
 use App\Filament\Resources\Concerns\TitledByRecord;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Resources\Spots\Schemas\SpotSelect;
-use App\Jobs\ExtractImport;
 use App\Models\Import;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -36,19 +35,7 @@ class ViewImport extends ViewRecord
                 ->color('warning')
                 ->visible(fn (): bool => $this->import()->status === ImportStatus::Failed)
                 ->action(function (): void {
-                    $import = $this->import();
-
-                    $import->update([
-                        'status' => ImportStatus::Pending,
-                        'error' => null,
-                        'failure_reason' => null,
-                        'failure_provider' => null,
-                        'title' => null,
-                        'description' => null,
-                        'search_terms' => [],
-                    ]);
-
-                    ExtractImport::dispatch($import);
+                    $this->import()->restart();
 
                     Notification::make()
                         ->title('Erneut gestartet')
@@ -58,7 +45,7 @@ class ViewImport extends ViewRecord
             RegenerateTextsAction::make(),
             Action::make('convert')
                 ->label('Übernehmen')
-                ->visible(fn (): bool => $this->isFinished() && ! $this->import()->isRegenerating())
+                ->visible(fn (): bool => $this->import()->isFinished() && ! $this->import()->isRegenerating())
                 ->fillForm(fn (): array => [
                     'title' => $this->import()->title,
                     'description' => $this->import()->description,
@@ -94,14 +81,9 @@ class ViewImport extends ViewRecord
                 }),
             DeleteAction::make()
                 ->label('Löschen')
-                ->visible(fn (): bool => $this->isFinished())
+                ->visible(fn (): bool => $this->import()->isFinished())
                 ->successRedirectUrl(ImportResource::getUrl('index')),
         ];
-    }
-
-    private function isFinished(): bool
-    {
-        return in_array($this->import()->status, [ImportStatus::Completed, ImportStatus::Failed], true);
     }
 
     private function import(): Import
