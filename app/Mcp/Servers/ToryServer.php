@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\CreateSpotTool;
 use App\Mcp\Tools\FindItemsTool;
 use App\Mcp\Tools\FindSpotsTool;
 use App\Mcp\Tools\MoveItemTool;
@@ -23,5 +24,6 @@ class ToryServer extends Server
         FindItemsTool::class,
         FindSpotsTool::class,
         MoveItemTool::class,
+        CreateSpotTool::class,
     ];
 }
