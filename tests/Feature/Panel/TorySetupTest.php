@@ -29,6 +29,12 @@ test('the explanation avoids technical terms', function () {
     expect($text)->not->toContain('MCP')->not->toContain('OAuth')->not->toContain('Token');
 });
 
+test('the address and the command show a copy icon', function () {
+    $html = Livewire::test(TorySetup::class)->html();
+
+    expect(substr_count($html, '<svg'))->toBe(2);
+});
+
 test('it says when no claude is connected', function () {
     Livewire::test(TorySetup::class)->assertSee('Noch kein Claude verbunden.');
 });
@@ -38,8 +44,8 @@ test("it lists the user's connections", function () {
     $this->actingAs($this->user);
 
     Livewire::test(TorySetup::class)
-        ->assertSee('Claude')
         ->assertSee('claude.ai')
+        ->assertSee('Verbunden am '.now()->format('d.m.Y'))
         ->assertDontSee('Noch kein Claude verbunden.');
 });
 

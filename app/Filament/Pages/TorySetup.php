@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
 
 class TorySetup extends Page
@@ -37,6 +38,8 @@ class TorySetup extends Page
                     ->label('Adresse von Tory')
                     ->state($address)
                     ->copyable()
+                    ->icon(Heroicon::OutlinedClipboard)
+                    ->iconPosition(IconPosition::After)
                     ->copyMessage('Kopiert'),
             ]),
             Section::make('Im Browser (claude.ai)')->schema([
@@ -54,6 +57,8 @@ class TorySetup extends Page
                     ->hiddenLabel()
                     ->state('claude mcp add --transport http tory '.$address)
                     ->copyable()
+                    ->icon(Heroicon::OutlinedClipboard)
+                    ->iconPosition(IconPosition::After)
                     ->copyMessage('Kopiert'),
             ]),
             Section::make('Probier es aus')->schema([
