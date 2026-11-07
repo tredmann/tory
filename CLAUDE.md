@@ -51,7 +51,7 @@ docker compose exec db psql -U tory -d tory
 - **Imports** (specs inventory-extraction, async-import): "Erfassen" creates a pending `Import`, `ExtractImport` runs `App\Ai\Agents\InventoryExtractor`, "Übernehmen" turns it into an item through `Import::convertToItem()`.
 - **Bulk import** (spec bulk-import): `BulkImport`, grouped by `GroupBulkImport`; the review page edits through locked model methods that throw `StaleBulkImport`; confirming creates one import per group.
 - **Spots, locations, labels** (spec spots-and-locations): `Spot` ("Lagerplatz", visible `code`, internal bigint id) belongs to a `Location` ("Lagerort"); `/spots/{code}` is the QR target. Labels: `SpotLabelsAction` and `SpotLabelSheet` render `resources/views/pdf/spot-labels.blade.php` with `spatie/laravel-pdf` and WeasyPrint.
-- **Items and photos** (specs item-photo-editing, photo-slideshow): `Item::changePhotos()`, the `ItemPhotos` component with `resources/js/item-photos.js`, GLightbox through `PhotoSlideshow`.
+- **Items and photos** (specs item-photo-editing, photo-slideshow, photo-endpoint): `Item::changePhotos()`, `app/Photos/` (`PhotoStore`, `Thumbnails`, `PhotoResponder`, `PhotoLinks`) behind the panel routes `/photos/…` and `/photos/thumb/…`, the `ItemPhotos` component with `resources/js/item-photos.js`, GLightbox through `PhotoSlideshow`.
 - **Search and embeddings** (specs items-locations-search, extraction-search-terms, selectable-embedding-provider): `App\Ai\ItemSearch` (keyword matches first, then cosine similarity >= the target's `minSimilarity`; keyword-only if embedding the query fails), `ItemEmbedder`, `EmbeddingTarget`, `EmbedItem`, `items:embed` (hourly).
 - **Neu generieren:** `RegenerateTexts` with the `RegeneratesTexts` trait on imports and items.
 - **AI providers** ("Eigene KI", specs ai-provider-settings, selectable-embedding-provider): `AiProvider` on `/ai-providers`, one active for object recognition and one for search (may differ); `SearchProviderSwitch`, `ProviderTester`, `ProviderFailure`, `ProviderTransfer`. With no active provider the `.env` fallback `config('ai.inventory.*')` applies; for local Ollama set `INVENTORY_AI_PROVIDER=ollama`, `INVENTORY_AI_MODEL=gemma4:e4b-mlx`, `OLLAMA_URL=http://host.docker.internal:11434`.
@@ -61,7 +61,7 @@ docker compose exec db psql -U tory -d tory
 
 ## Invariants
 
-- **Photo files** belong to exactly one bulk import, import or item. Handing them on (bulk import to imports, import to item) deletes the old row with a query-builder delete, so no model event removes the files; every plain delete removes its files. A second "Übernehmen" finds the row gone and answers 404.
+- **Photo files** belong to exactly one bulk import, import or item. Handing them on (bulk import to imports, import to item) deletes the old row with a query-builder delete, so no model event removes the files; every plain delete removes its files. Files are stored and deleted only through `PhotoStore`; a thumbnail at `thumbs/…` belongs to its original's path. A second "Übernehmen" finds the row gone and answers 404.
 - **Spot code and address never change.** `code` is 4 characters without `0`, `O`, `1`, `I`, is not fillable and is the only spot identifier that leaves the server (routes, API, labels).
 - **Queue timing:** every job timeout < 210 (worker `--timeout`; dev's `queue:listen` kills the child at its own timeout) < 300 (`retry_after`). `ExtractImport`, `RegenerateTexts`, `ReembedItems` and `GroupBulkImport` use `$tries = 1`, `$timeout = 200` (the last two work 150 s, then dispatch themselves with a cursor); `EmbedItem` uses 3 and 60. Dispatch happens inside Filament's create transaction.
 - **Embeddings have 1024 dimensions** (`WrongEmbeddingDimensions` otherwise). Changing it needs a migration of `items.embedding` plus `items:embed --all`.
@@ -78,7 +78,7 @@ docker compose exec db psql -U tory -d tory
 - `gemma4` ignores Ollama's `format` schema and prefixes `json`, so the extractor's instructions ask for a bare JSON object.
 - One `QRCode` instance per label, because an instance keeps what it rendered. The QR holds `APP_URL`, so labels printed locally point to `localhost`. `config/laravel-pdf.php` sets a 60 s timeout; the default 10 s fails at several hundred labels. One test renders real PDFs, so the suite needs WeasyPrint (the `app` image).
 - Panel pages outside tests need the running `vite` service or a build.
-- Thumbnails use temporary signed URLs, so a tab open past their expiry needs a reload. The API never uses signed URLs; photos go through bearer-protected `/photos/{file name}` routes.
+- Panel photos come from session-protected `/photos/…` routes; the first visit of a list with photos lacking thumbnails is slow because only one thumbnail is generated at a time. The API never uses signed URLs; photos go through bearer-protected `/photos/{file name}` routes (thumbnails under `/thumb`).
 - The browser reads EXIF capture time before the canvas resize drops it. `config/livewire.php` raises the upload throttle to 150/min because each photo is one request.
 - No app-level Blade layout exists: a `Route::livewire()` full-page component fails until `php artisan livewire:layout`.
 - Generated Filament assets in `public/{css,js,fonts}/filament` are gitignored and refreshed on `composer dump-autoload`; run `php artisan filament:assets` after a manual upgrade.
