@@ -46,6 +46,16 @@ test('a guest cannot save a theme and gets 401', function () {
     $this->postJson('/theme', ['theme' => 'dark'])->assertUnauthorized();
 });
 
+test('an unverified user cannot save a theme and gets 403', function () {
+    $user = User::factory()->unverified()->create(['theme_mode' => ThemeMode::Light]);
+
+    $this->actingAs($user)
+        ->postJson('/theme', ['theme' => 'dark'])
+        ->assertForbidden();
+
+    expect($user->fresh()->theme_mode)->toBe(ThemeMode::Light);
+});
+
 test('the account theme replaces the browser value before filament reads it', function () {
     $this->withoutVite();
 

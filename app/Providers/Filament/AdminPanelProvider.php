@@ -43,7 +43,9 @@ class AdminPanelProvider extends PanelProvider
             ->profile()
             ->globalSearch(false)
             ->authenticatedRoutes(function (Panel $panel): void {
-                Route::post('/theme', SaveThemeMode::class)->name('theme');
+                Route::post('/theme', SaveThemeMode::class)
+                    ->middleware($panel->getEmailVerifiedMiddleware())
+                    ->name('theme');
                 Route::get('/photos/thumb/{path}', [PhotoController::class, 'thumbnail'])
                     ->where('path', '.+')
                     ->middleware($panel->getEmailVerifiedMiddleware())
