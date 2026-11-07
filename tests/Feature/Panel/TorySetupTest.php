@@ -1,0 +1,55 @@
+<?php
+
+use App\Filament\Pages\TorySetup;
+use App\Mcp\ClaudeConnections;
+use App\Models\User;
+use Filament\Actions\Testing\TestAction;
+use Livewire\Livewire;
+
+beforeEach(function () {
+    $this->withoutVite();
+    $this->user = User::factory()->create();
+    $this->actingAs($this->user);
+});
+
+test('the page explains how to connect', function () {
+    $this->get('/tory-in-claude')
+        ->assertOk()
+        ->assertSee(url('/mcp'))
+        ->assertSee('claude mcp add --transport http tory '.url('/mcp'))
+        ->assertSee('Wo ist die Bohrmaschine?');
+});
+
+test('the explanation avoids technical terms', function () {
+    $html = Livewire::test(TorySetup::class)->html();
+    $body = str_replace('claude mcp add --transport http tory '.url('/mcp'), '', $html);
+    $body = str_replace(url('/mcp'), '', $body);
+    $text = strip_tags(preg_replace('#<(script|style)\b.*?</\1>#s', '', $body));
+
+    expect($text)->not->toContain('MCP')->not->toContain('OAuth')->not->toContain('Token');
+});
+
+test('it says when no claude is connected', function () {
+    Livewire::test(TorySetup::class)->assertSee('Noch kein Claude verbunden.');
+});
+
+test("it lists the user's connections", function () {
+    issueMcpTokens($this->user);
+    $this->actingAs($this->user);
+
+    Livewire::test(TorySetup::class)
+        ->assertSee('Claude')
+        ->assertSee('claude.ai')
+        ->assertDontSee('Noch kein Claude verbunden.');
+});
+
+test('trennen disconnects', function () {
+    $tokens = issueMcpTokens($this->user);
+    $this->actingAs($this->user);
+
+    Livewire::test(TorySetup::class)
+        ->callAction(TestAction::make('disconnect')->arguments(['clientId' => $tokens['client_id']]))
+        ->assertHasNoActionErrors();
+
+    expect(app(ClaudeConnections::class)->for($this->user))->toBeEmpty();
+});
