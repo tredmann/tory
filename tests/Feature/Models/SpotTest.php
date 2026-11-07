@@ -69,3 +69,13 @@ test('the full label names the location', function () {
 
     expect($spot->full_label)->toBe("Keller → {$spot->code} · Regal");
 });
+
+test('normalizeCode accepts any case', function () {
+    expect(Spot::normalizeCode('k7xm'))->toBe('K7XM');
+});
+
+test('normalizeCode rejects look-alikes and wrong length', function () {
+    expect(Spot::normalizeCode('K7X0'))->toBeNull()
+        ->and(Spot::normalizeCode('K7XMM'))->toBeNull()
+        ->and(Spot::normalizeCode('K7X'))->toBeNull();
+});

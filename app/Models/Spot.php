@@ -47,6 +47,37 @@ class Spot extends Model
         return $code;
     }
 
+    /**
+     * The uppercase code, or null when the value cannot be a code.
+     */
+    public static function normalizeCode(string $code): ?string
+    {
+        $code = strtoupper($code);
+
+        $isCode = strlen($code) === self::CODE_LENGTH
+            && strspn($code, self::CODE_ALPHABET) === self::CODE_LENGTH;
+
+        return $isCode ? $code : null;
+    }
+
+    /**
+     * Accepts a code in any case. A value that cannot be a code resolves to no
+     * record without querying, so the route answers 404.
+     *
+     * @param  mixed  $value
+     * @param  string|null  $field
+     */
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        $code = self::normalizeCode((string) $value);
+
+        if ($code === null) {
+            return null;
+        }
+
+        return parent::resolveRouteBinding($code, $field);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'code';

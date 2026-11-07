@@ -43,12 +43,9 @@ class SpotResource extends Resource
      */
     public static function resolveRecordRouteBinding(int|string $key, ?Closure $modifyQuery = null): ?Model
     {
-        $code = strtoupper((string) $key);
+        $code = Spot::normalizeCode((string) $key);
 
-        $isCode = strlen($code) === Spot::CODE_LENGTH
-            && strspn($code, Spot::CODE_ALPHABET) === Spot::CODE_LENGTH;
-
-        if (! $isCode) {
+        if ($code === null) {
             return null;
         }
 
