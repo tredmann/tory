@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Filesystem\LocalFilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use League\Flysystem\Config;
@@ -22,14 +23,22 @@ pest()->extend(TestCase::class)
  *
  * @return array{access_token: string, refresh_token: string, client_id: string}
  */
-function issueMcpTokens(User $user, string $clientName = 'Claude', string $redirect = 'https://claude.ai/api/mcp/auth_callback'): array
+function issueMcpTokens(User $user, string $clientName = 'Claude', string $redirect = 'https://claude.ai/api/mcp/auth_callback', ?string $existingClientId = null): array
 {
-    $clientId = test()->postJson('/oauth/register', ['client_name' => $clientName, 'redirect_uris' => [$redirect]])
+    $clientId = $existingClientId ?? test()->postJson('/oauth/register', ['client_name' => $clientName, 'redirect_uris' => [$redirect]])
         ->assertCreated()
         ->json('client_id');
 
     $verifier = Str::random(64);
     $state = Str::random(16);
+
+    test()->flushSession();
+    auth()->forgetGuards();
+
+    // Routes keep their controller (and its guard) between requests; a second user must not inherit the first.
+    foreach (Route::getRoutes() as $route) {
+        $route->flushController();
+    }
 
     $authorization = test()->actingAs($user)->get('/oauth/authorize?'.http_build_query([
         'client_id' => $clientId,
