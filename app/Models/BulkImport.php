@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Ai\ProviderFailure;
 use App\BulkImports\BulkPhoto;
 use App\BulkImports\PhotoGroup;
 use App\BulkImports\StagedPhoto;
@@ -11,6 +12,7 @@ use App\Enums\GroupMark;
 use App\Enums\ProviderFailureReason;
 use App\Jobs\GroupBulkImport;
 use Carbon\CarbonImmutable;
+use Closure;
 use Database\Factories\BulkImportFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
@@ -181,6 +184,96 @@ class BulkImport extends Model
             ...array_column($this->photos ?? [], 'path'),
             ...($this->discarded ?? []),
         ]));
+    }
+
+    /**
+     * Writes the cuts one window decided, starting at pair $firstPair.
+     *
+     * @param  list<bool>  $decided
+     */
+    public function storeCuts(int $firstPair, array $decided): void
+    {
+        $this->whileGrouping(function (BulkImport $row) use ($firstPair, $decided): void {
+            $cuts = $row->cuts;
+
+            foreach ($decided as $offset => $cut) {
+                $cuts[$firstPair + $offset] = $cut;
+            }
+
+            $row->update(['cuts' => $cuts]);
+        });
+    }
+
+    /**
+     * Turns the current cuts into groups and makes the bulk import ready for review. A group is
+     * marked merged when the AI removed a time cut inside it, otherwise split when the AI added
+     * a cut at one of its edges.
+     */
+    public function finishGrouping(bool $incomplete, ?ProviderFailure $failure = null): void
+    {
+        $this->whileGrouping(function (BulkImport $row) use ($incomplete, $failure): void {
+            $paths = array_column($row->photos, 'path');
+            $cuts = $row->cuts;
+            $timeCuts = $row->time_cuts;
+            $groups = [];
+            $first = 0;
+
+            foreach ($paths as $index => $path) {
+                $isLast = $index === count($paths) - 1;
+
+                if (! $isLast && ! $cuts[$index]) {
+                    continue;
+                }
+
+                $merged = false;
+
+                for ($pair = $first; $pair < $index; $pair++) {
+                    $merged = $merged || $timeCuts[$pair];
+                }
+
+                $split = ($first > 0 && ! $timeCuts[$first - 1])
+                    || (! $isLast && ! $timeCuts[$index]);
+
+                $groups[] = [
+                    'id' => (string) Str::uuid7(),
+                    'photos' => array_slice($paths, $first, $index - $first + 1),
+                    'mark' => match (true) {
+                        $merged => GroupMark::Merged->value,
+                        $split => GroupMark::Split->value,
+                        default => null,
+                    },
+                ];
+                $first = $index + 1;
+            }
+
+            $row->update([
+                'groups' => $groups,
+                'grouping_incomplete' => $incomplete,
+                'failure_reason' => $failure?->reason,
+                'failure_provider' => $failure?->reason !== null ? $failure->providerName : null,
+                'status' => BulkImportStatus::Ready,
+            ]);
+        });
+    }
+
+    /**
+     * Runs the callback on the locked row while it is still grouping, then takes over its state.
+     *
+     * @param  Closure(BulkImport): void  $callback
+     */
+    private function whileGrouping(Closure $callback): void
+    {
+        DB::transaction(function () use ($callback): void {
+            $row = self::query()->whereKey($this->getKey())->lockForUpdate()->first();
+
+            if ($row === null || $row->status !== BulkImportStatus::Grouping) {
+                return;
+            }
+
+            $callback($row);
+
+            $this->setRawAttributes($row->getAttributes(), true);
+        });
     }
 
     public function failureMessage(): ?string
