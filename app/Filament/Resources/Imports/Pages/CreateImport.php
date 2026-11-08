@@ -6,6 +6,7 @@ use App\Enums\ImportStatus;
 use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Jobs\ExtractImport;
+use App\Jobs\GenerateThumbnail;
 use App\Models\Import;
 use App\Photos\PhotoStore;
 use Filament\Resources\Pages\CreateRecord;
@@ -47,6 +48,10 @@ class CreateImport extends CreateRecord
         auth()->user()?->forceFill(['last_spot_id' => $import->spot_id])->save();
 
         ExtractImport::dispatch($import);
+
+        foreach ($import->photos ?? [] as $path) {
+            GenerateThumbnail::dispatch($path);
+        }
     }
 
     protected function getCreatedNotificationTitle(): ?string

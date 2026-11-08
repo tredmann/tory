@@ -1,6 +1,7 @@
 <?php
 
 use App\Jobs\EmbedItem;
+use App\Jobs\GenerateThumbnail;
 use App\Models\Item;
 use App\Photos\PhotoStore;
 use Illuminate\Http\UploadedFile;
@@ -241,4 +242,14 @@ test('removing a photo removes its thumbnail', function () {
 
     Storage::disk('local')->assertMissing(PhotoStore::thumbnailPath('imports/a.jpg'));
     Storage::disk('local')->assertExists(PhotoStore::thumbnailPath('imports/b.jpg'));
+});
+
+test('only added photos get a thumbnail queued', function () {
+    $item = itemWithPhotos(['a']);
+
+    $item->changePhotos([], ['k' => newPhoto()], null);
+
+    $added = $item->fresh()->photos[1];
+    Queue::assertPushedOn('thumbnails', GenerateThumbnail::class, fn (GenerateThumbnail $job): bool => $job->path === $added);
+    Queue::assertPushedTimes(GenerateThumbnail::class, 1);
 });

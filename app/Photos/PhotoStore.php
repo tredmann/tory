@@ -2,6 +2,7 @@
 
 namespace App\Photos;
 
+use App\Jobs\GenerateThumbnail;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -14,9 +15,18 @@ final class PhotoStore
         return 'photos/'.now()->format('Y/m');
     }
 
+    /**
+     * Stores the photo and queues its thumbnail.
+     */
     public static function store(UploadedFile $file): string|false
     {
-        return $file->store(self::directory(), 'local');
+        $path = $file->store(self::directory(), 'local');
+
+        if ($path !== false) {
+            GenerateThumbnail::dispatch($path);
+        }
+
+        return $path;
     }
 
     public static function thumbnailPath(string $path): string

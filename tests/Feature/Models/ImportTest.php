@@ -3,6 +3,7 @@
 use App\Enums\ImportStatus;
 use App\Enums\ProviderFailureReason;
 use App\Jobs\ExtractImport;
+use App\Jobs\GenerateThumbnail;
 use App\Models\Import;
 use App\Models\Item;
 use App\Models\Spot;
@@ -152,4 +153,14 @@ test('converting keeps the original and its thumbnail', function () {
 
     Storage::disk('local')->assertExists('imports/x.jpg');
     Storage::disk('local')->assertExists(PhotoStore::thumbnailPath('imports/x.jpg'));
+});
+
+test('converting queues no thumbnail', function () {
+    Queue::fake();
+    Storage::disk('local')->put('imports/x.jpg', 'x');
+    $import = Import::factory()->completed()->create(['photos' => ['imports/x.jpg']]);
+
+    $import->convertToItem('Pi-Gehäuse', null, Spot::factory()->create()->id);
+
+    Queue::assertNotPushed(GenerateThumbnail::class);
 });
