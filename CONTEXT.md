@@ -25,7 +25,7 @@ _Avoid_: Sticker, tag
 ### People
 
 **Administrator**:
-A user who may manage other users: invite them, change roles, lock and unlock them. There is always at least one; the last one cannot be demoted or locked.
+A user who may manage other users: invite them, change roles, lock and unlock them. There is always at least one; an administrator cannot lock or demote themselves, so the household always keeps at least one.
 _Avoid_: Admin (in the UI), owner
 
 **User** (Nutzer):

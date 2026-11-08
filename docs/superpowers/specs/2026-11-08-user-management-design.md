@@ -45,7 +45,7 @@ Today every verified user may do everything, and wherever self-service is on, an
 
 - `User::issueInviteLink(): string` creates a token with `Str::random(32)` (letters and digits only), stores its SHA-256 hash and `invite_expires_at = now() + 24 h`, overwrites any previous token and returns the full URL `{APP_URL}/invite/{token}`. The plain token exists only in this return value.
 - Route `GET|POST /invite/{token}` (English path), a guest page outside the panel's auth middleware, throttled to 10 per minute. It looks like Filament's login page (Filament's simple layout) and asks for password and confirmation, with the same password rules as the profile page.
-- Looking up the hash finds the user. A link is invalid when no user has the hash, `invite_expires_at` has passed or the user is locked. An invalid link shows the page with the message "Dieser Link ist abgelaufen oder ungültig. Bitte frag nach einem neuen." and no form, HTTP status 404.
+- Looking up the hash finds the user. A link is invalid when no user has the hash, `invite_expires_at` has passed or the user is locked. An invalid link shows the page with the message "Dieser Link ist abgelaufen oder ungültig. Bitte frag nach einem neuen." and no form, HTTP status 200 (Livewire full pages cannot set 404 cleanly).
 - Submitting sets the password, sets `email_verified_at` if it was null, clears `invite_token` and `invite_expires_at`, logs the user in (session regenerated, replacing anyone already logged in in that browser) and redirects to the dashboard. The link is then used up.
 - A new link for an active user does not touch the current password: it keeps working until the link is used.
 - Locking clears an open link.

@@ -6,9 +6,6 @@ use App\Filament\Auth\AcceptInvite;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SaveThemeMode;
 use App\Http\Middleware\LogOutLockedUser;
-use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
-use Filament\Auth\Pages\PasswordReset\ResetPassword;
-use Filament\Auth\Pages\Register;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -32,15 +29,11 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        $selfService = (bool) config('auth.self_service');
-
         return $panel
             ->default()
             ->id('admin')
             ->path('')
             ->login()
-            ->registration($selfService ? Register::class : null)
-            ->passwordReset($selfService ? RequestPasswordReset::class : null, $selfService ? ResetPassword::class : null)
             ->emailVerification()
             ->profile()
             ->globalSearch(false)

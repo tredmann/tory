@@ -69,6 +69,5 @@ RUN setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 ENV LOG_CHANNEL=stderr
-ENV AUTH_SELF_SERVICE=false
 
 USER www-data
