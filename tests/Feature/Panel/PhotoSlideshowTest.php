@@ -90,11 +90,11 @@ function storePhotos(array $photos): void
     }
 }
 
-test('a list thumbnail opens all photos of its record from the first', function (string $surface) {
+test('the imports list thumbnail opens all photos of its import from the first', function () {
     $photos = ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg'];
     storePhotos($photos);
 
-    $images = slideshowImages(photoSurface($surface, $photos)->html());
+    $images = slideshowImages(photoSurface('imports list', $photos)->html());
 
     expect($images)->toHaveCount(1);
     expect($images[0]['index'])->toBe(0);
@@ -103,7 +103,7 @@ test('a list thumbnail opens all photos of its record from the first', function 
     expect($images[0]['urls'][0])->toEndWith('/photos/imports/a.jpg');
     expect($images[0]['urls'][1])->toContain('b.jpg');
     expect($images[0]['urls'][2])->toContain('c.jpg');
-})->with('lists');
+});
 
 test('each view page thumbnail starts at its own photo', function (string $surface) {
     $photos = ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg'];
@@ -181,6 +181,37 @@ test('item lists show their photo across the whole tile', function (string $surf
     photoSurface($surface, ['imports/a.jpg'])->assertSeeHtml('width: 100%');
 })->with(['items list', 'spot items list']);
 
+test('an item tile shows three photos that each open the slideshow at their own', function (string $surface) {
+    $photos = ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg', 'imports/d.jpg', 'imports/e.jpg'];
+    storePhotos($photos);
+
+    $images = slideshowImages(photoSurface($surface, $photos)->html());
+
+    expect(array_column($images, 'index'))->toBe([0, 1, 2]);
+    expect($images[2]['urls'])->toHaveCount(5);
+    expect($images[2]['urls'][2])->toContain('c.jpg');
+})->with(['items list', 'spot items list']);
+
+test('an item tile loads its further photos lazily', function () {
+    $photos = ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg'];
+    storePhotos($photos);
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.photoSurface('items list', $photos)->html());
+    $images = (new DOMXPath($document))->query('//*[contains(@class, "tory-gallery")]//img');
+
+    expect($images)->toHaveCount(3);
+    expect($images->item(0)->getAttribute('loading'))->toBe('');
+    expect($images->item(1)->getAttribute('loading'))->toBe('lazy');
+    expect($images->item(2)->getAttribute('loading'))->toBe('lazy');
+});
+
+test('an item tile with one photo is no gallery', function () {
+    storePhotos(['imports/a.jpg']);
+
+    photoSurface('items list', ['imports/a.jpg'])->assertDontSeeHtml('tory-gallery');
+});
+
 test('list rows still link to the detail page', function () {
     $item = Item::factory()->create();
     $import = Import::factory()->create();
@@ -209,7 +240,7 @@ test('the panel loads the slideshow script', function () {
     $this->withVite();
     Vite::useHotFile($hotFile);
 
-    $this->get('/imports')->assertOk()->assertSee('resources/js/slideshow.js');
+    $this->get('/imports')->assertOk()->assertSee('resources/js/slideshow.js')->assertSee('resources/js/item-gallery.js');
 
     unlink($hotFile);
 });
