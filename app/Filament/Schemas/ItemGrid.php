@@ -20,7 +20,12 @@ use Illuminate\Database\Eloquent\Builder;
 class ItemGrid
 {
     /**
-     * Lays a table of items out as photo tiles, the same on every list: photo, title and
+     * How many photos a tile shows; the slideshow still holds all of them.
+     */
+    private const int GALLERY_SIZE = 3;
+
+    /**
+     * Lays a table of items out as photo tiles, the same on every list: photos, title and
      * where the item lies, then the given details.
      *
      * @param  array<Column|Component>  $details
@@ -35,9 +40,13 @@ class ItemGrid
                         ->state(fn (Item $record): array => PhotoLinks::thumbnails($record->photos ?? []))
                         ->imageWidth('100%')
                         ->imageHeight('auto')
-                        ->limit(1)
+                        ->limit(self::GALLERY_SIZE)
                         ->placeholder('Kein Foto')
-                        ->extraImgAttributes(fn (Item $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),
+                        ->extraAttributes(fn (Item $record): array => count(PhotoLinks::thumbnails($record->photos ?? [])) > 1 ? ['class' => 'tory-gallery'] : [])
+                        ->extraImgAttributes(fn (Item $record, string $state): array => [
+                            ...PhotoSlideshow::imgAttributes($record->photos, $state),
+                            ...(PhotoLinks::thumbnails($record->photos ?? [])[0] === $state ? [] : ['loading' => 'lazy']),
+                        ]),
                     TextColumn::make('title')
                         ->weight(FontWeight::Medium)
                         ->lineClamp(1),
