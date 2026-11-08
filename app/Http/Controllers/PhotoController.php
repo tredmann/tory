@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Photos\PhotoResponder;
 use App\Photos\PhotoStore;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PhotoController extends Controller
@@ -15,7 +16,7 @@ class PhotoController extends Controller
         return $this->photos->original($this->storagePath($path));
     }
 
-    public function thumbnail(string $path): StreamedResponse
+    public function thumbnail(string $path): Response
     {
         return $this->photos->thumbnail($this->storagePath($path));
     }

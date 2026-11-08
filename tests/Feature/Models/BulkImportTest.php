@@ -2,6 +2,7 @@
 
 use App\BulkImports\StagedPhoto;
 use App\Enums\BulkImportStatus;
+use App\Jobs\GenerateThumbnail;
 use App\Jobs\GroupBulkImport;
 use App\Models\BulkImport;
 use App\Models\Spot;
@@ -109,4 +110,16 @@ test('deleting a bulk import deletes the thumbnails with the photos', function (
     foreach ($paths as $path) {
         Storage::disk('local')->assertMissing(PhotoStore::thumbnailPath($path));
     }
+});
+
+test('start queues a thumbnail per photo', function () {
+    Storage::fake('local');
+    Queue::fake();
+
+    $bulk = BulkImport::start(User::factory()->create(), Spot::factory()->create()->id, [staged('a.jpg'), staged('b.jpg'), staged('c.jpg')]);
+
+    foreach ($bulk->allPaths() as $path) {
+        Queue::assertPushedOn('thumbnails', GenerateThumbnail::class, fn (GenerateThumbnail $job): bool => $job->path === $path);
+    }
+    Queue::assertPushedTimes(GenerateThumbnail::class, 3);
 });

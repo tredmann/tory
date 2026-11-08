@@ -1,9 +1,12 @@
 <?php
 
 use App\Http\Resources\Api\V1\PhotoUrls;
+use App\Jobs\GenerateThumbnail;
 use App\Models\Import;
 use App\Models\Item;
 use App\Models\User;
+use App\Photos\Thumbnails;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
@@ -77,25 +80,29 @@ it('answers 404 when the file is missing on disk', function () {
     $this->get("/api/v1/items/{$item->id}/photos/gone.jpg")->assertNotFound();
 });
 
-it('streams an item thumbnail as webp', function () {
+it('streams a stored item thumbnail as webp', function () {
     Sanctum::actingAs(User::factory()->create());
     Storage::disk('local')->put('photos/2026/11/abc.jpg', jpeg(800, 600));
+    (new Thumbnails)->generate('photos/2026/11/abc.jpg');
     $item = Item::factory()->create(['photos' => ['photos/2026/11/abc.jpg']]);
 
     $this->get("/api/v1/items/{$item->id}/photos/abc.jpg/thumb")
         ->assertOk()
         ->assertHeader('Content-Type', 'image/webp');
-    Storage::disk('local')->assertExists('thumbs/photos/2026/11/abc.jpg.webp');
 });
 
-it('streams an import thumbnail as webp', function () {
+it('answers a missing import thumbnail with the placeholder and queues it', function () {
+    Queue::fake();
     Sanctum::actingAs(User::factory()->create());
     Storage::disk('local')->put('imports/abc.png', png(800, 600));
     $import = Import::factory()->create(['photos' => ['imports/abc.png']]);
 
-    $this->get("/api/v1/imports/{$import->id}/photos/abc.png/thumb")
-        ->assertOk()
-        ->assertHeader('Content-Type', 'image/webp');
+    $response = $this->get("/api/v1/imports/{$import->id}/photos/abc.png/thumb");
+
+    $response->assertOk()->assertHeader('Content-Type', 'image/png');
+    expect($response->getFile()->getPathname())->toBe(resource_path('images/thumbnail-placeholder.png'))
+        ->and($response->headers->hasCacheControlDirective('no-cache'))->toBeTrue();
+    Queue::assertPushedOn('thumbnails', GenerateThumbnail::class, fn (GenerateThumbnail $job): bool => $job->path === 'imports/abc.png');
 });
 
 it('finds a photo in a month folder', function () {

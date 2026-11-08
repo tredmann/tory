@@ -3,6 +3,7 @@
 namespace App\Photos;
 
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class PhotoResponder
@@ -18,14 +19,17 @@ final class PhotoResponder
         return Storage::disk('local')->response($path, null, ['Cache-Control' => self::IMMUTABLE]);
     }
 
-    public function thumbnail(string $path): StreamedResponse
+    /**
+     * The stored thumbnail, or the placeholder while it is missing; never the original.
+     */
+    public function thumbnail(string $path): Response
     {
         abort_unless(Storage::disk('local')->exists($path), 404);
 
         $thumbnail = $this->thumbnails->for($path);
 
         if ($thumbnail === null) {
-            return Storage::disk('local')->response($path, null, ['Cache-Control' => 'private, no-cache']);
+            return response()->file(resource_path('images/thumbnail-placeholder.png'), ['Cache-Control' => 'private, no-cache']);
         }
 
         return Storage::disk('local')->response($thumbnail, null, ['Cache-Control' => self::IMMUTABLE]);

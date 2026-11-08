@@ -3,6 +3,7 @@
 use App\Enums\ImportStatus;
 use App\Enums\ProviderFailureReason;
 use App\Jobs\ExtractImport;
+use App\Jobs\GenerateThumbnail;
 use App\Models\Import;
 use App\Models\Item;
 use App\Models\Spot;
@@ -225,4 +226,16 @@ it('lists thumbnail urls in photo order', function () {
     expect($urls)->toHaveCount(2)
         ->and($urls[0])->toEndWith('/photos/b.jpg/thumb')
         ->and($urls[1])->toEndWith('/photos/a.png/thumb');
+});
+
+it('queues a thumbnail per uploaded photo', function () {
+    $response = $this->postJson('/api/v1/imports', [
+        'photos' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->image('b.jpg')],
+        'spot' => Spot::factory()->create()->code,
+    ])->assertCreated();
+
+    foreach (Import::findOrFail($response->json('data.id'))->photos as $path) {
+        Queue::assertPushedOn('thumbnails', GenerateThumbnail::class, fn (GenerateThumbnail $job): bool => $job->path === $path);
+    }
+    Queue::assertPushedTimes(GenerateThumbnail::class, 2);
 });

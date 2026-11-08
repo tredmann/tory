@@ -4,6 +4,7 @@ use App\Enums\ImportStatus;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Resources\Imports\Pages\CreateImport;
 use App\Jobs\ExtractImport;
+use App\Jobs\GenerateThumbnail;
 use App\Models\Import;
 use App\Models\Location;
 use App\Models\Spot;
@@ -193,4 +194,16 @@ test('a spot can be created through the picker', function () {
 
     expect($spot)->not->toBeNull()->and($spot->location->is($location))->toBeTrue();
     $component->assertFormSet(['spot_id' => $spot->id]);
+});
+
+test('a thumbnail is queued per photo', function () {
+    Livewire::test(CreateImport::class)
+        ->fillForm(['photos' => [UploadedFile::fake()->image('front.jpg'), UploadedFile::fake()->image('back.jpg')], 'spot_id' => Spot::factory()->create()->id])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    foreach (Import::sole()->photos as $path) {
+        Queue::assertPushedOn('thumbnails', GenerateThumbnail::class, fn (GenerateThumbnail $job): bool => $job->path === $path);
+    }
+    Queue::assertPushedTimes(GenerateThumbnail::class, 2);
 });

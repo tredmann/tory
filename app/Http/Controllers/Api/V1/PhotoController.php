@@ -7,6 +7,7 @@ use App\Models\Import;
 use App\Models\Item;
 use App\Photos\PhotoResponder;
 use Illuminate\Database\Eloquent\Model;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PhotoController extends Controller
@@ -23,12 +24,12 @@ class PhotoController extends Controller
         return $this->photos->original($this->pathOf($item, $photo));
     }
 
-    public function importThumbnail(Import $import, string $photo): StreamedResponse
+    public function importThumbnail(Import $import, string $photo): Response
     {
         return $this->photos->thumbnail($this->pathOf($import, $photo));
     }
 
-    public function itemThumbnail(Item $item, string $photo): StreamedResponse
+    public function itemThumbnail(Item $item, string $photo): Response
     {
         return $this->photos->thumbnail($this->pathOf($item, $photo));
     }

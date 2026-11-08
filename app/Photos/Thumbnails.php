@@ -2,6 +2,7 @@
 
 namespace App\Photos;
 
+use App\Jobs\GenerateThumbnail;
 use GdImage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -11,14 +12,14 @@ use Throwable;
 
 final class Thumbnails
 {
-    public const LOCK = 'photo-thumbnails';
-
     public const MAX_PIXELS = 60_000_000;
 
     private const SIZE = 400;
 
+    private const FAILED = 'thumbnail-failed:';
+
     /**
-     * The storage path of the thumbnail, created when missing; null when it cannot be made.
+     * The storage path of the thumbnail when it exists; otherwise queues it and returns null.
      */
     public function for(string $path): ?string
     {
@@ -27,15 +28,37 @@ final class Thumbnails
             return $thumbnail;
         }
 
-        $made = Cache::lock(self::LOCK, 60)->get(function () use ($path, $thumbnail): ?string {
-            if ($this->exists($thumbnail)) {
-                return $thumbnail;
-            }
+        if (! Cache::has(self::FAILED.$path)) {
+            GenerateThumbnail::dispatch($path);
+        }
 
-            return $this->generate($path, $thumbnail) ? $thumbnail : null;
-        });
+        return null;
+    }
 
-        return $made === false ? null : $made;
+    /**
+     * Makes the thumbnail unless the original is gone or the thumbnail exists; a failure is reported and remembered.
+     */
+    public function generate(string $path): void
+    {
+        $thumbnail = PhotoStore::thumbnailPath($path);
+        if (! Storage::disk('local')->exists($path) || $this->exists($thumbnail)) {
+            return;
+        }
+
+        try {
+            $this->make($path, $thumbnail);
+        } catch (Throwable $e) {
+            report($e);
+            self::markFailed($path);
+        }
+    }
+
+    /**
+     * Keeps the path from being queued again, so a photo that cannot be thumbnailed shows the placeholder for good.
+     */
+    public static function markFailed(string $path): void
+    {
+        Cache::forever(self::FAILED.$path, true);
     }
 
     private function exists(string $thumbnail): bool
@@ -43,49 +66,41 @@ final class Thumbnails
         return Storage::disk('local')->exists($thumbnail);
     }
 
-    private function generate(string $path, string $thumbnail): bool
+    private function make(string $path, string $thumbnail): void
     {
         $disk = Storage::disk('local');
 
-        try {
-            $dimensions = @getimagesize($disk->path($path));
+        $dimensions = @getimagesize($disk->path($path));
 
-            if ($dimensions === false || $dimensions[0] * $dimensions[1] > self::MAX_PIXELS) {
-                throw new RuntimeException("Photo {$path} is unreadable or too large to thumbnail.");
-            }
-
-            $contents = $disk->get($path);
-
-            $image = @imagecreatefromstring($contents);
-
-            if (! $image instanceof GdImage) {
-                throw new RuntimeException("Cannot decode photo {$path}.");
-            }
-
-            imagepalettetotruecolor($image);
-            $image = $this->orient($this->scale($image), $disk->path($path), $contents);
-
-            imagealphablending($image, false);
-            imagesavealpha($image, true);
-
-            ob_start();
-            $encoded = imagewebp($image, null, 80);
-            $webp = (string) ob_get_clean();
-
-            if (! $encoded || $webp === '') {
-                throw new RuntimeException("Cannot encode thumbnail for {$path}.");
-            }
-
-            $temporary = $thumbnail.'.'.Str::random(8).'.tmp';
-            $disk->put($temporary, $webp);
-            $disk->move($temporary, $thumbnail);
-
-            return true;
-        } catch (Throwable $e) {
-            report($e);
-
-            return false;
+        if ($dimensions === false || $dimensions[0] * $dimensions[1] > self::MAX_PIXELS) {
+            throw new RuntimeException("Photo {$path} is unreadable or too large to thumbnail.");
         }
+
+        $contents = $disk->get($path);
+
+        $image = @imagecreatefromstring($contents);
+
+        if (! $image instanceof GdImage) {
+            throw new RuntimeException("Cannot decode photo {$path}.");
+        }
+
+        imagepalettetotruecolor($image);
+        $image = $this->orient($this->scale($image), $disk->path($path), $contents);
+
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+
+        ob_start();
+        $encoded = imagewebp($image, null, 80);
+        $webp = (string) ob_get_clean();
+
+        if (! $encoded || $webp === '') {
+            throw new RuntimeException("Cannot encode thumbnail for {$path}.");
+        }
+
+        $temporary = $thumbnail.'.'.Str::random(8).'.tmp';
+        $disk->put($temporary, $webp);
+        $disk->move($temporary, $thumbnail);
     }
 
     private function scale(GdImage $image): GdImage

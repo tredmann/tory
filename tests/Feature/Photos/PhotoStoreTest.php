@@ -1,6 +1,10 @@
 <?php
 
+use App\Jobs\GenerateThumbnail;
 use App\Photos\PhotoStore;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 
 it('stores into the month folder', function () {
     $this->travelTo('2026-11-07 12:00');
@@ -27,3 +31,13 @@ it('maps storage paths to route paths and back', function (string $storage, stri
 it('refuses route paths outside the photo folders', function (string $route) {
     expect(PhotoStore::storagePath($route))->toBeNull();
 })->with(['../.env', 'imports/..', 'imports/.', 'imports/a/b.jpg', 'evals/x.json', 'livewire-tmp/x.jpg', 'thumb/imports/a.jpg', '2026/1/a.jpg', '', 'imports/..\\evals\\x.json', "imports/a\x01b.jpg", "imports/a.jpg\n", "imports/\xff.jpg"]);
+
+it('queues the thumbnail of a stored photo', function () {
+    Storage::fake('local');
+    Queue::fake();
+
+    $path = PhotoStore::store(UploadedFile::fake()->image('a.jpg'));
+
+    Queue::assertPushedOn('thumbnails', GenerateThumbnail::class, fn (GenerateThumbnail $job): bool => $job->path === $path);
+    Queue::assertPushedTimes(GenerateThumbnail::class, 1);
+});
