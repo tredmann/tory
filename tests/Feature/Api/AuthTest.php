@@ -109,3 +109,25 @@ it('answers 403 as JSON to an unverified token holder without an Accept header',
         ->assertForbidden()
         ->assertJson(['message' => 'Bitte bestätige zuerst deine E-Mail-Adresse.']);
 });
+
+test('a locked user gets no token', function () {
+    $user = User::factory()->locked()->create();
+
+    $this->postJson('/api/v1/login', ['email' => $user->email, 'password' => 'password', 'device_name' => 'iPhone'])
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Dieses Konto ist gesperrt.');
+});
+
+test('a token stops working while its user is locked and works again after unlocking', function () {
+    $user = User::factory()->create();
+    $token = $user->createToken('iPhone')->plainTextToken;
+
+    $user->lock();
+    $this->withToken($token)->getJson('/api/v1/user')
+        ->assertForbidden()
+        ->assertJsonPath('message', 'Dieses Konto ist gesperrt.');
+
+    $user->unlock();
+    $this->app['auth']->forgetGuards();
+    $this->withToken($token)->getJson('/api/v1/user')->assertOk();
+});

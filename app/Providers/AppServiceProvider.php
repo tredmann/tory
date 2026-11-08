@@ -54,7 +54,7 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureApiDocs(): void
     {
-        Gate::define('viewApiDocs', fn (User $user): bool => $user->hasVerifiedEmail());
+        Gate::define('viewApiDocs', fn (User $user): bool => ! $user->isLocked() && $user->hasVerifiedEmail());
 
         Scramble::configure()->withDocumentTransformers(
             fn (OpenApi $openApi) => $openApi->secure(SecurityScheme::http('bearer')),

@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SaveThemeMode;
+use App\Http\Middleware\LogOutLockedUser;
 use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
 use Filament\Auth\Pages\PasswordReset\ResetPassword;
 use Filament\Auth\Pages\Register;
@@ -78,6 +79,7 @@ class AdminPanelProvider extends PanelProvider
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
                 AuthenticateSession::class,
+                LogOutLockedUser::class,
                 ShareErrorsFromSession::class,
                 PreventRequestForgery::class,
                 SubstituteBindings::class,
