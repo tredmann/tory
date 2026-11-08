@@ -23,6 +23,9 @@ class ItemForm
                 Textarea::make('description')
                     ->label('Beschreibung')
                     ->rows(5),
+                Textarea::make('notes')
+                    ->label('Bemerkung')
+                    ->rows(3),
                 TagsInput::make('search_terms')
                     ->label('Suchbegriffe')
                     ->splitKeys(['Tab', ',']),

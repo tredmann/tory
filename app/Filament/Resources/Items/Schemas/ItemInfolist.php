@@ -34,6 +34,10 @@ class ItemInfolist
                             ->label('Beschreibung')
                             ->placeholder('—')
                             ->extraAttributes(['style' => 'white-space: pre-line']),
+                        TextEntry::make('notes')
+                            ->label('Bemerkung')
+                            ->placeholder('—')
+                            ->extraAttributes(['style' => 'white-space: pre-line']),
                         TextEntry::make('search_terms')
                             ->label('Suchbegriffe')
                             ->badge()
