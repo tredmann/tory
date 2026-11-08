@@ -1,11 +1,15 @@
 <?php
 
+use App\Jobs\GenerateThumbnail;
 use App\Models\User;
 use App\Photos\PhotoLinks;
+use App\Photos\Thumbnails;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     Storage::fake('local');
+    Queue::fake();
     $this->actingAs(User::factory()->create());
 });
 
@@ -26,25 +30,36 @@ it('serves an old photo', function () {
     $this->get('/photos/imports/a.jpg')->assertOk()->assertHeader('Content-Type', 'image/jpeg');
 });
 
-it('serves a webp thumbnail', function () {
+it('serves a stored webp thumbnail', function () {
     Storage::disk('local')->put('photos/2026/11/a.jpg', jpeg(800, 600));
+    (new Thumbnails)->generate('photos/2026/11/a.jpg');
 
     $response = $this->get('/photos/thumb/2026/11/a.jpg');
 
     $response->assertOk()->assertHeader('Content-Type', 'image/webp');
     expect($response->headers->hasCacheControlDirective('immutable'))->toBeTrue();
-    Storage::disk('local')->assertExists('thumbs/photos/2026/11/a.jpg.webp');
+    Queue::assertNothingPushed();
 });
 
-it('falls back to the original without caching', function () {
+it('answers a missing thumbnail with the placeholder and queues it', function () {
+    Storage::disk('local')->put('photos/2026/11/a.jpg', jpeg(800, 600));
+
+    $response = $this->get('/photos/thumb/2026/11/a.jpg');
+
+    $response->assertOk()->assertHeader('Content-Type', 'image/png');
+    expect($response->getFile()->getPathname())->toBe(resource_path('images/thumbnail-placeholder.png'))
+        ->and($response->headers->hasCacheControlDirective('no-cache'))->toBeTrue()
+        ->and($response->headers->hasCacheControlDirective('immutable'))->toBeFalse();
+    Queue::assertPushedOn('thumbnails', GenerateThumbnail::class);
+    Storage::disk('local')->assertMissing('thumbs/photos/2026/11/a.jpg.webp');
+});
+
+it('answers the placeholder for a corrupt photo, not the original', function () {
     Storage::disk('local')->put('imports/broken.jpg', 'not an image');
 
     $response = $this->get('/photos/thumb/imports/broken.jpg');
 
-    $response->assertOk();
-    expect($response->streamedContent())->toBe('not an image')
-        ->and($response->headers->hasCacheControlDirective('no-cache'))->toBeTrue()
-        ->and($response->headers->hasCacheControlDirective('immutable'))->toBeFalse();
+    expect($response->getFile()->getPathname())->toBe(resource_path('images/thumbnail-placeholder.png'));
 });
 
 it('answers 404 outside the photo folders', function (string $url) {
