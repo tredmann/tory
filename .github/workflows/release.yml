@@ -36,6 +36,8 @@ jobs:
           file: docker/Dockerfile
           target: prod
           platforms: linux/arm64
+          build-args: |
+            APP_VERSION=${{ github.ref_name }}
           push: true
           tags: |
             registry.digitalocean.com/${{ secrets.DIGITALOCEAN_REGISTRY }}/tory:${{ github.ref_name }}
