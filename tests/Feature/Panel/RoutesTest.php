@@ -52,7 +52,7 @@ test('record pages still open for an existing record', function (string $prefix,
 ]);
 
 test('the provider page is served at its english address', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(User::factory()->admin()->create());
 
     $this->get('/ai-providers')->assertOk();
 });

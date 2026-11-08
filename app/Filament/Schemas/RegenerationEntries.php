@@ -34,9 +34,9 @@ class RegenerationEntries
             TextEntry::make('regeneration_failure_message')
                 ->label('Fehler beim Neu generieren')
                 ->color('danger')
-                ->url(AiProviderResource::getUrl('index'))
+                ->url(fn (): ?string => AiProviderResource::canAccess() ? AiProviderResource::getUrl('index') : null)
                 ->visible(fn (Import|Item $record): bool => ! $record->isRegenerating() && $record->regeneration_failure_reason !== null)
-                ->state(fn (Import|Item $record): string => $record->regenerationFailureMessage().' Provider prüfen'),
+                ->state(fn (Import|Item $record): string => $record->regenerationFailureMessage().(AiProviderResource::canAccess() ? ' Provider prüfen' : '')),
             TextEntry::make('regeneration_error')
                 ->label('Fehler beim Neu generieren')
                 ->color('danger')

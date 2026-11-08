@@ -63,6 +63,7 @@ class AiProvidersTable
             ->recordClasses(fn (AiProvider $record): ?string => $record->is_active || $record->is_active_for_search ? 'tory-active-provider' : null)
             ->recordActions([
                 Action::make('activate')
+                    ->authorize('update')
                     ->label('Aktivieren')
                     ->hidden(fn (AiProvider $record): bool => $record->is_active || blank($record->model))
                     ->action(function (AiProvider $record): void {
@@ -74,6 +75,7 @@ class AiProvidersTable
                             ->send();
                     }),
                 Action::make('activateForSearch')
+                    ->authorize('update')
                     ->label('Für Suche aktivieren')
                     ->hidden(fn (AiProvider $record): bool => $record->is_active_for_search || blank($record->embedding_model))
                     ->requiresConfirmation()
@@ -115,6 +117,7 @@ class AiProvidersTable
                             ->send();
                     }),
                 Action::make('test')
+                    ->authorize('update')
                     ->label('Testen')
                     ->action(function (AiProvider $record, ProviderTester $tester): void {
                         $reason = $tester->run($record);

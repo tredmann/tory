@@ -115,6 +115,7 @@ test('the last card offers no merge and discarded photos do not count', function
 });
 
 test('the provider reason links to Eigene KI', function () {
+    $this->actingAs(User::factory()->admin()->create());
     $bulkImport = readyBulkImport([2], attributes: [
         'grouping_incomplete' => true,
         'failure_reason' => ProviderFailureReason::KeyRejected,
@@ -126,6 +127,19 @@ test('the provider reason links to Eigene KI', function () {
         ->assertSee('Provider prüfen')
         ->assertSeeHtml('href="'.AiProviderResource::getUrl('index').'"')
         ->assertDontSee('Die KI-Prüfung ist nicht vollständig gelaufen.');
+});
+
+test('a member sees the provider reason without the link', function () {
+    $bulkImport = readyBulkImport([2], attributes: [
+        'grouping_incomplete' => true,
+        'failure_reason' => ProviderFailureReason::KeyRejected,
+        'failure_provider' => 'Claude',
+    ]);
+
+    Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
+        ->assertSee($bulkImport->failureMessage())
+        ->assertDontSee('Provider prüfen')
+        ->assertDontSeeHtml('/ai-providers');
 });
 
 test('an incomplete grouping shows the general note', function () {

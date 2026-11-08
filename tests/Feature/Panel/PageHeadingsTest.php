@@ -24,7 +24,7 @@ use Livewire\Livewire;
 beforeEach(function () {
     Storage::fake('local');
     Queue::fake();
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(User::factory()->admin()->create());
 });
 
 /**

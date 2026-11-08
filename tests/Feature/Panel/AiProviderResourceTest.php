@@ -29,7 +29,14 @@ use Livewire\Livewire;
 
 beforeEach(function () {
     Cache::flush();
+    $this->actingAs(User::factory()->admin()->create());
+});
+
+test('a member can neither see nor open the provider page', function () {
     $this->actingAs(User::factory()->create());
+
+    $this->get('/ai-providers')->assertForbidden();
+    $this->get('/')->assertDontSee('Eigene KI');
 });
 
 function embeddedItem(): Item
