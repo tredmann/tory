@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\AcceptInvite;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SaveThemeMode;
 use App\Http\Middleware\LogOutLockedUser;
@@ -43,6 +44,7 @@ class AdminPanelProvider extends PanelProvider
             ->emailVerification()
             ->profile()
             ->globalSearch(false)
+            ->routes(fn () => Route::get('/invite/{token}', AcceptInvite::class)->middleware('throttle:10,1')->name('invite'))
             ->authenticatedRoutes(function (Panel $panel): void {
                 Route::post('/theme', SaveThemeMode::class)
                     ->middleware($panel->getEmailVerifiedMiddleware())
