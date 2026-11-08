@@ -18,14 +18,13 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install doctl
-        uses: digitalocean/action-doctl@3cb3953159719656269e044e0e24ca16dd2a690f # v2.5.2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-
-      # The login has to outlast the build, because the push happens at its end.
+      # The API token is both user name and password and does not expire during the build.
       - name: Log in to DigitalOcean Container Registry
-        run: doctl registry login --expiry-seconds 3600
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: registry.digitalocean.com
+          username: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          password: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
