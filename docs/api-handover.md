@@ -6,7 +6,7 @@ This document is for whoever builds the mobile client for Tory. It explains what
 
 | Term | Meaning |
 |---|---|
-| **Item** (`Gegenstand`) | A thing the household owns: title, description, search terms, 0–20 photos, and the spot where it lies. |
+| **Item** (`Gegenstand`) | A thing the household owns: title, description, search terms, a note, 0–20 photos, and the spot where it lies. |
 | **Spot** (`Lagerplatz`) | A concrete place: a box, a shelf, a drawer. Identified by a 4-character **code** such as `K7XM`, printed as a QR label. |
 | **Location** (`Lagerort`) | A group of spots, e.g. "Keller" or "Dachboden". Has a UUID and a unique name. |
 | **Import** | A photo upload waiting to become an item. A worker sends the photos to an AI model, which suggests title, description and search terms. The user then reviews and **converts** it into an item. |
@@ -101,6 +101,7 @@ Validation keys for array fields are indexed, e.g. `photos.2` or `search_terms.0
   "id": "0193…",
   "title": "Akku-Bohrschrauber",
   "description": "Grüner Akku-Bohrschrauber mit zwei Akkus und Ladegerät im Koffer.",
+  "notes": "Ein Akku fehlt",
   "search_terms": ["Bohrmaschine", "Akkuschrauber", "Werkzeug"],
   "spot": { "code": "K7XM", "name": "…", "note": null, "label": "…", "location": { "id": "…", "name": "Keller" } },
   "photos": [
@@ -117,7 +118,8 @@ Validation keys for array fields are indexed, e.g. `photos.2` or `search_terms.0
 }
 ```
 
-- `description` may be null. `search_terms` is always a list, possibly empty.
+- `description` and `notes` may be null. `search_terms` is always a list, possibly empty.
+- `notes` ("Bemerkung") is free text the user writes, e.g. "ohne Netzteil". The AI never writes or changes it, and search does not use it.
 - `photos` is ordered; the **first is the overview photo** (use it for tiles). It may be empty for old items — show a placeholder.
 - `thumbnails` matches `photos` one to one, 400 px WebP; use it for tiles and lists.
 - `regenerating: true` means someone pressed "Neu generieren" in the web panel and new texts are being written. Show the item read-only and offer no edit until it is false again (an edit would answer `409`).
@@ -308,6 +310,7 @@ Partial update; send only what changed:
 |---|---|
 | `title` | if sent: required, string, max 255 |
 | `description` | string or null |
+| `notes` | string or null; `""` or null clears it |
 | `search_terms` | list of strings, each max 255; **replaces** the whole list |
 | `spot` | spot code (moves the item) |
 

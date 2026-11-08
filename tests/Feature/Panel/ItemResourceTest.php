@@ -553,3 +553,27 @@ test('a rejected photo change leaves the title as it was', function () {
     expect($item->fresh())->title->toBe('Alter Titel')->photos->toBe(['imports/a.jpg']);
     Storage::disk('local')->assertExists('imports/a.jpg');
 });
+
+test('the view page shows the note', function () {
+    $item = Item::factory()->create(['notes' => 'Netzteil fehlt']);
+
+    Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
+        ->assertSee('Bemerkung')
+        ->assertSee('Netzteil fehlt');
+});
+
+test('the edit page changes and clears the note', function () {
+    $item = Item::factory()->create();
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->fillForm(['notes' => 'Dongle fehlt'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+    expect($item->fresh()->notes)->toBe('Dongle fehlt');
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->fillForm(['notes' => ''])
+        ->call('save')
+        ->assertHasNoFormErrors();
+    expect($item->fresh()->notes)->toBeNull();
+});

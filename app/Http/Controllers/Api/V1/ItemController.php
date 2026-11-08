@@ -83,6 +83,7 @@ class ItemController extends Controller
                 'spot_id' => $spotId,
                 'title' => $request->validated('title'),
                 'description' => $request->validated('description'),
+                'notes' => $request->validated('notes'),
                 'search_terms' => $request->validated('search_terms') ?? [],
                 'photos' => $paths,
             ]);

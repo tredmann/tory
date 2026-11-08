@@ -27,6 +27,12 @@ class StoreItemRequest extends FormRequest
              */
             'description' => ['nullable', 'string'],
             /**
+             * What the user noted about the item, never written by the AI.
+             *
+             * @example Ohne Netzteil
+             */
+            'notes' => ['nullable', 'string'],
+            /**
              * Extra words the keyword and semantic search should find the item by.
              */
             'search_terms' => ['nullable', 'array'],

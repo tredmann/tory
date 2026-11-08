@@ -47,3 +47,27 @@ it('never shows the internal spot id or the embedding', function () {
                 ->etc())
             ->etc());
 });
+
+it('shows the note on one line and shortened', function () {
+    Item::factory()->create(['title' => 'Beamer', 'notes' => "Fernbedienung fehlt\nKabel im Keller"]);
+    Item::factory()->create(['title' => 'Router', 'notes' => str_repeat('a', 300)]);
+    Item::factory()->create(['title' => 'Monitor']);
+    $user = User::factory()->create();
+
+    ToryServer::actingAs($user)
+        ->tool(FindItemsTool::class, ['query' => 'Beamer'])
+        ->assertSee('Beamer')
+        ->assertSee('– Bemerkung: Fernbedienung fehlt Kabel im Keller')
+        ->assertStructuredContent(fn (AssertableJson $json) => $json
+            ->where('items.0.notes', "Fernbedienung fehlt\nKabel im Keller")->etc());
+
+    ToryServer::actingAs($user)
+        ->tool(FindItemsTool::class, ['query' => 'Router'])
+        ->assertStructuredContent(fn (AssertableJson $json) => $json
+            ->where('items.0.notes', fn (string $notes) => mb_strlen($notes) <= 203)->etc());
+
+    ToryServer::actingAs($user)
+        ->tool(FindItemsTool::class, ['query' => 'Monitor'])
+        ->assertDontSee('Bemerkung')
+        ->assertStructuredContent(fn (AssertableJson $json) => $json->where('items.0.notes', null)->etc());
+});

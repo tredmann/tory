@@ -40,6 +40,10 @@ _Avoid_: batch, Sammelimport
 A word or phrase attached to an item or import so that it can be found by words that its title and description do not contain.
 _Avoid_: Tag, keyword
 
+**Note** (Bemerkung):
+Free text the user writes on an item, such as "ohne Netzteil" or "Dongle fehlt". The AI never writes or changes it, and search does not use it.
+_Avoid_: Comment, Kommentar, remark
+
 **API token**:
 A long-lived secret that one device of the mobile app uses to act as a user on the REST API. It is named after the device and never expires.
 _Avoid_: Session, API key (that is a provider's credential)

@@ -141,3 +141,14 @@ test('failed on a deleted record does nothing', function () {
 
     expect(Item::count())->toBe(0);
 });
+
+test('keeps the note of an item', function () {
+    Queue::fake();
+    InventoryExtractor::fake([['title' => 'Neu', 'description' => 'D', 'search_terms' => []]]);
+    $item = ($this->makeRecord)('item');
+    $item->forceFill(['notes' => 'Dongle fehlt'])->saveQuietly();
+
+    (new RegenerateTexts($item))->handle();
+
+    expect($item->fresh())->title->toBe('Neu')->notes->toBe('Dongle fehlt');
+});

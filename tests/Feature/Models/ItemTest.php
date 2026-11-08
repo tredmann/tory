@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\EmbedItem;
 use App\Models\Item;
 use App\Models\Spot;
 use App\Photos\PhotoStore;
@@ -56,4 +57,14 @@ test('deleting an item deletes the thumbnails with the photos', function () {
 
     Storage::disk('local')->assertMissing('imports/x.jpg');
     Storage::disk('local')->assertMissing(PhotoStore::thumbnailPath('imports/x.jpg'));
+});
+
+test('changing the note does not recompute the embedding', function () {
+    $item = Item::factory()->create();
+    Queue::fake();
+
+    $item->update(['notes' => 'Netzteil fehlt']);
+
+    expect($item->fresh()->notes)->toBe('Netzteil fehlt');
+    Queue::assertNotPushed(EmbedItem::class);
 });
