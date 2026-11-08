@@ -48,3 +48,9 @@ test('the spec never mentions the internal spot id', function () {
 
     expect($json)->not->toContain('spot_id')->not->toContain('last_spot_id');
 });
+
+test('a locked user gets 403', function () {
+    $this->actingAs(User::factory()->locked()->create());
+
+    $this->get('/docs/api')->assertForbidden();
+});

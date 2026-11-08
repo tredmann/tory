@@ -33,3 +33,24 @@ test('users can log out', function () {
 
     $this->assertGuest();
 });
+
+test('a locked user cannot log in', function () {
+    $user = User::factory()->locked()->create();
+
+    Livewire::test(Login::class)
+        ->fillForm(['email' => $user->email, 'password' => 'password'])
+        ->call('authenticate')
+        ->assertHasFormErrors(['email']);
+
+    $this->assertGuest();
+});
+
+test('an open session ends when the user is locked', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user)->get('/')->assertOk();
+
+    $user->lock();
+
+    $this->get('/')->assertRedirect(route('filament.admin.auth.login'));
+    $this->assertGuest();
+});

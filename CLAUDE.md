@@ -14,11 +14,11 @@ Laravel 13 + Filament 5 on FrankenPHP (PHP 8.5) with Postgres 18 and pgvector, d
 - The entrypoint (`docker/entrypoint.sh`) creates `.env` and `APP_KEY`, runs `composer install` when `vendor/` is missing and migrates when `AUTO_MIGRATE=true`. Tests migrate `tory_testing` only, so after adding a migration run `php artisan migrate` on the dev database too.
 - After changing `docker/`: `docker compose build app && docker compose up -d app`. After changing `compose.yaml`: `docker compose up -d app`.
 - `app` has a 4-minute stop grace period so a running extraction can finish; a hard kill leaves an import on "Läuft" until the queue's `retry_after` (300 s) fails it.
-- Logs: `docker compose logs -f app`; processes: `docker compose exec app supervisorctl status`. Mail uses the `log` driver; verification and reset links land in `storage/logs/laravel.log`.
+- Logs: `docker compose logs -f app`; processes: `docker compose exec app supervisorctl status`. Mail uses the `log` driver; verification links land in `storage/logs/laravel.log`.
 
 ## Production and releases
 
-- The `prod` target of `docker/Dockerfile` runs as `www-data`, refuses to start without `APP_KEY`, has no `.env`, logs to stderr and needs `DB_*`, `APP_URL`, optionally `AUTO_MIGRATE=true`, and a volume on `/app/storage` (uid 33). It sets `AUTH_SELF_SERVICE=false` (no registration or password reset). Behind a TLS-terminating proxy set `TRUSTED_PROXIES`, otherwise URLs come out as `http`. The database needs the `vector` extension. `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` (PEM contents, from `passport:keys`) are required for the MCP server and the image refuses to start without them; dev and `composer setup` generate keys into `storage/` (gitignored).
+- The `prod` target of `docker/Dockerfile` runs as `www-data`, refuses to start without `APP_KEY`, has no `.env`, logs to stderr and needs `DB_*`, `APP_URL`, optionally `AUTO_MIGRATE=true`, and a volume on `/app/storage` (uid 33). There is no registration or password reset. `users:make-admin <email>` promotes an existing user; on a fresh install first create it with `make:filament-user` and mark it verified (the CLI user is unverified and no reset exists). Behind a TLS-terminating proxy set `TRUSTED_PROXIES`, otherwise URLs come out as `http`. The database needs the `vector` extension. `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` (PEM contents, from `passport:keys`) are required for the MCP server and the image refuses to start without them; dev and `composer setup` generate keys into `storage/` (gitignored).
 - Pushing a tag like `1.0.0` runs `.github/workflows/release.yml`: an arm64-only build on a native arm64 runner (the server is arm64), pushed as `tory:{tag}` and `tory:latest` to `registry.digitalocean.com/$DIGITALOCEAN_REGISTRY`. It does not wait for the tests.
 
 ## Running commands
@@ -32,6 +32,7 @@ docker compose exec app php artisan test --compact [tests/Feature/Panel/ViewImpo
 docker compose exec app ./vendor/bin/pint --dirty
 docker compose exec app ./vendor/bin/phpstan analyse
 docker compose exec app php artisan make:filament-user --name=Admin --email=admin@example.com --password=secret
+docker compose exec app php artisan users:make-admin admin@example.com
 # CLI-created users are unverified:
 docker compose exec app php artisan tinker --execute='App\Models\User::firstWhere("email", "admin@example.com")->markEmailAsVerified();'
 docker compose exec app php artisan queue:failed
@@ -44,7 +45,7 @@ docker compose exec db psql -U tory -d tory
 
 ## Architecture map
 
-- **Panel:** `app/Providers/Filament/AdminPanelProvider.php` (id `admin`, path `''`); everything under `app/Filament/` is auto-discovered. Filament's own auth; `User` implements `FilamentUser` and `MustVerifyEmail`. No policies: every verified user sees every record (one household). Global search is off.
+- **Panel:** `app/Providers/Filament/AdminPanelProvider.php` (id `admin`, path `''`); everything under `app/Filament/` is auto-discovered. Filament's own auth; `User` implements `FilamentUser` and `MustVerifyEmail`. Two roles (`UserRole`); `UserPolicy` and `AiProviderPolicy` make the user list and "Eigene KI" admin-only; everything else has no policy and is open to every verified, unlocked user (one household). Global search is off.
 - **Resources:** one directory per resource (`ImportResource.php`, `Schemas/`, `Tables/`, `Pages/`); breadcrumb and title traits in `app/Filament/Resources/Concerns/`. Status enums in `app/Enums/` implement `HasLabel`/`HasColor` for badges.
 - **German UI:** locale `de`, Laravel's messages in `lang/de/` by hand, dates `d.m.Y H:i` (`AppServiceProvider`).
 - **Dashboard and item grid:** `App\Filament\Pages\Dashboard` with widgets in `app/Filament/Widgets/`; every list of items is `App\Filament\Schemas\ItemGrid` photo tiles and looks the same everywhere. A tile shows up to three photos (spec item-grid-gallery): hover strips, swiping and dots from `resources/js/item-gallery.js` and `resources/css/item-grid.css`.
@@ -56,7 +57,8 @@ docker compose exec db psql -U tory -d tory
 - **Neu generieren:** `RegenerateTexts` with the `RegeneratesTexts` trait on imports and items.
 - **AI providers** ("Eigene KI", specs ai-provider-settings, selectable-embedding-provider): `AiProvider` on `/ai-providers`, one active for object recognition and one for search (may differ); `SearchProviderSwitch`, `ProviderTester`, `ProviderFailure`, `ProviderTransfer`. With no active provider the `.env` fallback `config('ai.inventory.*')` applies; for local Ollama set `INVENTORY_AI_PROVIDER=ollama`, `INVENTORY_AI_MODEL=gemma4:e4b-mlx`, `OLLAMA_URL=http://host.docker.internal:11434`.
 - **REST API** (spec rest-api, `docs/api-handover.md`): `routes/api.php`, controllers, Form Requests and Resources under `Api/V1/`; Sanctum tokens only; OpenAPI by `dedoc/scramble` at `/docs/api`, gated by `Gate viewApiDocs`.
-- **MCP server** (spec mcp-server, "Tory in Claude"): `routes/ai.php` registers `/mcp` (`ToryServer`, tools in `app/Mcp/Tools/`) behind Passport `auth:api` and email verification, plus `Mcp::oauthRoutes()`. `ClaudeConnections` lists and ends connections, `TorySetup` is the panel page (`resources/css/tory-setup.css`, a direct Vite entry in the `HEAD_END` hook). Tools reuse the rules of the panel and API.
+- **MCP server** (spec mcp-server, "Tory in Claude"): `routes/ai.php` registers `/mcp` (`ToryServer`, tools in `app/Mcp/Tools/`) behind Passport `auth:api` and `EnsureUserIsActive` (verified and not locked), plus `Mcp::oauthRoutes()`. `ClaudeConnections` lists and ends connections, `TorySetup` is the panel page (`resources/css/tory-setup.css`, a direct Vite entry in the `HEAD_END` hook). Tools reuse the rules of the panel and API.
+- **Users** (spec user-management): `UserResource` on `/users`, invite page `App\Filament\Auth\AcceptInvite` on `/invite/{token}`, `LogOutLockedUser` (web and panel) and `EnsureUserIsActive` (API, `/mcp`).
 - **Theme:** `users.theme_mode`, written to `localStorage` by `resources/views/filament/theme-mode.blade.php` before Filament reads it, saved through `POST /theme`.
 - **Assets:** Filament's precompiled theme. A `HEAD_END` render hook loads the panel's JS and CSS from `resources/js/` and `resources/css/` with `@vite`; they are plain CSS because uncompiled Tailwind classes do not exist in the panel. `resources/css/app.css` and `resources/js/app.js` are unused entries.
 
@@ -86,7 +88,7 @@ docker compose exec db psql -U tory -d tory
 - The browser reads EXIF capture time before the canvas resize drops it. `config/livewire.php` raises the upload throttle to 150/min because each photo is one request.
 - No app-level Blade layout exists: a `Route::livewire()` full-page component fails until `php artisan livewire:layout`.
 - Generated Filament assets in `public/{css,js,fonts}/filament` are gitignored and refreshed on `composer dump-autoload`; run `php artisan filament:assets` after a manual upgrade.
-- Wherever `AUTH_SELF_SERVICE` is on (the default outside the production image), any verified registrant can download all provider keys in plain text, spend them and switch providers.
+- The invite token is shown only once (only its hash is stored); a lost link needs "Neuer Link".
 
 ## Tickets and branches
 

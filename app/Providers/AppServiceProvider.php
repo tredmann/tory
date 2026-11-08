@@ -50,11 +50,11 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * The API docs are for verified panel users only; requests carry bearer tokens.
+     * The API docs are for verified, unlocked panel users only; requests carry bearer tokens.
      */
     protected function configureApiDocs(): void
     {
-        Gate::define('viewApiDocs', fn (User $user): bool => $user->hasVerifiedEmail());
+        Gate::define('viewApiDocs', fn (User $user): bool => ! $user->isLocked() && $user->hasVerifiedEmail());
 
         Scramble::configure()->withDocumentTransformers(
             fn (OpenApi $openApi) => $openApi->secure(SecurityScheme::http('bearer')),

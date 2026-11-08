@@ -9,16 +9,7 @@ afterEach(function () {
     TrustProxies::flushState();
 });
 
-test('self service accounts are on by default', function () {
-    $panel = (new AdminPanelProvider(app()))->panel(Panel::make());
-
-    expect($panel->hasRegistration())->toBeTrue()
-        ->and($panel->hasPasswordReset())->toBeTrue();
-});
-
-test('turning self service off removes registration and password reset but not the login', function () {
-    config(['auth.self_service' => false]);
-
+test('the panel has neither registration nor password reset', function () {
     $panel = (new AdminPanelProvider(app()))->panel(Panel::make());
 
     expect($panel->hasRegistration())->toBeFalse()

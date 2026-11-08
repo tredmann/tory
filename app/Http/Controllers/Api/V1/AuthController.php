@@ -25,6 +25,10 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['email' => __('auth.failed')]);
         }
 
+        if ($user->isLocked()) {
+            abort(403, 'Dieses Konto ist gesperrt.');
+        }
+
         if (! $user->hasVerifiedEmail()) {
             abort(403, 'Bitte bestätige zuerst deine E-Mail-Adresse.');
         }

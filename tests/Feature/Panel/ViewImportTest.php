@@ -306,6 +306,7 @@ test('deleting an import removes the row and its photo files', function () {
 });
 
 test('a fixable failure names the provider and links to the settings with debug off', function () {
+    $this->actingAs(User::factory()->admin()->create());
     config(['app.debug' => false]);
     $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::KeyRejected, 'Claude')->create();
 
@@ -315,6 +316,16 @@ test('a fixable failure names the provider and links to the settings with debug 
         ->assertSeeHtml(AiProviderResource::getUrl('index'))
         ->assertDontSee('Connection refused')
         ->assertDontSee('Die Analyse ist fehlgeschlagen');
+});
+
+test('a member sees the failure without the provider link', function () {
+    config(['app.debug' => false]);
+    $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::KeyRejected, 'Claude')->create();
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertSee('Claude hat den API-Key abgelehnt.')
+        ->assertDontSee('Provider prüfen')
+        ->assertDontSeeHtml('/ai-providers');
 });
 
 test('other failures keep the general message with debug off', function () {
@@ -336,6 +347,7 @@ test('debug mode also shows the raw error of a fixable failure', function () {
 });
 
 test('the failure sentence survives the provider being renamed or deleted', function () {
+    $this->actingAs(User::factory()->admin()->create());
     config(['app.debug' => false]);
     expect(AiProvider::count())->toBe(0);
     $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::UnknownModel, 'Gelöschter Provider')->create();

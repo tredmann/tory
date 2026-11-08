@@ -148,6 +148,7 @@ test('a failing dispatch leaves the record startable', function () {
 });
 
 test('a failure shows the reason with the provider link', function () {
+    $this->actingAs(User::factory()->admin()->create());
     config(['app.debug' => false]);
     $item = Item::factory()->create([
         'regeneration_error' => 'geheim',
@@ -162,6 +163,7 @@ test('a failure shows the reason with the provider link', function () {
 });
 
 test('a failure on an import shows the reason with the provider link', function () {
+    $this->actingAs(User::factory()->admin()->create());
     config(['app.debug' => false]);
     $import = Import::factory()->completed()->create([
         'regeneration_error' => 'geheim',
@@ -173,6 +175,19 @@ test('a failure on an import shows the reason with the provider link', function 
         ->assertSee('Claude schnell hat den API-Key abgelehnt. Provider prüfen')
         ->assertSeeHtml(AiProviderResource::getUrl('index'))
         ->assertDontSee('geheim');
+});
+
+test('a member sees the regeneration failure without the provider link', function () {
+    config(['app.debug' => false]);
+    $item = Item::factory()->create([
+        'regeneration_failure_reason' => ProviderFailureReason::KeyRejected,
+        'regeneration_failure_provider' => 'Claude schnell',
+    ]);
+
+    Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
+        ->assertSee('Claude schnell hat den API-Key abgelehnt.')
+        ->assertDontSee('Provider prüfen')
+        ->assertDontSeeHtml('/ai-providers');
 });
 
 test('an unclassified failure shows the general sentence', function () {

@@ -11,12 +11,12 @@ Development happens entirely in Docker. You only need Docker Desktop (or compati
 Tory is a household inventory. Built so far (2026-11-04 to 2026-11-06):
 
 - **Stack and tooling.** Dockerised FrankenPHP app with queue worker and scheduler under supervisord, Postgres 18 with pgvector, Vite service, Pest/Pint/Larastan, Laravel Boost with the Filament skill, GitHub Actions test workflow.
-- **Panel.** Filament 5 is the whole app at `/`, with login, registration, password reset, email verification and profile. Every verified user sees everything; there is no policy layer yet.
+- **Panel.** Filament 5 is the whole app at `/`, with login, email verification and profile. Users are created by an administrator under "Nutzer" and join through a 24-hour invite link; there is no self-registration and no password reset. Every verified user sees all items, spots and imports; only administrators manage users and "Eigene KI".
 - **Photo imports.** "Importe" → "Erfassen" uploads 1–6 photos, stores them on the private disk and queues `ExtractImport`. The AI extractor (runs on the provider active on "Eigene KI", with `.env` as fallback) returns a German title and a search-friendly description. The import page polls until the job is done, shows the result or the error, and offers Retry and "Löschen".
 - **Spots.** "Lagerplätze": every spot has a permanent random four-character code (shown as `4WWH · Name`) and a page at `/spots/{code}` that lists the items inside; that address is the future QR target.
 - **Locations.** "Lagerorte" (`/locations`) group spots (e.g. Keller, Garage); every spot belongs to one, is shown as `Keller → 4WWH · Regal`, and the item list can be filtered by location.
 - **Items.** "Gegenstände": "Übernehmen" on a completed or failed import turns it into an item in a chosen spot (the photo files stay where they are; ownership moves to the item). Items can be edited and deleted (photos included).
-- **Eigene KI.** The panel entry "Eigene KI" (`/ai-providers`) lists AI providers as cards (Ollama, Claude, OpenAI, Mistral). Create several, pick the model from a list fetched from the vendor or type it, test one with a bundled photo, and activate one with a click; the next import uses it. Nothing switches providers on its own. "Exportieren" downloads all providers as a JSON file **with the API keys in plain text**, and "Importieren" reads such a file on another installation: providers whose UUID already exists are skipped, new ones arrive inactive. Every verified user can export the keys, so decide about self-registration before making an installation public.
+- **Eigene KI.** The panel entry "Eigene KI" (`/ai-providers`) lists AI providers as cards (Ollama, Claude, OpenAI, Mistral). Create several, pick the model from a list fetched from the vendor or type it, test one with a bundled photo, and activate one with a click; the next import uses it. Nothing switches providers on its own. "Exportieren" downloads all providers as a JSON file **with the API keys in plain text**, and "Importieren" reads such a file on another installation: providers whose UUID already exists are skipped, new ones arrive inactive. Only administrators can open "Eigene KI" and export the keys.
 - **Search.** The item list searches by keyword (title and description) and by meaning via embeddings (`bge-m3` on Ollama, 1024 dimensions, stored in pgvector). Run `ollama pull bge-m3` once to enable the semantic part; without it the search still works by keyword. `items:embed` catches up missing embeddings hourly.
 
 Next: print labels with QR codes for spots.
@@ -38,11 +38,11 @@ On first start the `app` container copies `.env.example` to `.env`, generates `A
 | `vite` | http://localhost:5173 | Vite dev server with HMR |
 | `db` | `localhost:5432` (`tory` / `tory` / `secret`) | Postgres 18 with pgvector |
 
-Mail uses the `log` driver: verification and password-reset links appear in `storage/logs/laravel.log`.
+Mail uses the `log` driver: verification links appear in `storage/logs/laravel.log`.
 
 ## Create a user
 
-Register at http://localhost:8000/register, or create one from the CLI:
+There is no registration page. Create the first user from the CLI:
 
 ```sh
 docker compose exec app php artisan make:filament-user --name=Admin --email=admin@example.com --password=secret
@@ -54,11 +54,17 @@ Users created from the CLI are not email-verified, and the panel requires verifi
 docker compose exec app php artisan tinker --execute='App\Models\User::firstWhere("email", "admin@example.com")->markEmailAsVerified();'
 ```
 
+Then promote that user to administrator; further users are created by an administrator under "Nutzer" and open the invite link they are given:
+
+```sh
+docker compose exec app php artisan users:make-admin admin@example.com
+```
+
 ## AI
 
 `laravel/ai` is installed with Anthropic as the default provider (`config/ai.php`). Set `ANTHROPIC_API_KEY` in `.env`. The `App\Ai\Agents\Assistant` agent exists but has no UI yet.
 
-Photos are imported at `/imports/create` ("Erfassen"): the upload is queued and `App\Ai\Agents\InventoryExtractor` turns the photos into a German title and description, which appear on the import's page once the job has finished, so the queue worker must be running. Which AI does the work is set on the panel page **Eigene KI** (`/ai-providers`): "Provider anlegen" with name, vendor (Ollama, Claude, OpenAI, Mistral), API key or Ollama address, and model; "Testen" sends a small test photo; "Aktivieren" makes it the one used from the next extraction on. API keys are stored encrypted with `APP_KEY` and never shown again (only the last four characters), so changing `APP_KEY` makes stored keys unreadable and they must be entered again. The active provider cannot be deleted. Note that registration is open: on a publicly reachable install anyone who registers could use the stored keys, so turn registration off before going public.
+Photos are imported at `/imports/create` ("Erfassen"): the upload is queued and `App\Ai\Agents\InventoryExtractor` turns the photos into a German title and description, which appear on the import's page once the job has finished, so the queue worker must be running. Which AI does the work is set on the panel page **Eigene KI** (`/ai-providers`): "Provider anlegen" with name, vendor (Ollama, Claude, OpenAI, Mistral), API key or Ollama address, and model; "Testen" sends a small test photo; "Aktivieren" makes it the one used from the next extraction on. API keys are stored encrypted with `APP_KEY` and never shown again (only the last four characters), so changing `APP_KEY` makes stored keys unreadable and they must be entered again. The active provider cannot be deleted. Only administrators can see this page and export the keys.
 
 Only while no provider is active does extraction fall back to `.env`; locally it then runs on Ollama with `gemma4:e4b-mlx`, reached from the container via `host.docker.internal`:
 

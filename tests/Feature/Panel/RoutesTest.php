@@ -10,9 +10,9 @@ test('guests are redirected from the panel root to the login page', function () 
     $this->get('/')->assertRedirect('/login');
 });
 
-test('the login and registration pages are served at the root', function () {
+test('the login page is served at the root and registration does not exist', function () {
     $this->get('/login')->assertOk();
-    $this->get('/register')->assertOk();
+    $this->get('/register')->assertNotFound();
 });
 
 test('filament assets are published', function () {
@@ -52,7 +52,7 @@ test('record pages still open for an existing record', function (string $prefix,
 ]);
 
 test('the provider page is served at its english address', function () {
-    $this->actingAs(User::factory()->create());
+    $this->actingAs(User::factory()->admin()->create());
 
     $this->get('/ai-providers')->assertOk();
 });

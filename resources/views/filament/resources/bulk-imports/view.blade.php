@@ -15,7 +15,9 @@
             <x-filament::callout color="warning" icon="heroicon-o-exclamation-triangle">
                 <x-slot name="description">
                     {{ $bulkImport->failureMessage() }}
-                    <a href="{{ AiProviderResource::getUrl('index') }}" class="tory-review-note-link">Provider prüfen</a>
+                    @if (AiProviderResource::canAccess())
+                        <a href="{{ AiProviderResource::getUrl('index') }}" class="tory-review-note-link">Provider prüfen</a>
+                    @endif
                 </x-slot>
             </x-filament::callout>
         @elseif ($bulkImport->grouping_incomplete)

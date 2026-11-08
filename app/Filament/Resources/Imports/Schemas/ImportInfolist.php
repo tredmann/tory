@@ -51,9 +51,9 @@ class ImportInfolist
                         TextEntry::make('failure_message')
                             ->label('Fehler')
                             ->color('danger')
-                            ->url(AiProviderResource::getUrl('index'))
+                            ->url(fn (): ?string => AiProviderResource::canAccess() ? AiProviderResource::getUrl('index') : null)
                             ->visible(fn (Import $record): bool => $record->status === ImportStatus::Failed && $record->failure_reason !== null)
-                            ->state(fn (Import $record): string => $record->failureMessage().' Provider prüfen'),
+                            ->state(fn (Import $record): string => $record->failureMessage().(AiProviderResource::canAccess() ? ' Provider prüfen' : '')),
                         TextEntry::make('error')
                             ->label('Fehler')
                             ->color('danger')

@@ -141,3 +141,22 @@ test('client registration is throttled', function () {
 
     postJson('/oauth/register', ['client_name' => 'Zu viel', 'redirect_uris' => ['https://example.org/cb']])->assertTooManyRequests();
 });
+
+test('a locked user is sent to the login instead of the consent page', function () {
+    $clientId = registerClient('Claude', 'https://claude.ai/api/mcp/auth_callback');
+
+    actingAs(User::factory()->locked()->create())
+        ->get(authorizeQuery($clientId, 'https://claude.ai/api/mcp/auth_callback'))
+        ->assertRedirect(route('filament.admin.auth.login'));
+
+    $this->assertGuest();
+});
+
+test('mcp refuses a locked user', function () {
+    $user = User::factory()->create();
+    $tokens = issueMcpTokens($user);
+    $user->lock();
+
+    withToken($tokens['access_token'])->postJson('/mcp', initializeMessage())
+        ->assertForbidden();
+});

@@ -185,7 +185,7 @@ No token needed. Rate limit: 5 per minute per IP.
 
 - `device_name` (max 255) names the token. Use something the user recognises, e.g. the device's name.
 - Store the token in the platform's secure storage (Keychain / Keystore). It never expires.
-- There is no registration, password reset or email verification in the API. Accounts are created and verified on the web; production installations may have self-registration switched off.
+- There is no registration, password reset or email verification in the API. Accounts are created and verified on the web; accounts are created by an administrator and activated through an invite link; there is no self-registration.
 
 #### `POST /logout`
 

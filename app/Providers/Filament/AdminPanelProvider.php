@@ -2,11 +2,10 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\AcceptInvite;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SaveThemeMode;
-use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
-use Filament\Auth\Pages\PasswordReset\ResetPassword;
-use Filament\Auth\Pages\Register;
+use App\Http\Middleware\LogOutLockedUser;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -30,18 +29,15 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        $selfService = (bool) config('auth.self_service');
-
         return $panel
             ->default()
             ->id('admin')
             ->path('')
             ->login()
-            ->registration($selfService ? Register::class : null)
-            ->passwordReset($selfService ? RequestPasswordReset::class : null, $selfService ? ResetPassword::class : null)
             ->emailVerification()
             ->profile()
             ->globalSearch(false)
+            ->routes(fn () => Route::get('/invite/{token}', AcceptInvite::class)->middleware('throttle:10,1')->name('invite'))
             ->authenticatedRoutes(function (Panel $panel): void {
                 Route::post('/theme', SaveThemeMode::class)
                     ->middleware($panel->getEmailVerifiedMiddleware())
@@ -78,6 +74,7 @@ class AdminPanelProvider extends PanelProvider
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
                 AuthenticateSession::class,
+                LogOutLockedUser::class,
                 ShareErrorsFromSession::class,
                 PreventRequestForgery::class,
                 SubstituteBindings::class,
