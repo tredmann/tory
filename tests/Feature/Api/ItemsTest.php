@@ -97,7 +97,7 @@ it('shows an item without its embedding', function () {
 });
 
 it('updates only the sent fields', function () {
-    $item = Item::factory()->create(['title' => 'Alt', 'description' => 'Text', 'search_terms' => ['a']]);
+    $item = Item::factory()->create(['title' => 'Alt', 'description' => 'Text', 'notes' => 'Alt', 'search_terms' => ['a']]);
     $spot = Spot::factory()->create();
 
     $this->patchJson("/api/v1/items/{$item->id}", ['spot' => strtolower($spot->code)])
@@ -108,6 +108,7 @@ it('updates only the sent fields', function () {
     expect($item->title)->toBe('Alt')
         ->and($item->description)->toBe('Text')
         ->and($item->search_terms)->toBe(['a'])
+        ->and($item->notes)->toBe('Alt')
         ->and($item->spot_id)->toBe($spot->id);
 });
 
@@ -120,6 +121,19 @@ it('updates texts', function () {
         ->assertJsonPath('data.search_terms', ['x', 'y']);
 
     expect($item->fresh()->description)->toBeNull();
+});
+
+it('changes and clears the note', function () {
+    $item = Item::factory()->create();
+
+    $this->patchJson("/api/v1/items/{$item->id}", ['notes' => 'Dongle fehlt'])
+        ->assertOk()
+        ->assertJsonPath('data.notes', 'Dongle fehlt');
+
+    $this->patchJson("/api/v1/items/{$item->id}", ['notes' => ''])
+        ->assertOk()
+        ->assertJsonPath('data.notes', null);
+    expect($item->fresh()->notes)->toBeNull();
 });
 
 it('rejects an empty title', function () {
@@ -200,8 +214,10 @@ it('creates an item with photos and texts without extraction', function () {
         'title' => 'Akkuschrauber',
         'description' => 'Grüner Akkuschrauber mit zwei Akkus.',
         'search_terms' => ['Werkzeug', 'Bohrer'],
+        'notes' => 'Ohne Netzteil',
         'spot' => strtolower($spot->code),
     ])->assertCreated()
+        ->assertJsonPath('data.notes', 'Ohne Netzteil')
         ->assertJsonPath('data.title', 'Akkuschrauber')
         ->assertJsonPath('data.description', 'Grüner Akkuschrauber mit zwei Akkus.')
         ->assertJsonPath('data.search_terms', ['Werkzeug', 'Bohrer'])
@@ -232,6 +248,7 @@ it('creates an item without description and search terms', function () {
         'spot' => $spot->code,
     ])->assertCreated()
         ->assertJsonPath('data.description', null)
+        ->assertJsonPath('data.notes', null)
         ->assertJsonPath('data.search_terms', []);
 });
 
@@ -253,6 +270,7 @@ it('rejects an invalid new item', function (Closure $payload, string $field) {
     'no title' => [fn (Spot $s) => ['spot' => $s->code, 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'title'],
     'a too long title' => [fn (Spot $s) => ['spot' => $s->code, 'title' => str_repeat('x', 256), 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'title'],
     'a search term that is no string' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'search_terms' => [['x']], 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'search_terms.0'],
+    'a note that is no string' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'notes' => ['x'], 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'notes'],
     'no spot' => [fn (Spot $s) => ['title' => 'X', 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
     'an unknown spot' => [fn (Spot $s) => ['spot' => 'ZZZZ', 'title' => 'X', 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
 ]);

@@ -17,6 +17,12 @@ class UpdateItemRequest extends FormRequest
         return [
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
+            /**
+             * What the user noted about the item, never written by the AI.
+             *
+             * @example Ohne Netzteil
+             */
+            'notes' => ['sometimes', 'nullable', 'string'],
             'search_terms' => ['sometimes', 'array'],
             'search_terms.*' => ['string', 'max:255'],
             'spot' => $this->spotRules('sometimes'),
