@@ -89,6 +89,13 @@ test('an administrator cannot lock, demote or re-invite themselves', function ()
         ->assertFormFieldIsDisabled('role');
 });
 
+test('an administrator cannot demote themselves through the edit action', function () {
+    Livewire::test(ManageUsers::class)
+        ->callTableAction('edit', $this->admin, ['name' => $this->admin->name, 'email' => $this->admin->email, 'role' => UserRole::Member->value]);
+
+    expect($this->admin->fresh()->role)->toBe(UserRole::Admin);
+});
+
 test('there is no delete', function () {
     Livewire::test(ManageUsers::class)
         ->assertTableActionDoesNotExist('delete');

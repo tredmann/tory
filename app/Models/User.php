@@ -119,7 +119,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'invite_expires_at' => now()->addHours(24),
         ])->save();
 
-        return url('/invite/'.$token);
+        return route('filament.admin.invite', ['token' => $token]);
     }
 
     public static function findByInviteToken(string $token): ?self

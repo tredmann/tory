@@ -50,7 +50,7 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * The API docs are for verified panel users only; requests carry bearer tokens.
+     * The API docs are for verified, unlocked panel users only; requests carry bearer tokens.
      */
     protected function configureApiDocs(): void
     {
