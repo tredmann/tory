@@ -4,6 +4,9 @@ use App\Providers\AppServiceProvider;
 use App\Providers\Filament\AdminPanelProvider;
 use Filament\Panel;
 use Illuminate\Http\Middleware\TrustProxies;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 
 afterEach(function () {
     TrustProxies::flushState();
@@ -33,4 +36,46 @@ test('the forwarded scheme is ignored without a trusted proxy', function () {
     $response = $this->withHeaders(['X-Forwarded-Proto' => 'https'])->get('/login')->assertOk();
 
     expect($response->getContent())->toMatch('#"http://[^"]+/css/filament/#');
+});
+
+/**
+ * Answers the Pwned Passwords range request; the given password is reported as leaked.
+ */
+function fakePwnedPasswords(?string $leaked = null): void
+{
+    Http::preventStrayRequests();
+
+    $body = $leaked === null ? '' : substr(strtoupper(sha1($leaked)), 5).':42';
+
+    Http::fake(['https://api.pwnedpasswords.com/range/*' => Http::response($body)]);
+}
+
+function passwordPasses(string $password): bool
+{
+    return Validator::make(['password' => $password], ['password' => Password::default()])->passes();
+}
+
+test('in production a password of 15 characters passes without any character class', function () {
+    app()->detectEnvironment(fn (): string => 'production');
+    fakePwnedPasswords();
+
+    expect(passwordPasses('nurkleinbuchsta'))->toBeTrue();
+});
+
+test('in production a password shorter than 15 characters fails', function () {
+    app()->detectEnvironment(fn (): string => 'production');
+    fakePwnedPasswords();
+
+    expect(passwordPasses('nurkleinbuchst'))->toBeFalse();
+});
+
+test('in production a leaked password fails', function () {
+    app()->detectEnvironment(fn (): string => 'production');
+    fakePwnedPasswords(leaked: 'ein-geleaktes-passwort');
+
+    expect(passwordPasses('ein-geleaktes-passwort'))->toBeFalse();
+});
+
+test('outside production a password of 8 characters passes', function () {
+    expect(passwordPasses('achtzeic'))->toBeTrue();
 });

@@ -3,6 +3,7 @@
 use App\Enums\UserRole;
 use App\Filament\Auth\AcceptInvite;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 
@@ -36,6 +37,21 @@ test('the password must be confirmed', function () {
         ->fillForm(['password' => 'ein-langes-passwort', 'passwordConfirmation' => 'anders'])
         ->call('accept')
         ->assertHasFormErrors(['password']);
+});
+
+test('in production the invite refuses a password shorter than 15 characters', function () {
+    $user = User::invite('Anna', 'anna@example.com', UserRole::Member);
+    $page = Livewire::test(AcceptInvite::class, ['token' => inviteToken($user)])
+        ->fillForm(['password' => 'nurkleinbuchst', 'passwordConfirmation' => 'nurkleinbuchst']);
+
+    app()->detectEnvironment(fn (): string => 'production');
+    Http::preventStrayRequests();
+    Http::fake(['https://api.pwnedpasswords.com/range/*' => Http::response('')]);
+
+    $page->call('accept')
+        ->assertHasFormErrors(['password' => 'Das Feld Passwort muss mindestens 15 Zeichen lang sein.']);
+
+    $this->assertGuest();
 });
 
 test('an unknown, used or locked link shows the invalid message', function (string $token) {
