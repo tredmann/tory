@@ -6,6 +6,7 @@ use App\Filament\Auth\AcceptInvite;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SaveThemeMode;
 use App\Http\Middleware\LogOutLockedUser;
+use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -13,6 +14,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Icons\Heroicon;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -37,6 +39,12 @@ class AdminPanelProvider extends PanelProvider
             ->emailVerification()
             ->profile()
             ->globalSearch(false)
+            ->userMenuItems([
+                Action::make('version')
+                    ->label(fn (): string => 'Version '.config('app.version'))
+                    ->icon(Heroicon::OutlinedInformationCircle)
+                    ->disabled(),
+            ])
             ->routes(fn () => Route::get('/invite/{token}', AcceptInvite::class)->middleware('throttle:10,1')->name('invite'))
             ->authenticatedRoutes(function (Panel $panel): void {
                 Route::post('/theme', SaveThemeMode::class)

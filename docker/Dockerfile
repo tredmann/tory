@@ -70,4 +70,8 @@ ENV APP_ENV=production
 ENV APP_DEBUG=false
 ENV LOG_CHANNEL=stderr
 
+# The release tag, passed by the release workflow and shown in the user menu.
+ARG APP_VERSION=dev
+ENV APP_VERSION=$APP_VERSION
+
 USER www-data
