@@ -22,6 +22,24 @@ _Avoid_: Number, Nr., ID
 The printed tag on a spot, carrying its code, name, a QR code and the address the QR code leads to. It leaves out the location, so it stays correct when the spot moves.
 _Avoid_: Sticker, tag
 
+### People
+
+**Administrator**:
+A user who may manage other users: invite them, change roles, lock and unlock them. There is always at least one; the last one cannot be demoted or locked.
+_Avoid_: Admin (in the UI), owner
+
+**User** (Nutzer):
+A person who can log in and sees the whole household inventory. Everyone who is not an administrator is a plain user.
+_Avoid_: Mitglied, Member (in the UI)
+
+**Invite link** (Einladungslink):
+A single-use address, valid for 24 hours, through which an invited person chooses a password and so joins. A new link replaces the old one.
+_Avoid_: Registrierungslink, Token
+
+**Locked** (gesperrt):
+A user who can no longer log in or use any connection, but whose data stays. An administrator can unlock them again.
+_Avoid_: Deleted, deactivated, banned
+
 ### Things
 
 **Item** (Gegenstand):
