@@ -21,6 +21,7 @@ use Throwable;
 
 /**
  * @property string $id
+ * @property string|null $notes
  * @property list<string>|null $search_terms null on a model created in this request without the database default
  */
 #[Hidden(['embedding'])]
@@ -37,6 +38,7 @@ class Item extends Model
         'spot_id',
         'title',
         'description',
+        'notes',
         'photos',
         'search_terms',
     ];
