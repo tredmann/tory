@@ -42,6 +42,7 @@ class FindItemsTool extends Tool
                 'id' => $item->id,
                 'title' => $item->title,
                 'description' => $item->description === null ? null : Str::limit($item->description, 200),
+                'notes' => $item->notes === null ? null : Str::limit($item->notes, 200),
                 'spot' => SpotSummary::of($item->spot),
             ])
             ->all();
@@ -51,7 +52,8 @@ class FindItemsTool extends Tool
         }
 
         $lines = array_map(
-            fn (array $item): string => "{$item['title']} ({$item['id']}): {$item['spot']['name']} ({$item['spot']['code']}), {$item['spot']['location']}",
+            fn (array $item): string => "{$item['title']} ({$item['id']}): {$item['spot']['name']} ({$item['spot']['code']}), {$item['spot']['location']}"
+                .($item['notes'] === null ? '' : ' – Bemerkung: '.Str::squish($item['notes'])),
             $items,
         );
 
