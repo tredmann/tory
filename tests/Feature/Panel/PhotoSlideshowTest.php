@@ -240,7 +240,7 @@ test('the panel loads the slideshow script', function () {
     $this->withVite();
     Vite::useHotFile($hotFile);
 
-    $this->get('/imports')->assertOk()->assertSee('resources/js/slideshow.js');
+    $this->get('/imports')->assertOk()->assertSee('resources/js/slideshow.js')->assertSee('resources/js/item-gallery.js');
 
     unlink($hotFile);
 });

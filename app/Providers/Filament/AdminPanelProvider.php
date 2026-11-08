@@ -65,7 +65,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): HtmlString => new HtmlString(Blade::render("@vite(['resources/js/slideshow.js', 'resources/js/item-photos.js', 'resources/js/bulk-photos.js', 'resources/css/item-grid.css', 'resources/css/tory-setup.css'])")),
+                fn (): HtmlString => new HtmlString(Blade::render("@vite(['resources/js/slideshow.js', 'resources/js/item-photos.js', 'resources/js/bulk-photos.js', 'resources/js/item-gallery.js', 'resources/css/item-grid.css', 'resources/css/tory-setup.css'])")),
             )
             ->colors([
                 'primary' => Color::Amber,

@@ -126,3 +126,59 @@
 .dark .tory-location-bar::after {
     background: var(--gray-500);
 }
+
+/* A tile with several photos: a strip one photo wide that snaps per photo; item-gallery.js scrolls it on hover. */
+.tory-item-grid .tory-gallery {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    border-radius: 12px;
+}
+
+.tory-item-grid .tory-gallery::-webkit-scrollbar {
+    display: none;
+}
+
+.tory-item-grid .tory-gallery img {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    border-radius: 0;
+}
+
+.tory-item-grid .fi-ta-col:has(> .tory-gallery) {
+    --tory-dots: 2;
+    --tory-active: 0;
+    position: relative;
+}
+
+.tory-item-grid .fi-ta-col:has(> .tory-gallery > img:nth-child(3)) {
+    --tory-dots: 3;
+}
+
+.tory-item-grid .fi-ta-col:has(> .tory-gallery[data-active='1']) {
+    --tory-active: 1;
+}
+
+.tory-item-grid .fi-ta-col:has(> .tory-gallery[data-active='2']) {
+    --tory-active: 2;
+}
+
+/* One dot per photo, 6 px apart; the first layer is the visible photo's dot. */
+.tory-item-grid .fi-ta-col:has(> .tory-gallery)::after {
+    content: '';
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    width: calc(var(--tory-dots) * 12px - 6px);
+    height: 6px;
+    translate: -50% 0;
+    background:
+        radial-gradient(circle at 3px 3px, #fff 2.5px, transparent 3px) calc(var(--tory-active) * 12px) 0 / 6px 6px no-repeat,
+        radial-gradient(circle at 3px 3px, rgb(255 255 255 / 0.5) 2.5px, transparent 3px) 0 0 / 12px 6px repeat-x;
+    filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.6));
+    pointer-events: none;
+}
