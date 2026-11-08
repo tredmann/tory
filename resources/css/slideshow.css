@@ -1,5 +1,11 @@
+/* Every image that opens the slideshow is a thumbnail; the gray shows behind the transparent placeholder. */
 img[data-slideshow] {
     cursor: pointer;
+    background: var(--gray-100);
+}
+
+.dark img[data-slideshow] {
+    background: var(--gray-800);
 }
 
 .tory-slideshow-position {
