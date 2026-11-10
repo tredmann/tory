@@ -8,6 +8,7 @@ use App\Models\Import;
 use App\Models\Item;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -18,6 +19,7 @@ class RegenerateTextsAction
         return Action::make('regenerate')
             ->label('Neu generieren')
             ->color('gray')
+            ->groupedIcon(Heroicon::ArrowPath)
             ->requiresConfirmation()
             ->modalHeading('Texte neu generieren?')
             ->modalDescription('Titel, Beschreibung und Suchbegriffe werden durch neue Vorschläge ersetzt, auch manuelle Änderungen. Das lässt sich nicht rückgängig machen. Mit einem kostenpflichtigen Provider kostet jeder Lauf Geld.')

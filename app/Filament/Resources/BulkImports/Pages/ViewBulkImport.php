@@ -17,6 +17,7 @@ use App\Models\Import;
 use App\Photos\PhotoLinks;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -43,14 +44,11 @@ class ViewBulkImport extends ViewRecord
     }
 
     /**
-     * @return array<Action>
+     * @return array<Action|ActionGroup>
      */
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make()
-                ->label('Löschen')
-                ->successRedirectUrl(ImportResource::getUrl('index')),
             Action::make('confirm')
                 ->label(fn (): string => self::imports($this->bulkImport()->importCount()).' anlegen')
                 ->visible(fn (): bool => $this->bulkImport()->status === BulkImportStatus::Ready)
@@ -80,6 +78,11 @@ class ViewBulkImport extends ViewRecord
 
                     $this->redirect(ImportResource::getUrl('index'));
                 }),
+            ActionGroup::make([
+                DeleteAction::make()
+                    ->label('Löschen')
+                    ->successRedirectUrl(ImportResource::getUrl('index')),
+            ])->color('gray'),
         ];
     }
 

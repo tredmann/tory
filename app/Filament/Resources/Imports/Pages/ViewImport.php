@@ -11,6 +11,7 @@ use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Resources\Spots\Schemas\SpotSelect;
 use App\Models\Import;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -25,7 +26,7 @@ class ViewImport extends ViewRecord
     protected static string $resource = ImportResource::class;
 
     /**
-     * @return array<Action>
+     * @return array<Action|ActionGroup>
      */
     protected function getHeaderActions(): array
     {
@@ -42,7 +43,6 @@ class ViewImport extends ViewRecord
                         ->success()
                         ->send();
                 }),
-            RegenerateTextsAction::make(),
             Action::make('convert')
                 ->label('Übernehmen')
                 ->visible(fn (): bool => $this->import()->isFinished() && ! $this->import()->isRegenerating())
@@ -79,10 +79,13 @@ class ViewImport extends ViewRecord
 
                     $this->redirect(ImportResource::getUrl('index'));
                 }),
-            DeleteAction::make()
-                ->label('Löschen')
-                ->visible(fn (): bool => $this->import()->isFinished())
-                ->successRedirectUrl(ImportResource::getUrl('index')),
+            ActionGroup::make([
+                RegenerateTextsAction::make(),
+                DeleteAction::make()
+                    ->label('Löschen')
+                    ->visible(fn (): bool => $this->import()->isFinished())
+                    ->successRedirectUrl(ImportResource::getUrl('index')),
+            ])->color('gray'),
         ];
     }
 
