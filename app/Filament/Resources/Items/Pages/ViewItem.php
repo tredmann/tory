@@ -8,6 +8,7 @@ use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
 use App\Filament\Resources\Concerns\TitledByRecord;
 use App\Filament\Resources\Items\ItemResource;
 use App\Models\Item;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
@@ -21,10 +22,12 @@ class ViewItem extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            RegenerateTextsAction::make(),
-            EditAction::make()
-                ->visible(fn (Item $record): bool => ! $record->isRegenerating()),
-            DeleteAction::make(),
+            ActionGroup::make([
+                RegenerateTextsAction::make(),
+                EditAction::make()
+                    ->visible(fn (Item $record): bool => ! $record->isRegenerating()),
+                DeleteAction::make(),
+            ])->color('gray'),
         ];
     }
 }

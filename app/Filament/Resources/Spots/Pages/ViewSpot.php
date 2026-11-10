@@ -8,6 +8,7 @@ use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
 use App\Filament\Resources\Concerns\TitledByRecord;
 use App\Filament\Resources\Spots\SpotResource;
 use App\Models\Spot;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
@@ -22,24 +23,26 @@ class ViewSpot extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            SpotLabelsAction::make(),
-            EditAction::make(),
-            DeleteAction::make()
-                ->before(function (DeleteAction $action, Spot $record): void {
-                    $reason = match (true) {
-                        $record->items()->exists() => 'Der Lagerplatz enthält noch Gegenstände und kann nicht gelöscht werden.',
-                        $record->bulkImports()->exists() => 'Dieser Lagerplatz wird noch von einem Bulkimport verwendet.',
-                        default => null,
-                    };
+            ActionGroup::make([
+                SpotLabelsAction::make(),
+                EditAction::make(),
+                DeleteAction::make()
+                    ->before(function (DeleteAction $action, Spot $record): void {
+                        $reason = match (true) {
+                            $record->items()->exists() => 'Der Lagerplatz enthält noch Gegenstände und kann nicht gelöscht werden.',
+                            $record->bulkImports()->exists() => 'Dieser Lagerplatz wird noch von einem Bulkimport verwendet.',
+                            default => null,
+                        };
 
-                    if ($reason === null) {
-                        return;
-                    }
+                        if ($reason === null) {
+                            return;
+                        }
 
-                    Notification::make()->title($reason)->danger()->send();
+                        Notification::make()->title($reason)->danger()->send();
 
-                    $action->halt();
-                }),
+                        $action->halt();
+                    }),
+            ])->color('gray'),
         ];
     }
 }

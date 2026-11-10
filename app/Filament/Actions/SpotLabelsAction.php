@@ -8,6 +8,7 @@ use App\Models\Spot;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Forms\Components\Select;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -44,6 +45,7 @@ class SpotLabelsAction
     {
         return $action
             ->color('gray')
+            ->groupedIcon(Heroicon::QrCode)
             ->modalHeading('Etiketten erzeugen')
             ->modalSubmitActionLabel('PDF herunterladen')
             ->schema([

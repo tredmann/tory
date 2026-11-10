@@ -8,10 +8,12 @@ use App\Filament\Resources\Concerns\OmitsPageBreadcrumb;
 use App\Filament\Resources\Concerns\StartsBreadcrumbsAtHome;
 use App\Models\AiProvider;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use InvalidArgumentException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -28,35 +30,39 @@ class ManageAiProviders extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('export')
-                ->label('Exportieren')
-                ->color('gray')
-                ->authorize('create')
-                ->disabled(fn (): bool => ! AiProvider::query()->exists())
-                ->requiresConfirmation()
-                ->modalHeading('Provider exportieren')
-                ->modalDescription('Die Datei enthält die API-Keys im Klartext. Bewahre sie sicher auf und lösche sie nach dem Import.')
-                ->modalSubmitActionLabel('Exportieren')
-                ->action(fn (ProviderTransfer $transfer): StreamedResponse => $this->downloadExport($transfer)),
-            Action::make('import')
-                ->label('Importieren')
-                ->color('gray')
-                ->authorize('create')
-                ->modalHeading('Provider importieren')
-                ->modalDescription('Provider, deren UUID hier schon vorhanden ist, werden übersprungen. Neue Provider sind zunächst inaktiv.')
-                ->modalSubmitActionLabel('Importieren')
-                ->schema([
-                    FileUpload::make('file')
-                        ->label('Datei')
-                        ->storeFiles(false)
-                        ->acceptedFileTypes(['application/json', 'text/plain'])
-                        ->maxSize(1024)
-                        ->required(),
-                ])
-                ->action(fn (array $data, ProviderTransfer $transfer) => $this->importFile($data['file'], $transfer)),
             CreateAction::make()
                 ->label('Provider anlegen')
                 ->createAnother(false),
+            ActionGroup::make([
+                Action::make('export')
+                    ->label('Exportieren')
+                    ->color('gray')
+                    ->groupedIcon(Heroicon::ArrowDownTray)
+                    ->authorize('create')
+                    ->disabled(fn (): bool => ! AiProvider::query()->exists())
+                    ->requiresConfirmation()
+                    ->modalHeading('Provider exportieren')
+                    ->modalDescription('Die Datei enthält die API-Keys im Klartext. Bewahre sie sicher auf und lösche sie nach dem Import.')
+                    ->modalSubmitActionLabel('Exportieren')
+                    ->action(fn (ProviderTransfer $transfer): StreamedResponse => $this->downloadExport($transfer)),
+                Action::make('import')
+                    ->label('Importieren')
+                    ->color('gray')
+                    ->groupedIcon(Heroicon::ArrowUpTray)
+                    ->authorize('create')
+                    ->modalHeading('Provider importieren')
+                    ->modalDescription('Provider, deren UUID hier schon vorhanden ist, werden übersprungen. Neue Provider sind zunächst inaktiv.')
+                    ->modalSubmitActionLabel('Importieren')
+                    ->schema([
+                        FileUpload::make('file')
+                            ->label('Datei')
+                            ->storeFiles(false)
+                            ->acceptedFileTypes(['application/json', 'text/plain'])
+                            ->maxSize(1024)
+                            ->required(),
+                    ])
+                    ->action(fn (array $data, ProviderTransfer $transfer) => $this->importFile($data['file'], $transfer)),
+            ])->color('gray'),
         ];
     }
 
