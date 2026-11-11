@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Locations\Tables;
 
 use App\Models\Location;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
@@ -23,12 +24,14 @@ class LocationsTable
             ])
             ->defaultSort('name')
             ->recordActions([
-                EditAction::make()
-                    ->label('Bearbeiten'),
-                DeleteAction::make()
-                    ->label('Löschen')
-                    ->disabled(fn (Location $record): bool => $record->spots()->exists())
-                    ->tooltip(fn (Location $record): ?string => $record->spots()->exists() ? 'Enthält noch Lagerplätze' : null),
+                ActionGroup::make([
+                    EditAction::make()
+                        ->label('Bearbeiten'),
+                    DeleteAction::make()
+                        ->label('Löschen')
+                        ->disabled(fn (Location $record): bool => $record->spots()->exists())
+                        ->tooltip(fn (Location $record): ?string => $record->spots()->exists() ? 'Enthält noch Lagerplätze' : null),
+                ])->color('gray'),
             ]);
     }
 }

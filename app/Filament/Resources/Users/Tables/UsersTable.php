@@ -7,8 +7,10 @@ use App\Enums\UserStatus;
 use App\Filament\Resources\Users\Pages\ManageUsers;
 use App\Models\User;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Auth\Access\Gate;
@@ -35,41 +37,46 @@ class UsersTable
             ->paginated(false)
             ->defaultSort('name')
             ->recordActions([
-                EditAction::make()
-                    ->label('Bearbeiten')
-                    ->using(self::saveUser(...)),
-                Action::make('issueInvite')
-                    ->authorize('issueInvite')
-                    ->label('Neuer Link')
-                    ->requiresConfirmation()
-                    ->modalHeading('Neuer Link')
-                    ->modalDescription('Ein bisher ausgegebener Link wird damit ungültig.')
-                    ->modalSubmitActionLabel('Link erzeugen')
-                    ->action(fn (User $record, ManageUsers $livewire) => $livewire->showInviteLink($record->issueInviteLink())),
-                Action::make('lock')
-                    ->authorize('lock')
-                    ->label('Sperren')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalHeading('Sperren')
-                    ->modalDescription('Die Person kann sich danach weder anmelden noch die API oder Claude nutzen.')
-                    ->modalSubmitActionLabel('Sperren')
-                    ->action(function (User $record): void {
-                        $record->lock();
+                ActionGroup::make([
+                    EditAction::make()
+                        ->label('Bearbeiten')
+                        ->using(self::saveUser(...)),
+                    Action::make('issueInvite')
+                        ->authorize('issueInvite')
+                        ->label('Neuer Link')
+                        ->groupedIcon(Heroicon::Link)
+                        ->requiresConfirmation()
+                        ->modalHeading('Neuer Link')
+                        ->modalDescription('Ein bisher ausgegebener Link wird damit ungültig.')
+                        ->modalSubmitActionLabel('Link erzeugen')
+                        ->action(fn (User $record, ManageUsers $livewire) => $livewire->showInviteLink($record->issueInviteLink())),
+                    Action::make('lock')
+                        ->authorize('lock')
+                        ->label('Sperren')
+                        ->groupedIcon(Heroicon::LockClosed)
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Sperren')
+                        ->modalDescription('Die Person kann sich danach weder anmelden noch die API oder Claude nutzen.')
+                        ->modalSubmitActionLabel('Sperren')
+                        ->action(function (User $record): void {
+                            $record->lock();
 
-                        Notification::make()->title('Gesperrt')->success()->send();
-                    }),
-                Action::make('unlock')
-                    ->authorize('unlock')
-                    ->label('Entsperren')
-                    ->requiresConfirmation()
-                    ->modalHeading('Entsperren')
-                    ->modalSubmitActionLabel('Entsperren')
-                    ->action(function (User $record): void {
-                        $record->unlock();
+                            Notification::make()->title('Gesperrt')->success()->send();
+                        }),
+                    Action::make('unlock')
+                        ->authorize('unlock')
+                        ->label('Entsperren')
+                        ->groupedIcon(Heroicon::LockOpen)
+                        ->requiresConfirmation()
+                        ->modalHeading('Entsperren')
+                        ->modalSubmitActionLabel('Entsperren')
+                        ->action(function (User $record): void {
+                            $record->unlock();
 
-                        Notification::make()->title('Entsperrt')->success()->send();
-                    }),
+                            Notification::make()->title('Entsperrt')->success()->send();
+                        }),
+                ])->color('gray'),
             ]);
     }
 

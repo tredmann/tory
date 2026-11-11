@@ -1,0 +1,10 @@
+.tory-provider-grid .fi-ta-record-content-ctn {
+    align-items: flex-start;
+    column-gap: 0.75rem;
+    flex-direction: row;
+}
+
+.tory-provider-grid .fi-ta-record-content-ctn > :first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
