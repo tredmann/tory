@@ -13,12 +13,38 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Component;
 
 class ViewSpot extends ViewRecord
 {
     use OmitsPageBreadcrumb, StartsBreadcrumbsAtHome, TitledByRecord;
 
     protected static string $resource = SpotResource::class;
+
+    public function getSubheading(): ?string
+    {
+        $spot = $this->getRecord();
+        assert($spot instanceof Spot);
+
+        return $spot->location->name;
+    }
+
+    /**
+     * The infolist holds only the note; without one Filament would fall back to showing the form.
+     */
+    protected function hasInfolist(): bool
+    {
+        return true;
+    }
+
+    /**
+     * An empty infolist would still take up a gap above the items.
+     */
+    public function getInfolistContentComponent(): Component
+    {
+        return parent::getInfolistContentComponent()
+            ->visible(fn (): bool => $this->getSchema('infolist')->getComponents() !== []);
+    }
 
     protected function getHeaderActions(): array
     {

@@ -76,11 +76,30 @@ test('the list finds a spot by code and by name', function () {
         ->assertCanNotSeeTableRecords([$wanted]);
 });
 
-test('the view page shows code, name and note', function () {
-    $spot = Spot::factory()->create(['name' => 'Schrank', 'note' => 'Flur']);
+test('the view page names the spot in its title and its location below', function () {
+    $location = Location::factory()->create(['name' => 'Keller']);
+    $spot = Spot::factory()->for($location)->create(['name' => 'Schrank']);
+
+    $page = Livewire::test(ViewSpot::class, ['record' => $spot->getRouteKey()])
+        ->assertSee("{$spot->code} · Schrank");
+
+    expect($page->instance()->getSubheading())->toBe('Keller');
+});
+
+test('the view page shows the note with its line breaks', function () {
+    $spot = Spot::factory()->create(['note' => "Rote Kiste\nunterstes Fach"]);
 
     Livewire::test(ViewSpot::class, ['record' => $spot->getRouteKey()])
-        ->assertSee($spot->code)->assertSee('Schrank')->assertSee('Flur');
+        ->assertSchemaComponentVisible('note', 'infolist')
+        ->assertSeeHtml('Rote Kiste<br');
+});
+
+test('the view page leaves the note out when there is none and shows no form instead', function () {
+    $spot = Spot::factory()->create(['note' => null]);
+
+    Livewire::test(ViewSpot::class, ['record' => $spot->getRouteKey()])
+        ->assertSchemaComponentHidden('note', 'infolist')
+        ->assertDontSee('Notiz');
 });
 
 test('a spot opens by its code in any case', function () {
