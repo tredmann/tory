@@ -72,8 +72,15 @@ class AdminPanelProvider extends PanelProvider
                 fn (): HtmlString => new HtmlString(Blade::render("@vite(['resources/js/slideshow.js', 'resources/js/item-photos.js', 'resources/js/bulk-photos.js', 'resources/js/item-gallery.js', 'resources/css/item-grid.css', 'resources/css/tory-setup.css', 'resources/css/ai-providers.css'])")),
             )
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => array_replace(Color::hex('#C42A18'), [
+                    500 => Color::hex('#C42A18')[600],
+                    600 => '#C42A18',
+                    700 => '#A82213',
+                    800 => '#8F1C0F',
+                ]),
+                'gray' => Color::Stone,
             ])
+            ->font('DM Sans')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
