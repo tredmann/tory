@@ -15,6 +15,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
 
 class ImportResource extends Resource
 {
@@ -31,6 +32,8 @@ class ImportResource extends Resource
     protected static ?string $recordTitleAttribute = 'title';
 
     protected static ?string $navigationLabel = 'Importe';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Inventar';
 
     protected static ?int $navigationSort = 4;
 
