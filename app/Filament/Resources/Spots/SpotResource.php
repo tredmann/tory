@@ -18,6 +18,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
 
 class SpotResource extends Resource
 {
@@ -32,6 +33,8 @@ class SpotResource extends Resource
     protected static ?string $pluralModelLabel = 'Lagerplätze';
 
     protected static ?string $navigationLabel = 'Lagerplätze';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Inventar';
 
     protected static ?int $navigationSort = 2;
 

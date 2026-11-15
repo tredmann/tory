@@ -11,6 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class LocationResource extends Resource
 {
@@ -25,6 +26,8 @@ class LocationResource extends Resource
     protected static ?string $pluralModelLabel = 'Lagerorte';
 
     protected static ?string $navigationLabel = 'Lagerorte';
+
+    protected static string|UnitEnum|null $navigationGroup = 'Inventar';
 
     protected static ?int $navigationSort = 3;
 

@@ -11,6 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class AiProviderResource extends Resource
 {
@@ -26,9 +27,11 @@ class AiProviderResource extends Resource
 
     protected static ?string $navigationLabel = 'Eigene KI';
 
+    protected static string|UnitEnum|null $navigationGroup = 'Einstellungen';
+
     protected static ?string $breadcrumb = 'Eigene KI';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 6;
 
     protected static ?string $recordTitleAttribute = 'name';
 

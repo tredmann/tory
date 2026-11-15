@@ -11,6 +11,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -72,7 +73,23 @@ class AdminPanelProvider extends PanelProvider
                 fn (): HtmlString => new HtmlString(Blade::render("@vite(['resources/js/slideshow.js', 'resources/js/item-photos.js', 'resources/js/bulk-photos.js', 'resources/js/item-gallery.js', 'resources/css/item-grid.css', 'resources/css/tory-setup.css', 'resources/css/ai-providers.css'])")),
             )
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => array_replace(Color::hex('#C42A18'), [
+                    500 => Color::hex('#C42A18')[600],
+                    600 => '#C42A18',
+                    700 => '#A82213',
+                    800 => '#8F1C0F',
+                ]),
+                'gray' => Color::Stone,
+            ])
+            ->font('DM Sans')
+            ->sidebarWidth('14rem')
+            ->brandLogo(fn (): View => view('filament.brand-logo', ['mark' => asset('images/tory-mark.svg')]))
+            ->darkModeBrandLogo(fn (): View => view('filament.brand-logo', ['mark' => asset('images/tory-mark-white.svg')]))
+            ->brandLogoHeight('2rem')
+            ->favicon(asset('images/tory-mark.svg'))
+            ->navigationGroups([
+                NavigationGroup::make('Inventar')->collapsible(false),
+                NavigationGroup::make('Einstellungen')->collapsible(false),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

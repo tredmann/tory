@@ -14,6 +14,7 @@ use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
+use UnitEnum;
 
 class TorySetup extends Page
 {
@@ -25,7 +26,9 @@ class TorySetup extends Page
 
     protected static ?string $navigationLabel = 'Tory in Claude';
 
-    protected static ?int $navigationSort = 6;
+    protected static string|UnitEnum|null $navigationGroup = 'Einstellungen';
+
+    protected static ?int $navigationSort = 5;
 
     public function content(Schema $schema): Schema
     {
