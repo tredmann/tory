@@ -60,10 +60,10 @@ test('while regenerating, the import status itself says so', function () {
 });
 
 test('while regenerating, an item shows the state right below its photos', function () {
-    $item = Item::factory()->create(['regenerating_at' => now()]);
+    $item = Item::factory()->create(['regenerating_at' => now(), 'description' => 'Gelb, mit Ladegerät']);
 
     Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
-        ->assertSeeInOrder(['Fotos', 'Wird neu generiert …', 'Titel']);
+        ->assertSeeInOrder(['Fotos', 'Wird neu generiert …', 'Gelb, mit Ladegerät']);
 });
 
 test('the action is hidden on pending, running and failed imports', function (string $state) {

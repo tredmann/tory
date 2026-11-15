@@ -71,8 +71,29 @@ test('the view page shows title, description and spot', function () {
     Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
         ->assertSee('Akkuschrauber')
         ->assertSee('Gelb, mit Ladegerät')
-        ->assertSee("{$spot->code} · Schrank")
+        ->assertSee($spot->code)
+        ->assertSee('· Schrank')
         ->assertSeeHtml("/spots/{$spot->code}");
+});
+
+test('the view page shows the title only as its heading', function () {
+    $item = Item::factory()->create(['title' => 'Akkuschrauber']);
+
+    Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
+        ->assertSee('Akkuschrauber')
+        ->assertDontSee('Titel');
+});
+
+test('the view page leaves out empty texts', function () {
+    $item = Item::factory()->create(['description' => null, 'notes' => null, 'search_terms' => []]);
+
+    $page = Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
+        ->assertDontSee('Beschreibung')
+        ->assertDontSee('Bemerkung')
+        ->assertDontSee('Suchbegriffe')
+        ->assertDontSee('—');
+
+    expect(preg_match_all('/<section\b/', $page->html()))->toBe(2);
 });
 
 test('the view page shows search terms', function () {
@@ -157,7 +178,7 @@ test('the list and view page show the location', function () {
         ->assertSeeHtml("/spots/{$spot->code}");
 
     Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
-        ->assertSee('Keller → ')
+        ->assertSee('Keller · ')
         ->assertSeeHtml("/spots/{$spot->code}");
 });
 
