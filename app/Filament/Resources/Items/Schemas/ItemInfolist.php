@@ -2,15 +2,16 @@
 
 namespace App\Filament\Resources\Items\Schemas;
 
-use App\Filament\Resources\Spots\SpotResource;
 use App\Filament\Schemas\PhotoSlideshow;
 use App\Filament\Schemas\RegenerationEntries;
 use App\Models\Item;
 use App\Photos\PhotoLinks;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class ItemInfolist
 {
@@ -18,38 +19,67 @@ class ItemInfolist
     {
         return $schema
             ->components([
-                Section::make()
+                Grid::make(1)
+                    ->columnSpanFull()
                     ->extraAttributes(fn (Item $record): array => $record->isRegenerating() ? ['wire:poll.5s' => ''] : [])
                     ->schema([
-                        ImageEntry::make('photos')
-                            ->label('Fotos')
-                            ->state(fn (Item $record): array => PhotoLinks::thumbnails($record->photos ?? []))
-                            ->imageHeight(160)
-                            ->wrap()
-                            ->extraImgAttributes(fn (Item $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),
-                        RegenerationEntries::running(),
-                        TextEntry::make('title')
-                            ->label('Titel'),
-                        TextEntry::make('description')
-                            ->label('Beschreibung')
-                            ->placeholder('—')
-                            ->extraAttributes(['style' => 'white-space: pre-line']),
-                        TextEntry::make('notes')
-                            ->label('Bemerkung')
-                            ->placeholder('—')
-                            ->extraAttributes(['style' => 'white-space: pre-line']),
-                        TextEntry::make('search_terms')
-                            ->label('Suchbegriffe')
-                            ->badge()
-                            ->placeholder('—'),
-                        ...RegenerationEntries::failures(),
-                        TextEntry::make('spot.full_label')
-                            ->label('Lagerplatz')
-                            ->url(fn (Item $record): string => SpotResource::getUrl('view', ['record' => $record->spot])),
-                        TextEntry::make('created_at')
-                            ->label('Angelegt')
-                            ->dateTime(),
+                        Section::make()->schema([
+                            ImageEntry::make('photos')
+                                ->label('Fotos')
+                                ->state(fn (Item $record): array => PhotoLinks::thumbnails($record->photos ?? []))
+                                ->imageHeight(160)
+                                ->wrap()
+                                ->extraImgAttributes(fn (Item $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),
+                        ]),
+                        Grid::make(['default' => 1, 'lg' => 3])
+                            ->extraAttributes(['class' => 'tory-item-boxes'])
+                            ->schema([
+                                Section::make()
+                                    ->columnSpan(['lg' => 2])
+                                    ->visible(fn (Item $record): bool => self::hasTexts($record))
+                                    ->schema([
+                                        RegenerationEntries::running(),
+                                        self::multiline(TextEntry::make('description'))
+                                            ->label('Beschreibung')
+                                            ->visible(fn (Item $record): bool => filled($record->description)),
+                                        self::multiline(TextEntry::make('notes'))
+                                            ->label('Bemerkung')
+                                            ->visible(fn (Item $record): bool => filled($record->notes)),
+                                        ...RegenerationEntries::failures(),
+                                    ]),
+                                Section::make()
+                                    ->columnStart(['lg' => 3])
+                                    ->schema([
+                                        TextEntry::make('search_terms')
+                                            ->label('Suchbegriffe')
+                                            ->color('gray')
+                                            ->visible(fn (Item $record): bool => filled($record->search_terms)),
+                                        TextEntry::make('created_at')
+                                            ->label('Angelegt')
+                                            ->dateTime(),
+                                    ]),
+                            ]),
                     ]),
             ]);
+    }
+
+    /**
+     * Whether the left box has anything to show: a text or the state of "Neu generieren".
+     */
+    private static function hasTexts(Item $record): bool
+    {
+        return filled($record->description)
+            || filled($record->notes)
+            || $record->isRegenerating()
+            || $record->regeneration_failure_reason !== null
+            || filled($record->regeneration_error);
+    }
+
+    /**
+     * Keeps the line breaks of a text; a CSS white-space rule would also show the line breaks of the markup.
+     */
+    private static function multiline(TextEntry $entry): TextEntry
+    {
+        return $entry->formatStateUsing(fn (string $state): HtmlString => new HtmlString(nl2br(e($state))));
     }
 }
