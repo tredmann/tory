@@ -27,7 +27,8 @@ test('a trusted proxy makes generated urls https', function () {
 
     $response = $this->withHeaders(['X-Forwarded-Proto' => 'https'])->get('/login')->assertOk();
 
-    expect($response->getContent())->toMatch('#"https://[^"]+/css/filament/#');
+    expect($response->getContent())->toMatch('#"https://[^"]+/css/filament/#')
+        ->and($response->getContent())->toMatch('#rel="icon"[^>]+href="https://[^"]+/images/tory-mark\.svg"#');
 });
 
 test('the forwarded scheme is ignored without a trusted proxy', function () {
