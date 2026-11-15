@@ -42,3 +42,7 @@ yarn-error.log
 
 /.superpowers
 /.playwright-cli
+
+/docs/private
+/security/TODO.md
+/security/checklist.md
