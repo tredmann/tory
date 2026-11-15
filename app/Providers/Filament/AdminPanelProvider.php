@@ -83,6 +83,10 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->font('DM Sans')
             ->sidebarWidth('14rem')
+            ->brandLogo(fn (): View => view('filament.brand-logo', ['mark' => asset('images/tory-mark.svg')]))
+            ->darkModeBrandLogo(fn (): View => view('filament.brand-logo', ['mark' => asset('images/tory-mark-white.svg')]))
+            ->brandLogoHeight('2rem')
+            ->favicon(asset('images/tory-mark.svg'))
             ->navigationGroups([
                 NavigationGroup::make('Inventar')->collapsible(false),
                 NavigationGroup::make('Einstellungen')->collapsible(false),
