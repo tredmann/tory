@@ -1,30 +1,144 @@
 [
     {
         "name": "RØDE Wireless GO",
-        "photos": ["photos/rode-1.jpg", "photos/rode-2.jpg", "photos/rode-3.jpg"],
-        "search_words": ["mikrofon", "rode"],
-        "title_words": ["Mikrofon"],
-        "forbidden_words": ["Verpackung", "Karton", "Gebrauchsspuren", "beschädigt"]
+        "photos": [
+            "photos/rode-1.jpg",
+            "photos/rode-2.jpg",
+            "photos/rode-3.jpg"
+        ],
+        "de": {
+            "search_words": [
+                "mikrofon",
+                "rode"
+            ],
+            "title_words": [
+                "Mikrofon"
+            ],
+            "forbidden_words": [
+                "Verpackung",
+                "Karton",
+                "Gebrauchsspuren",
+                "beschädigt"
+            ]
+        },
+        "en": {
+            "search_words": [
+                "microphone",
+                "rode"
+            ],
+            "title_words": [
+                "Microphone"
+            ],
+            "forbidden_words": [
+                "packaging",
+                "box",
+                "signs of wear",
+                "damaged"
+            ]
+        }
     },
     {
         "name": "APC",
-        "photos": ["photos/apc.jpg"],
-        "search_words": ["apc", "usv", "strom", "steckdose"],
-        "title_words": ["USV"],
-        "forbidden_words": ["Netzteil", "Gehäuse"]
+        "photos": [
+            "photos/apc.jpg"
+        ],
+        "de": {
+            "search_words": [
+                "apc",
+                "usv",
+                "strom",
+                "steckdose"
+            ],
+            "title_words": [
+                "USV"
+            ],
+            "forbidden_words": [
+                "Netzteil",
+                "Gehäuse"
+            ]
+        },
+        "en": {
+            "search_words": [
+                "apc",
+                "ups",
+                "power",
+                "outlet"
+            ],
+            "title_words": [
+                "UPS"
+            ],
+            "forbidden_words": [
+                "power supply",
+                "housing"
+            ]
+        }
     },
     {
         "name": "Pelikan 4001",
-        "photos": ["photos/pelikan.jpg"],
-        "search_words": ["patronen", "tinte"],
-        "title_words": ["Tintenpatronen"],
-        "forbidden_words": ["Verpackung", "Packung", "Best Quality"]
+        "photos": [
+            "photos/pelikan.jpg"
+        ],
+        "de": {
+            "search_words": [
+                "patronen",
+                "tinte"
+            ],
+            "title_words": [
+                "Tintenpatronen"
+            ],
+            "forbidden_words": [
+                "Verpackung",
+                "Packung",
+                "Best Quality"
+            ]
+        },
+        "en": {
+            "search_words": [
+                "cartridges",
+                "ink"
+            ],
+            "title_words": [
+                "cartridges"
+            ],
+            "forbidden_words": [
+                "packaging",
+                "pack",
+                "Best Quality"
+            ]
+        }
     },
     {
         "name": "Soennecken 3155",
-        "photos": ["photos/soennecken-1.jpg", "photos/soennecken-2.jpg"],
-        "search_words": ["hefter", "tacker", "klammer"],
-        "title_words": ["Hefter"],
-        "forbidden_words": ["Metallklammer", "Gebrauchsspuren"]
+        "photos": [
+            "photos/soennecken-1.jpg",
+            "photos/soennecken-2.jpg"
+        ],
+        "de": {
+            "search_words": [
+                "hefter",
+                "tacker",
+                "klammer"
+            ],
+            "title_words": [
+                "Hefter"
+            ],
+            "forbidden_words": [
+                "Metallklammer",
+                "Gebrauchsspuren"
+            ]
+        },
+        "en": {
+            "search_words": [
+                "stapler",
+                "staples"
+            ],
+            "title_words": [
+                "Stapler"
+            ],
+            "forbidden_words": [
+                "metal clip",
+                "signs of wear"
+            ]
+        }
     }
 ]

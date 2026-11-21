@@ -2,6 +2,8 @@
 
 namespace App\Ai\Eval;
 
+use App\Enums\Language;
+
 /**
  * Renders eval runs as plain text for the console and the saved file.
  */
@@ -10,9 +12,9 @@ final class EvalReport
     /**
      * @param  non-empty-list<EvalRun>  $runs
      */
-    public function render(string $providerName, array $runs): string
+    public function render(string $providerName, Language $language, array $runs): string
     {
-        $lines = ["Extraktions-Eval mit {$providerName}", 'Durchläufe: '.count($runs), ''];
+        $lines = ["Extraktions-Eval mit {$providerName}", 'Sprache: '.$language->getLabel(), 'Durchläufe: '.count($runs), ''];
 
         foreach ($runs as $number => $run) {
             $lines[] = '=== Durchlauf '.($number + 1).' ===';

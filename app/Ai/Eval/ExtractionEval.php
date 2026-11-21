@@ -7,6 +7,7 @@ use App\Ai\EmbeddingTarget;
 use App\Ai\ExtractedTexts;
 use App\Ai\ItemEmbedder;
 use App\Ai\ProviderFailure;
+use App\Enums\Language;
 use App\Models\AiProvider;
 use App\Models\Item;
 use Laravel\Ai\Files\Image;
@@ -23,7 +24,7 @@ final class ExtractionEval
     /**
      * @param  list<EvalCase>  $cases
      */
-    public function run(AiProvider $provider, array $cases): EvalRun
+    public function run(AiProvider $provider, array $cases, Language $language): EvalRun
     {
         $texts = [];
         $errors = [];
@@ -31,7 +32,7 @@ final class ExtractionEval
         foreach ($cases as $index => $case) {
             try {
                 $attachments = array_map(fn (string $path): Image => Image::fromPath($path, mime_content_type($path) ?: null), $case->photos);
-                $texts[$index] = InventoryExtractor::make(aiProvider: $provider)->extract($attachments);
+                $texts[$index] = InventoryExtractor::make(aiProvider: $provider, language: $language)->extract($attachments);
             } catch (Throwable $e) {
                 $errors[$index] = ProviderFailure::from($e, $provider)->getMessage();
             }
