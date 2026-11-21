@@ -20,6 +20,14 @@ test('the setup page asks for the first administrator', function () {
         ->assertSeeText('Administrator anlegen');
 });
 
+test('the setup page follows the browser language on a fresh install', function () {
+    $this->withHeader('Accept-Language', 'en')
+        ->get('/setup')
+        ->assertOk()
+        ->assertSeeText('Welcome to Tory')
+        ->assertDontSeeText('Willkommen bei Tory');
+});
+
 test('setting up logs the new administrator in', function () {
     Livewire::test(SetUpFirstAdministrator::class)
         ->fillForm(firstAdministratorForm())

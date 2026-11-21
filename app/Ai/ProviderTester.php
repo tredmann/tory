@@ -39,7 +39,10 @@ final class ProviderTester
             return null;
         }
 
-        return 'Bilderkennung: '.($extraction ?? 'ok.').' Embedding: '.($embedding ?? 'ok.');
+        return __('Image recognition: :extraction Embedding: :embedding', [
+            'extraction' => $extraction ?? __('OK.'),
+            'embedding' => $embedding ?? __('OK.'),
+        ]);
     }
 
     private function extractionReason(AiProvider $provider): ?string
@@ -56,7 +59,7 @@ final class ProviderTester
             report($failure);
 
             return $failure->reason?->message($provider->name)
-                ?? 'Der Test ist fehlgeschlagen. Bitte Modell und Zugangsdaten prüfen.';
+                ?? __('The test failed. Please check the model and credentials.');
         }
     }
 }

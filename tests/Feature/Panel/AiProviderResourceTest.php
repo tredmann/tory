@@ -3,6 +3,7 @@
 use App\Ai\Agents\InventoryExtractor;
 use App\Ai\ProviderTransfer;
 use App\Enums\AiVendor;
+use App\Enums\Language;
 use App\Filament\Resources\AiProviders\AiProviderResource;
 use App\Filament\Resources\AiProviders\Pages\ManageAiProviders;
 use App\Filament\Resources\Imports\ImportResource;
@@ -846,4 +847,17 @@ test('the subheading names the env fallback per role', function () {
     Livewire::test(ManageAiProviders::class)
         ->assertSee('Für die Bilderkennung gilt die Serverkonfiguration (.env).')
         ->assertDontSee('Für die Suche gilt');
+});
+
+test('an English user sees the provider page in English', function () {
+    $user = User::factory()->admin()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+    app()->setLocale('en');
+    $this->actingAs($user);
+
+    Livewire::test(ManageAiProviders::class)
+        ->assertSee('AI providers')
+        ->assertSee('The server configuration (.env) currently applies.')
+        ->assertDontSee('Eigene KI')
+        ->assertDontSee('Aktuell gilt die Serverkonfiguration');
 });

@@ -56,7 +56,7 @@ class AdminPanelProvider extends PanelProvider
                         $livewire->js('window.location.reload()');
                     }),
                 Action::make('version')
-                    ->label(fn (): string => 'Version '.config('app.version'))
+                    ->label(fn (): string => __('Version :version', ['version' => config('app.version')]))
                     ->icon(Heroicon::OutlinedInformationCircle)
                     ->disabled(),
             ])

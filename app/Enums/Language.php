@@ -17,6 +17,14 @@ enum Language: string implements HasLabel
         };
     }
 
+    public function dateTimeFormat(): string
+    {
+        return match ($this) {
+            self::German => 'd.m.Y H:i',
+            self::English => 'j M Y, H:i',
+        };
+    }
+
     public function other(): self
     {
         return match ($this) {

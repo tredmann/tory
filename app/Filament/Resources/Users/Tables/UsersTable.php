@@ -22,15 +22,15 @@ class UsersTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->label('Name')
+                    ->label(__('Name'))
                     ->sortable(),
                 TextColumn::make('email')
-                    ->label('E-Mail'),
+                    ->label(__('Email')),
                 TextColumn::make('role')
-                    ->label('Rolle')
+                    ->label(__('Role'))
                     ->badge(),
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('Status'))
                     ->state(fn (User $record): UserStatus => $record->status())
                     ->badge(),
             ])
@@ -39,42 +39,42 @@ class UsersTable
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()
-                        ->label('Bearbeiten')
+                        ->label(__('Edit'))
                         ->using(self::saveUser(...)),
                     Action::make('issueInvite')
                         ->authorize('issueInvite')
-                        ->label('Neuer Link')
+                        ->label(__('New link'))
                         ->groupedIcon(Heroicon::Link)
                         ->requiresConfirmation()
-                        ->modalHeading('Neuer Link')
-                        ->modalDescription('Ein bisher ausgegebener Link wird damit ungültig.')
-                        ->modalSubmitActionLabel('Link erzeugen')
+                        ->modalHeading(__('New link'))
+                        ->modalDescription(__('An invite link issued so far becomes invalid.'))
+                        ->modalSubmitActionLabel(__('Create link'))
                         ->action(fn (User $record, ManageUsers $livewire) => $livewire->showInviteLink($record->issueInviteLink())),
                     Action::make('lock')
                         ->authorize('lock')
-                        ->label('Sperren')
+                        ->label(__('Lock'))
                         ->groupedIcon(Heroicon::LockClosed)
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->modalHeading('Sperren')
-                        ->modalDescription('Die Person kann sich danach weder anmelden noch die API oder Claude nutzen.')
-                        ->modalSubmitActionLabel('Sperren')
+                        ->modalHeading(__('Lock'))
+                        ->modalDescription(__('The person can then no longer sign in or use the API or Claude.'))
+                        ->modalSubmitActionLabel(__('Lock'))
                         ->action(function (User $record): void {
                             $record->lock();
 
-                            Notification::make()->title('Gesperrt')->success()->send();
+                            Notification::make()->title(__('Locked'))->success()->send();
                         }),
                     Action::make('unlock')
                         ->authorize('unlock')
-                        ->label('Entsperren')
+                        ->label(__('Unlock'))
                         ->groupedIcon(Heroicon::LockOpen)
                         ->requiresConfirmation()
-                        ->modalHeading('Entsperren')
-                        ->modalSubmitActionLabel('Entsperren')
+                        ->modalHeading(__('Unlock'))
+                        ->modalSubmitActionLabel(__('Unlock'))
                         ->action(function (User $record): void {
                             $record->unlock();
 
-                            Notification::make()->title('Entsperrt')->success()->send();
+                            Notification::make()->title(__('Unlocked'))->success()->send();
                         }),
                 ])->color('gray'),
             ]);

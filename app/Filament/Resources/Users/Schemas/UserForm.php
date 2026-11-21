@@ -14,17 +14,17 @@ class UserForm
     {
         return $schema->components([
             TextInput::make('name')
-                ->label('Name')
+                ->label(__('Name'))
                 ->required()
                 ->maxLength(255),
             TextInput::make('email')
-                ->label('E-Mail')
+                ->label(__('Email'))
                 ->email()
                 ->required()
                 ->unique(ignoreRecord: true)
                 ->maxLength(255),
             Select::make('role')
-                ->label('Rolle')
+                ->label(__('Role'))
                 ->options(UserRole::class)
                 ->default(UserRole::Member)
                 ->required()
