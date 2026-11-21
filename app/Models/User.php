@@ -125,6 +125,8 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             $user = new self(['name' => $name, 'email' => $email, 'password' => $password]);
             $user->forceFill(['role' => UserRole::Admin, 'email_verified_at' => now()])->save();
 
+            HouseholdSettings::current()->changeContentLanguage(Language::from(app()->getLocale()));
+
             return $user;
         });
     }

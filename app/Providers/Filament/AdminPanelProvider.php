@@ -8,6 +8,7 @@ use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SaveThemeMode;
 use App\Http\Middleware\LogOutLockedUser;
 use App\Http\Middleware\RedirectToFirstAdministratorSetup;
+use App\Http\Middleware\SetLocale;
 use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -106,6 +107,7 @@ class AdminPanelProvider extends PanelProvider
                 RedirectToFirstAdministratorSetup::class,
                 AuthenticateSession::class,
                 LogOutLockedUser::class,
+                SetLocale::class,
                 ShareErrorsFromSession::class,
                 PreventRequestForgery::class,
                 SubstituteBindings::class,
