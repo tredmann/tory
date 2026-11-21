@@ -11,7 +11,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use UnitEnum;
 
 class LocationResource extends Resource
 {
@@ -21,17 +20,29 @@ class LocationResource extends Resource
 
     protected static ?string $slug = 'locations';
 
-    protected static ?string $modelLabel = 'Lagerort';
-
-    protected static ?string $pluralModelLabel = 'Lagerorte';
-
-    protected static ?string $navigationLabel = 'Lagerorte';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Inventar';
-
     protected static ?int $navigationSort = 3;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getModelLabel(): string
+    {
+        return __('Location');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Locations');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Locations');
+    }
+
+    public static function getNavigationGroup(): string
+    {
+        return __('Inventory');
+    }
 
     public static function form(Schema $schema): Schema
     {

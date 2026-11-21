@@ -19,18 +19,18 @@ class LocationsTable
                     ->label('Name')
                     ->searchable(),
                 TextColumn::make('spots_count')
-                    ->label('Lagerplätze')
+                    ->label(__('Spots'))
                     ->counts('spots'),
             ])
             ->defaultSort('name')
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make()
-                        ->label('Bearbeiten'),
+                        ->label(__('Edit')),
                     DeleteAction::make()
-                        ->label('Löschen')
+                        ->label(__('Delete'))
                         ->disabled(fn (Location $record): bool => $record->spots()->exists())
-                        ->tooltip(fn (Location $record): ?string => $record->spots()->exists() ? 'Enthält noch Lagerplätze' : null),
+                        ->tooltip(fn (Location $record): ?string => $record->spots()->exists() ? (string) __('Still contains spots') : null),
                 ])->color('gray'),
             ]);
     }

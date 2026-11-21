@@ -18,7 +18,6 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
-use UnitEnum;
 
 class SpotResource extends Resource
 {
@@ -28,17 +27,29 @@ class SpotResource extends Resource
 
     protected static ?string $slug = 'spots';
 
-    protected static ?string $modelLabel = 'Lagerplatz';
-
-    protected static ?string $pluralModelLabel = 'Lagerplätze';
-
-    protected static ?string $navigationLabel = 'Lagerplätze';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Inventar';
-
     protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'label';
+
+    public static function getModelLabel(): string
+    {
+        return __('Spot');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Spots');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Spots');
+    }
+
+    public static function getNavigationGroup(): string
+    {
+        return __('Inventory');
+    }
 
     /**
      * Accepts a code in any case. Anything that cannot be a code resolves to no

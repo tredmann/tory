@@ -24,7 +24,7 @@ class SpotForm
     {
         return [
             Select::make('location_id')
-                ->label('Lagerort')
+                ->label(__('Location'))
                 ->required()
                 ->searchable()
                 ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
@@ -38,7 +38,7 @@ class SpotForm
                 ->required()
                 ->maxLength(255),
             Textarea::make('note')
-                ->label('Notiz'),
+                ->label(__('Spot note')),
         ];
     }
 }
