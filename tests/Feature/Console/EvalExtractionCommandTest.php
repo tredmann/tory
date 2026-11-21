@@ -107,7 +107,7 @@ test('totals show the range across runs', function () {
     AiProvider::factory()->create(['name' => 'Ollama lokal']);
     $calls = 0;
     InventoryExtractor::fake(function () use (&$calls) {
-        $first = $calls++ < 5;
+        $first = $calls++ < 4;
 
         return ['title' => 'Gerät', 'description' => 'x', 'search_terms' => $first ? ['mikrofon', 'rode', 'apc'] : []];
     });
