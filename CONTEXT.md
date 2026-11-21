@@ -36,6 +36,10 @@ _Avoid_: Mitglied, Member (in the UI)
 A single-use address, valid for 24 hours, through which an invited person chooses a password and so joins. A new link replaces the old one.
 _Avoid_: Registrierungslink, Token
 
+**First administrator setup** (Ersteinrichtung):
+The page a fresh installation shows while it has no user at all, on which the first visitor creates the first administrator. Once any user exists it is gone for good.
+_Avoid_: Registrierung, Installation
+
 **Locked** (gesperrt):
 A user who can no longer log in or use any connection, but whose data stays. An administrator can unlock them again.
 _Avoid_: Deleted, deactivated, banned
