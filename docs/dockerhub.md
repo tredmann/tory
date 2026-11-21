@@ -56,7 +56,8 @@ services:
     volumes:
       - ./storage:/app/storage
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   db:
@@ -67,6 +68,11 @@ services:
       POSTGRES_PASSWORD: "change-me"
     volumes:
       - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U tory -d tory"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
 volumes:
