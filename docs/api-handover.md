@@ -14,7 +14,7 @@ This document is for whoever builds the mobile client for Tory. It explains what
 
 The main loop of the app: **photograph a thing → upload as import → wait for the suggestion → review → convert onto a spot**. The second loop: **find a thing** (search, or scan a spot's QR label to see what is inside).
 
-All user-facing texts the API returns (validation errors, status labels, conflict messages) are **German**. Show them as they come.
+All user-facing texts the API returns (validation errors, status labels, conflict messages) follow the interface language of the token's owner, German or English. Show them as they come. Item content (title, description, search terms) comes back as stored, in the household's content language.
 
 ## 2. Basics
 
@@ -62,8 +62,8 @@ Use `links.next` to load more. It keeps your filter and search parameters.
 | `401` | Missing, wrong or revoked token | `{"message": "Unauthenticated."}` → drop the token, show login |
 | `403` | Account email not verified | `{"message": "Bitte bestätige zuerst deine E-Mail-Adresse."}` |
 | `404` | Unknown id/code, photo not on that record, import already converted | `{"message": "…"}` — don't rely on the text |
-| `409` | The action is not allowed in the record's current state (see each endpoint) | `{"message": "<German sentence>"}` → show it, refresh the record |
-| `422` | Validation failed | `{"message": "…", "errors": {"field": ["German message", …]}}` → show per field |
+| `409` | The action is not allowed in the record's current state (see each endpoint) | `{"message": "<sentence>"}` → show it, refresh the record |
+| `422` | Validation failed | `{"message": "…", "errors": {"field": ["message", …]}}` → show per field |
 | `429` | Too many login attempts (5 per minute per IP) | wait for `Retry-After` seconds |
 | `5xx` | Server trouble | generic retry message |
 
@@ -152,7 +152,7 @@ Validation keys for array fields are indexed, e.g. `photos.2` or `search_terms.0
 | `failed` | Fehlgeschlagen | extraction failed | show `failure_message`; retry; convert by hand; delete |
 
 - `title`, `description` are null until `completed`. `search_terms` is `[]` until then.
-- `failure_message` is a German sentence when `failed`, otherwise null. Some failures name a problem only the household admin can fix in the web panel ("Eigene KI"), e.g. "Claude hat den API-Key abgelehnt." — show it as is.
+- `failure_message` is a sentence in the owner's language when `failed`, otherwise null. Some failures name a problem only the household admin can fix in the web panel ("Eigene KI"), e.g. "Claude hat den API-Key abgelehnt." — show it as is.
 - `error` is the raw technical error and is **only filled on installations running in debug mode**. Production returns null. Don't build UI on it.
 - `spot` may be null only for very old imports; imports created through the API always have one.
 

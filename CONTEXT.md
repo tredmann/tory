@@ -60,7 +60,7 @@ _Avoid_: Deleted, deactivated, banned
 A single inventoried thing with photos, a title and a description. An item always lies on exactly one spot; its location follows from that spot.
 _Avoid_: Object, article, Artikel
 
-**Import** (action „Erfassen“, English UI "Add item"; „Übernehmen“ is "Create item", „Neu generieren" is "Regenerate"):
+**Import** (action „Erfassen“, English UI "Add item"; „Übernehmen“ is "Create item", „Neu generieren“ is "Regenerate"):
 The 1–20 photos of one thing on their way to becoming an item, together with the texts the AI suggested for them.
 _Avoid_: Upload, capture, Erfassung
 
