@@ -2,8 +2,8 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "tory/tory",
     "type": "project",
-    "description": "Tory application.",
-    "keywords": ["laravel", "framework"],
+    "description": "A household inventory that answers one question: where is that thing?",
+    "keywords": ["inventory", "household", "laravel", "filament"],
     "license": "MIT",
     "require": {
         "php": "^8.3",

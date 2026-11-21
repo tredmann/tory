@@ -14,13 +14,6 @@
         "forbidden_words": ["Netzteil", "Gehäuse"]
     },
     {
-        "name": "Raspberry Pi 5",
-        "photos": ["photos/raspberry-pi.jpg"],
-        "search_words": ["raspberry", "pi5"],
-        "title_words": ["Raspberry Pi 5"],
-        "forbidden_words": ["Platine"]
-    },
-    {
         "name": "Pelikan 4001",
         "photos": ["photos/pelikan.jpg"],
         "search_words": ["patronen", "tinte"],

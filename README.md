@@ -1,32 +1,32 @@
 # Tory
 
-Laravel 13 · Filament 5 · Livewire 4 · Laravel AI SDK · FrankenPHP (PHP 8.5) · Postgres 18
+A household inventory that answers one question: where is that thing?
 
-The Filament panel is the whole app and answers at `/`.
+You photograph an item, an AI model writes its title, description and search terms, and you put it on a spot such as "Regal 3, Fach 2" in the cellar. Later you search by keyword or by meaning and Tory tells you where the item lies. The interface is German; code and documentation are English. The vocabulary is defined in `CONTEXT.md`.
 
-Development happens entirely in Docker. You only need Docker Desktop (or compatible) on the host.
+## What it does
 
-## Where things stand
+- **Photo imports.** "Erfassen" uploads 1 to 20 photos of one item; the extraction runs in the background and "Übernehmen" turns the result into an item on a spot. A bulk import takes many photos at once, groups them into items and lets you review the groups first.
+- **Spots and locations.** A spot ("Lagerplatz") is the concrete place, a location ("Lagerort") groups spots. Every spot has a permanent four-character code and a page at `/spots/{code}`.
+- **Labels.** Spot labels with a QR code are printed as a PDF sheet.
+- **Search.** By keyword and by meaning (embeddings in pgvector, 1024 dimensions). Without an embedding provider the search still works by keyword.
+- **Eigene KI.** Administrators set up AI providers (Ollama, Claude, OpenAI, Mistral) and pick one for object recognition and one for search. Nothing switches providers on its own.
+- **Users.** One household per installation. An administrator invites users by link; there is no registration and no password reset.
+- **REST API** under `/api/v1` with bearer tokens, documented at `/docs/api` (see `docs/api-handover.md`).
+- **MCP server** at `/mcp` behind OAuth, so Claude can find items and spots and move items.
 
-Tory is a household inventory. Built so far (2026-11-04 to 2026-11-06):
+## Stack
 
-- **Stack and tooling.** Dockerised FrankenPHP app with queue worker and scheduler under supervisord, Postgres 18 with pgvector, Vite service, Pest/Pint/Larastan, Laravel Boost with the Filament skill, GitHub Actions test workflow.
-- **Panel.** Filament 5 is the whole app at `/`, with login, email verification and profile. Users are created by an administrator under "Nutzer" and join through a 24-hour invite link; there is no self-registration and no password reset. Every verified user sees all items, spots and imports; only administrators manage users and "Eigene KI".
-- **Photo imports.** "Importe" → "Erfassen" uploads 1–6 photos, stores them on the private disk and queues `ExtractImport`. The AI extractor (runs on the provider active on "Eigene KI", with `.env` as fallback) returns a German title and a search-friendly description. The import page polls until the job is done, shows the result or the error, and offers Retry and "Löschen".
-- **Spots.** "Lagerplätze": every spot has a permanent random four-character code (shown as `4WWH · Name`) and a page at `/spots/{code}` that lists the items inside; that address is the future QR target.
-- **Locations.** "Lagerorte" (`/locations`) group spots (e.g. Keller, Garage); every spot belongs to one, is shown as `Keller → 4WWH · Regal`, and the item list can be filtered by location.
-- **Items.** "Gegenstände": "Übernehmen" on a completed or failed import turns it into an item in a chosen spot (the photo files stay where they are; ownership moves to the item). Items can be edited and deleted (photos included).
-- **Eigene KI.** The panel entry "Eigene KI" (`/ai-providers`) lists AI providers as cards (Ollama, Claude, OpenAI, Mistral). Create several, pick the model from a list fetched from the vendor or type it, test one with a bundled photo, and activate one with a click; the next import uses it. Nothing switches providers on its own. "Exportieren" downloads all providers as a JSON file **with the API keys in plain text**, and "Importieren" reads such a file on another installation: providers whose UUID already exists are skipped, new ones arrive inactive. Only administrators can open "Eigene KI" and export the keys.
-- **Search.** The item list searches by keyword (title and description) and by meaning via embeddings (`bge-m3` on Ollama, 1024 dimensions, stored in pgvector). Run `ollama pull bge-m3` once to enable the semantic part; without it the search still works by keyword. `items:embed` catches up missing embeddings hourly.
+Laravel 13 · Filament 5 · Livewire 4 · Laravel AI SDK · FrankenPHP (PHP 8.5) · Postgres 18 with pgvector
 
-Next: print labels with QR codes for spots.
+The Filament panel is the whole app and answers at `/`. Development happens entirely in Docker; you only need Docker Desktop (or compatible) on the host.
 
-Design documents and plans for each feature are in `docs/superpowers/specs/` and `docs/superpowers/plans/`. Known small gaps are listed at the end of each plan's execution recap (Retry race under concurrent clicks, list table polling while idle, a handful of test-coverage gaps).
+Each feature has a design document in `docs/superpowers/specs/` and a plan in `docs/superpowers/plans/`. `SECURITY.md` holds a security self-assessment and the contact for reporting a vulnerability.
 
 ## Getting started
 
 ```sh
-git clone <repo> tory && cd tory
+git clone https://github.com/tredmann/tory.git && cd tory
 docker compose up --build -d
 ```
 
@@ -104,12 +104,26 @@ Smoke-test the queue worker: `docker compose exec app php artisan tinker --execu
 
 `.mcp.json` runs the Boost MCP server inside the container (`docker compose exec -T app php artisan boost:mcp`), so Claude Code picks it up from the project root with no host PHP. Guidelines live in `CLAUDE.md`, skills in `.claude/skills`. Refresh them with `docker compose exec app php artisan boost:install --guidelines --skills --mcp` (then `git checkout .mcp.json`, since Boost rewrites it for host PHP).
 
-## Production image
+## Production and releases
 
-`docker/Dockerfile` has a `prod` target that bakes in Composer dependencies and the built Vite assets and runs `queue:work` instead of `queue:listen`:
+`docker/Dockerfile` has a `prod` target that bakes in Composer dependencies and the built Vite assets, runs as `www-data` and runs `queue:work` instead of `queue:listen`:
 
 ```sh
 docker build -f docker/Dockerfile --target prod -t tory:prod .
 ```
 
-Provide a real `.env` (or environment variables) and set `AUTO_MIGRATE=true` if you want migrations to run on start. The database needs the pgvector extension (the dev `db` image is `pgvector/pgvector:pg18-trixie`; the items migration creates the extension, which needs a role allowed to do so), and an embedding provider must be reachable for semantic search; without one, search falls back to keywords and `items:embed` reports failures. Keep `DB_QUEUE_RETRY_AFTER` above the import job timeout (200 seconds; the default is 300), otherwise a second worker can re-run a running extraction.
+The image has no `.env`; configure it through environment variables:
+
+- `APP_KEY` and `APP_URL`; the image refuses to start without `APP_KEY`. Stored provider keys are encrypted with it.
+- `DB_*` for a Postgres database with the pgvector extension (the items migration creates the extension, which needs a role allowed to do so). Set `AUTO_MIGRATE=true` to migrate on start.
+- `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` with the PEM contents from `php artisan passport:keys`; the MCP server needs them and the image refuses to start without them.
+- `TRUSTED_PROXIES` behind a TLS-terminating proxy, otherwise URLs come out as `http`.
+- A volume on `/app/storage`, writable for uid 33.
+
+On a fresh installation create the first user as described under "Create a user". An embedding provider must be reachable for semantic search; without one, search falls back to keywords and `items:embed` reports failures. Keep `DB_QUEUE_RETRY_AFTER` above the import job timeout (200 seconds; the default is 300), otherwise a second worker can re-run a running extraction.
+
+Pushing a version tag like `1.0.0` runs `.github/workflows/release.yml`, which builds the `prod` target for arm64 and pushes it to a DigitalOcean container registry named by the repository secrets `DIGITALOCEAN_ACCESS_TOKEN` and `DIGITALOCEAN_REGISTRY`. Change the workflow to use another registry or platform.
+
+## License
+
+Tory is released under the MIT license, see `LICENSE`.
