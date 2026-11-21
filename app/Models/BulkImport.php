@@ -139,7 +139,7 @@ class BulkImport extends Model
                 ));
                 $cuts = TimeGrouping::cuts($sorted);
 
-                $bulkImport = self::create([
+                $bulkImport = self::query()->create([
                     'user_id' => $user->getKey(),
                     'spot_id' => $spotId,
                     'status' => BulkImportStatus::Grouping,
@@ -421,7 +421,7 @@ class BulkImport extends Model
                     continue;
                 }
 
-                $imports[] = Import::create([
+                $imports[] = Import::query()->create([
                     'user_id' => $row->user_id,
                     'spot_id' => $row->spot_id,
                     'status' => ImportStatus::Pending,

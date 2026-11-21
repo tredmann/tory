@@ -5,11 +5,11 @@ use App\Models\Spot;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Sanctum::actingAs(User::factory()->create());
 });
 
-it('lists locations by name with spots_count', function () {
+it('lists locations by name with spots_count', function (): void {
     Location::factory()->create(['name' => 'Zimmer']);
     $garage = Location::factory()->create(['name' => 'Garage']);
     Spot::factory()->for($garage)->count(2)->create();
@@ -21,14 +21,14 @@ it('lists locations by name with spots_count', function () {
         ->assertJsonPath('data.1.spots_count', 0);
 });
 
-it('creates a location', function () {
+it('creates a location', function (): void {
     $this->postJson('/api/v1/locations', ['name' => 'Keller'])
         ->assertCreated()
         ->assertJsonPath('data.name', 'Keller')
         ->assertJsonStructure(['data' => ['id']]);
 });
 
-it('rejects a duplicate location name', function () {
+it('rejects a duplicate location name', function (): void {
     Location::factory()->create(['name' => 'Keller']);
 
     $this->postJson('/api/v1/locations', ['name' => 'Keller'])

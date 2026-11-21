@@ -37,7 +37,7 @@ class ClaudeConnections
                     connectedAt: CarbonImmutable::instance($first->created_at),
                 );
             })
-            ->sortByDesc(fn (ClaudeConnection $connection) => $connection->connectedAt)
+            ->sortByDesc(fn (ClaudeConnection $connection): CarbonImmutable => $connection->connectedAt)
             ->values();
     }
 

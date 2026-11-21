@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('household_settings', function (Blueprint $table) {
+        Schema::create('household_settings', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('content_language');
             $table->timestamps();

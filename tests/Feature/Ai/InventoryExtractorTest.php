@@ -8,7 +8,7 @@ use App\Models\AiProvider;
 use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Laravel\Ai\Files\Image;
 
-test('provider and model come from the inventory config', function () {
+test('provider and model come from the inventory config', function (): void {
     config(['ai.inventory.provider' => 'ollama', 'ai.inventory.model' => 'gemma4:e4b-mlx']);
     $agent = new InventoryExtractor;
 
@@ -16,17 +16,17 @@ test('provider and model come from the inventory config', function () {
         ->and($agent->model())->toBe('gemma4:e4b-mlx');
 });
 
-test('the model falls back to the provider default when unset', function () {
+test('the model falls back to the provider default when unset', function (): void {
     config(['ai.inventory.model' => null]);
 
     expect((new InventoryExtractor)->model())->toBeNull();
 });
 
-test('uses a 180 second timeout', function () {
+test('uses a 180 second timeout', function (): void {
     expect((new InventoryExtractor)->timeout())->toBe(180);
 });
 
-test('returns a structured title and description for the attached images', function () {
+test('returns a structured title and description for the attached images', function (): void {
     InventoryExtractor::fake([
         ['title' => 'Raspberry Pi 4 Model B', 'description' => 'Grüne Platine mit vier USB-Anschlüssen.'],
     ]);
@@ -41,11 +41,11 @@ test('returns a structured title and description for the attached images', funct
         'description' => 'Grüne Platine mit vier USB-Anschlüssen.',
     ]);
 
-    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->attachments->count() === 2);
+    InventoryExtractor::assertPrompted(fn ($prompt): bool => $prompt->attachments->count() === 2);
 });
 
-test('instructions ask for German texts with search terms and forbid inventing details', function () {
-    $instructions = (string) (new InventoryExtractor)->instructions();
+test('instructions ask for German texts with search terms and forbid inventing details', function (): void {
+    $instructions = (new InventoryExtractor)->instructions();
 
     expect($instructions)
         ->toContain('Deutsch')
@@ -54,25 +54,25 @@ test('instructions ask for German texts with search terms and forbid inventing d
         ->not->toContain('sichtbaren Zustand');
 });
 
-test('the schema requires search terms', function () {
+test('the schema requires search terms', function (): void {
     $schema = (new InventoryExtractor)->schema(new JsonSchemaTypeFactory);
 
     expect($schema)->toHaveKeys(['title', 'description', 'search_terms']);
 });
 
-test('an empty model env value falls back to the provider default', function () {
+test('an empty model env value falls back to the provider default', function (): void {
     config(['ai.inventory.model' => '']);
 
     expect((new InventoryExtractor)->model())->toBeNull();
 });
 
-test('an empty provider env value falls back to anthropic', function () {
+test('an empty provider env value falls back to anthropic', function (): void {
     config(['ai.inventory.provider' => '']);
 
     expect((new InventoryExtractor)->provider())->toBe('anthropic');
 });
 
-test('builds its provider from the given AI provider', function () {
+test('builds its provider from the given AI provider', function (): void {
     $aiProvider = AiProvider::factory()->create([
         'vendor' => AiVendor::Mistral, 'api_key' => 'mk-1', 'model' => 'pixtral-x',
     ]);
@@ -83,7 +83,7 @@ test('builds its provider from the given AI provider', function () {
         ->and($agent->model())->toBe('pixtral-x');
 });
 
-test('an Ollama provider uses its stored address and needs no key', function () {
+test('an Ollama provider uses its stored address and needs no key', function (): void {
     $aiProvider = AiProvider::factory()->create([
         'vendor' => AiVendor::Ollama, 'api_key' => null, 'url' => 'http://ollama.test:11434', 'model' => 'gemma',
     ]);
@@ -94,13 +94,13 @@ test('an Ollama provider uses its stored address and needs no key', function () 
         ->and($provider->additionalConfiguration()['url'])->toBe('http://ollama.test:11434');
 });
 
-test('extract rejects an incomplete answer', function () {
+test('extract rejects an incomplete answer', function (): void {
     InventoryExtractor::fake([['title' => 'Nur Titel', 'description' => ' ']]);
 
     InventoryExtractor::make()->extract([]);
 })->throws(RuntimeException::class, 'Das Modell hat keine vollständige Antwort geliefert.');
 
-test('extract returns a DTO with cleaned search terms', function () {
+test('extract returns a DTO with cleaned search terms', function (): void {
     InventoryExtractor::fake([[
         'title' => 'Hefter', 'description' => 'Roter Hefter.',
         'search_terms' => [' Hefter ', 'hefter', 'Tacker', '', 42],
@@ -114,7 +114,7 @@ test('extract returns a DTO with cleaned search terms', function () {
         ->and($texts->searchTerms)->toBe(['Hefter', 'Tacker']);
 });
 
-test('extract tolerates missing or unusable search terms', function (array $extra) {
+test('extract tolerates missing or unusable search terms', function (array $extra): void {
     InventoryExtractor::fake([['title' => 'Hefter', 'description' => 'Roter Hefter.', ...$extra]]);
 
     expect(InventoryExtractor::make()->extract([])->searchTerms)->toBe([]);
@@ -124,7 +124,7 @@ test('extract tolerates missing or unusable search terms', function (array $extr
     'null' => [['search_terms' => null]],
 ]);
 
-test('it keeps the German prompt', function () {
+test('it keeps the German prompt', function (): void {
     $expected = <<<'TXT'
     Du hilfst bei der Inventarisierung. Die Fotos zeigen einen Gegenstand, den jemand später in seinem Inventar wiederfinden will. Beschreibe den Gegenstand selbst, nicht das Foto.
 
@@ -143,10 +143,10 @@ test('it keeps the German prompt', function () {
     expect(new InventoryExtractor(language: Language::German)->instructions())
         ->toBe($expected)
         ->toContain('Schreibe alles auf Deutsch.')
-        ->and((string) (new InventoryExtractor)->instructions())->toBe($expected);
+        ->and((new InventoryExtractor)->instructions())->toBe($expected);
 });
 
-test('the German schema and prompt stay German', function () {
+test('the German schema and prompt stay German', function (): void {
     InventoryExtractor::fake([['title' => 'Hefter', 'description' => 'Roter Hefter.']]);
     $schema = (new InventoryExtractor)->schema(new JsonSchemaTypeFactory);
 
@@ -158,7 +158,7 @@ test('the German schema and prompt stay German', function () {
     InventoryExtractor::assertPrompted('Analysiere die Fotos und liefere Titel, Beschreibung und Suchbegriffe.');
 });
 
-test('it writes English for English', function () {
+test('it writes English for English', function (): void {
     InventoryExtractor::fake([['title' => 'Stapler', 'description' => 'A red stapler.']]);
     $agent = new InventoryExtractor(language: Language::English);
     $schema = $agent->schema(new JsonSchemaTypeFactory);

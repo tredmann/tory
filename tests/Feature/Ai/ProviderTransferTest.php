@@ -34,7 +34,7 @@ function transferEntry(array $overrides = []): array
     ];
 }
 
-test('a round trip restores values and key, encrypted and with its hint', function () {
+test('a round trip restores values and key, encrypted and with its hint', function (): void {
     $cloud = AiProvider::factory()->create(['name' => 'Claude', 'api_key' => 'sk-secret-3fa9', 'model' => 'claude-x']);
     $local = AiProvider::factory()->ollama()->create(['name' => 'Lokal']);
     $transfer = new ProviderTransfer;
@@ -62,7 +62,7 @@ test('a round trip restores values and key, encrypted and with its hint', functi
         ->and($restoredLocal->api_key)->toBeNull();
 });
 
-test('the export contains the format header and no active state', function () {
+test('the export contains the format header and no active state', function (): void {
     AiProvider::factory()->active()->create();
 
     $document = json_decode((new ProviderTransfer)->export()->toJson(), true);
@@ -73,7 +73,7 @@ test('the export contains the format header and no active state', function () {
         ->and($document['providers'][0])->not->toHaveKey('is_active');
 });
 
-test('an existing uuid is skipped and left unchanged, even with another key in the file', function () {
+test('an existing uuid is skipped and left unchanged, even with another key in the file', function (): void {
     $provider = AiProvider::factory()->create(['api_key' => 'sk-local-key-0000', 'model' => 'lokal']);
 
     $result = (new ProviderTransfer)->import(transferFile([
@@ -88,7 +88,7 @@ test('an existing uuid is skipped and left unchanged, even with another key in t
         ->and($fresh->api_key)->toBe('sk-local-key-0000');
 });
 
-test('importing the same file twice creates nothing twice', function () {
+test('importing the same file twice creates nothing twice', function (): void {
     $file = transferFile([transferEntry()]);
     $transfer = new ProviderTransfer;
 
@@ -98,7 +98,7 @@ test('importing the same file twice creates nothing twice', function () {
         ->and(AiProvider::query()->count())->toBe(1);
 });
 
-test('a new uuid with a taken name is renamed, also a second time', function () {
+test('a new uuid with a taken name is renamed, also a second time', function (): void {
     AiProvider::factory()->create(['name' => 'OpenAI']);
 
     $result = (new ProviderTransfer)->import(transferFile([
@@ -111,7 +111,7 @@ test('a new uuid with a taken name is renamed, also a second time', function () 
         ->toBe(['OpenAI', 'OpenAI (Import 2)', 'OpenAI (Import)']);
 });
 
-test('a renamed entry stays within the name length', function () {
+test('a renamed entry stays within the name length', function (): void {
     $name = str_repeat('a', 255);
     AiProvider::factory()->create(['name' => $name]);
 
@@ -122,7 +122,7 @@ test('a renamed entry stays within the name length', function () {
         ->toEndWith(' (Import)');
 });
 
-test('an import activates nothing and leaves the active provider active', function () {
+test('an import activates nothing and leaves the active provider active', function (): void {
     $active = AiProvider::factory()->active()->create();
 
     (new ProviderTransfer)->import(transferFile([transferEntry(['is_active' => true])]));
@@ -131,7 +131,7 @@ test('an import activates nothing and leaves the active provider active', functi
         ->and(AiProvider::query()->where('is_active', true)->count())->toBe(1);
 });
 
-test('a provider with an unreadable key is left out of the export and counted', function () {
+test('a provider with an unreadable key is left out of the export and counted', function (): void {
     $broken = AiProvider::factory()->create();
     AiProvider::factory()->create();
     DB::table('ai_providers')->where('id', $broken->id)->update(['api_key' => 'not-a-valid-payload']);
@@ -143,7 +143,7 @@ test('a provider with an unreadable key is left out of the export and counted', 
         ->and($result->entries[0]->uuid)->not->toBe($broken->id);
 });
 
-test('an Ollama entry stores no key from the file', function () {
+test('an Ollama entry stores no key from the file', function (): void {
     (new ProviderTransfer)->import(transferFile([transferEntry([
         'vendor' => 'ollama',
         'api_key' => 'sk-should-not-be-stored',
@@ -157,7 +157,7 @@ test('an Ollama entry stores no key from the file', function () {
         ->and($provider->url)->toBe('http://ollama:11434');
 });
 
-test('a cloud entry stores a trimmed key and no address', function () {
+test('a cloud entry stores a trimmed key and no address', function (): void {
     (new ProviderTransfer)->import(transferFile([transferEntry([
         'api_key' => "  sk-file-key-1234\n",
         'url' => 'http://somewhere',
@@ -169,9 +169,9 @@ test('a cloud entry stores a trimmed key and no address', function () {
         ->and($provider->url)->toBeNull();
 });
 
-test('an invalid file imports nothing and does not repeat its contents', function (string $file) {
-    expect(fn () => (new ProviderTransfer)->import($file))
-        ->toThrow(function (InvalidArgumentException $exception) {
+test('an invalid file imports nothing and does not repeat its contents', function (string $file): void {
+    expect(fn (): ProviderImportResult => (new ProviderTransfer)->import($file))
+        ->toThrow(function (InvalidArgumentException $exception): void {
             expect($exception->getMessage())->not->toContain('sk-file-key-1234');
         });
 
@@ -179,36 +179,36 @@ test('an invalid file imports nothing and does not repeat its contents', functio
 })->with([
     'broken json' => ['{"providers": [sk-file-key-1234'],
     'not an object' => ['"sk-file-key-1234"'],
-    'wrong format' => fn () => json_encode(['format' => 'other', 'version' => 1, 'providers' => [transferEntry()]]),
-    'wrong version' => fn () => json_encode(['format' => 'tory-ai-providers', 'version' => 2, 'providers' => [transferEntry()]]),
-    'no providers' => fn () => json_encode(['format' => 'tory-ai-providers', 'version' => 1]),
-    'missing key' => fn () => transferFile([transferEntry(['name' => 'Gut']), transferEntry(['api_key' => null])]),
-    'blank key' => fn () => transferFile([transferEntry(['api_key' => '   '])]),
-    'invalid uuid' => fn () => transferFile([transferEntry(['uuid' => 'sk-file-key-1234'])]),
-    'duplicate uuid' => function () {
+    'wrong format' => fn (): string|false => json_encode(['format' => 'other', 'version' => 1, 'providers' => [transferEntry()]]),
+    'wrong version' => fn (): string|false => json_encode(['format' => 'tory-ai-providers', 'version' => 2, 'providers' => [transferEntry()]]),
+    'no providers' => fn (): string|false => json_encode(['format' => 'tory-ai-providers', 'version' => 1]),
+    'missing key' => fn (): string => transferFile([transferEntry(['name' => 'Gut']), transferEntry(['api_key' => null])]),
+    'blank key' => fn (): string => transferFile([transferEntry(['api_key' => '   '])]),
+    'invalid uuid' => fn (): string => transferFile([transferEntry(['uuid' => 'sk-file-key-1234'])]),
+    'duplicate uuid' => function (): string {
         $uuid = (string) Str::uuid();
 
         return transferFile([transferEntry(['uuid' => $uuid]), transferEntry(['uuid' => $uuid])]);
     },
-    'unknown vendor' => fn () => transferFile([transferEntry(['vendor' => 'sk-file-key-1234'])]),
-    'ollama without address' => fn () => transferFile([transferEntry(['vendor' => 'ollama', 'url' => null])]),
-    'ollama with a bad address' => fn () => transferFile([transferEntry(['vendor' => 'ollama', 'url' => 'sk-file-key-1234'])]),
-    'name too long' => fn () => transferFile([transferEntry(['name' => str_repeat('a', 256)])]),
-    'model missing' => fn () => transferFile([transferEntry(['model' => ''])]),
-    'whitespace-only model and no embedding model' => fn () => transferFile([transferEntry(['model' => '   '])]),
-    'whitespace-only model and embedding model' => fn () => transferFile([transferEntry(['model' => '  ', 'embedding_model' => ' '])]),
-    'claude without model' => fn () => transferFile([transferEntry(['vendor' => 'anthropic', 'model' => null, 'embedding_model' => 'sk-file-key-1234'])]),
-    'threshold above one' => fn () => transferFile([transferEntry(['search_min_similarity' => 1.5])]),
-    'threshold below zero' => fn () => transferFile([transferEntry(['search_min_similarity' => -0.1])]),
-    'key is not a string' => fn () => transferFile([transferEntry(['api_key' => ['sk-file-key-1234']])]),
+    'unknown vendor' => fn (): string => transferFile([transferEntry(['vendor' => 'sk-file-key-1234'])]),
+    'ollama without address' => fn (): string => transferFile([transferEntry(['vendor' => 'ollama', 'url' => null])]),
+    'ollama with a bad address' => fn (): string => transferFile([transferEntry(['vendor' => 'ollama', 'url' => 'sk-file-key-1234'])]),
+    'name too long' => fn (): string => transferFile([transferEntry(['name' => str_repeat('a', 256)])]),
+    'model missing' => fn (): string => transferFile([transferEntry(['model' => ''])]),
+    'whitespace-only model and no embedding model' => fn (): string => transferFile([transferEntry(['model' => '   '])]),
+    'whitespace-only model and embedding model' => fn (): string => transferFile([transferEntry(['model' => '  ', 'embedding_model' => ' '])]),
+    'claude without model' => fn (): string => transferFile([transferEntry(['vendor' => 'anthropic', 'model' => null, 'embedding_model' => 'sk-file-key-1234'])]),
+    'threshold above one' => fn (): string => transferFile([transferEntry(['search_min_similarity' => 1.5])]),
+    'threshold below zero' => fn (): string => transferFile([transferEntry(['search_min_similarity' => -0.1])]),
+    'key is not a string' => fn (): string => transferFile([transferEntry(['api_key' => ['sk-file-key-1234']])]),
 ]);
 
-test('the error for an invalid entry names its position', function () {
-    expect(fn () => (new ProviderTransfer)->import(transferFile([transferEntry(), transferEntry(['model' => ''])])))
+test('the error for an invalid entry names its position', function (): void {
+    expect(fn (): ProviderImportResult => (new ProviderTransfer)->import(transferFile([transferEntry(), transferEntry(['model' => ''])])))
         ->toThrow(InvalidArgumentException::class, 'Eintrag 2');
 });
 
-test('export and import keep the embedding fields', function () {
+test('export and import keep the embedding fields', function (): void {
     $provider = AiProvider::factory()->embedding('bge-m3')->create(['search_min_similarity' => 0.42]);
     $transfer = new ProviderTransfer;
 
@@ -223,7 +223,7 @@ test('export and import keep the embedding fields', function () {
         ->and($restored->model)->toBe($provider->model);
 });
 
-test('neither active role is transferred', function () {
+test('neither active role is transferred', function (): void {
     Queue::fake();
     $provider = AiProvider::factory()->activeForSearch()->active()->create();
     $transfer = new ProviderTransfer;
@@ -240,7 +240,7 @@ test('neither active role is transferred', function () {
     Queue::assertNotPushed(ReembedItems::class);
 });
 
-test('an old file without the new fields still imports', function () {
+test('an old file without the new fields still imports', function (): void {
     (new ProviderTransfer)->import(transferFile([transferEntry()]));
 
     $provider = AiProvider::query()->firstOrFail();
@@ -249,7 +249,7 @@ test('an old file without the new fields still imports', function () {
         ->and($provider->search_min_similarity)->toBeNull();
 });
 
-test('an entry with only an embedding model imports', function () {
+test('an entry with only an embedding model imports', function (): void {
     (new ProviderTransfer)->import(transferFile([transferEntry(['model' => null, 'embedding_model' => ' bge-m3 '])]));
 
     $provider = AiProvider::query()->firstOrFail();
@@ -258,14 +258,14 @@ test('an entry with only an embedding model imports', function () {
         ->and($provider->embedding_model)->toBe('bge-m3');
 });
 
-test('a whitespace-only model counts as absent when an embedding model exists', function () {
+test('a whitespace-only model counts as absent when an embedding model exists', function (): void {
     (new ProviderTransfer)->import(transferFile([transferEntry(['model' => '   ', 'embedding_model' => 'bge-m3'])]));
 
     expect(AiProvider::query()->firstOrFail()->model)->toBeNull();
 });
 
-test('an entry without any model fails the whole import', function () {
-    expect(fn () => (new ProviderTransfer)->import(transferFile([
+test('an entry without any model fails the whole import', function (): void {
+    expect(fn (): ProviderImportResult => (new ProviderTransfer)->import(transferFile([
         transferEntry(['name' => 'Gut']),
         transferEntry(['model' => null, 'embedding_model' => null]),
     ])))->toThrow(InvalidArgumentException::class, 'Eintrag 2');
@@ -273,7 +273,7 @@ test('an entry without any model fails the whole import', function () {
     expect(AiProvider::query()->count())->toBe(0);
 });
 
-test('claude entries need a model and drop an embedding model', function () {
+test('claude entries need a model and drop an embedding model', function (): void {
     (new ProviderTransfer)->import(transferFile([transferEntry([
         'vendor' => 'anthropic',
         'model' => 'claude-x',
@@ -288,7 +288,7 @@ test('claude entries need a model and drop an embedding model', function () {
         ->and($provider->search_min_similarity)->toBeNull();
 });
 
-test('a provider without a chat model survives a round trip', function () {
+test('a provider without a chat model survives a round trip', function (): void {
     $provider = AiProvider::factory()->embedding('bge-m3')->create(['model' => null]);
     $transfer = new ProviderTransfer;
 
@@ -302,7 +302,7 @@ test('a provider without a chat model survives a round trip', function () {
         ->and($restored->embedding_model)->toBe('bge-m3');
 });
 
-test('a threshold without an embedding model is stored as given', function () {
+test('a threshold without an embedding model is stored as given', function (): void {
     (new ProviderTransfer)->import(transferFile([transferEntry(['search_min_similarity' => 0.3])]));
 
     expect(AiProvider::query()->firstOrFail()->search_min_similarity)->toEqual(0.3);

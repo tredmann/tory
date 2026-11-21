@@ -4,7 +4,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-it('gives users that existed before the migration the German locale', function () {
+it('gives users that existed before the migration the German locale', function (): void {
     $migration = require glob(database_path('migrations/*_add_locale_to_users_table.php'))[0];
 
     DB::beginTransaction();
@@ -32,7 +32,7 @@ it('gives users that existed before the migration the German locale', function (
     }
 });
 
-it('leaves the locale empty for users created afterwards', function () {
+it('leaves the locale empty for users created afterwards', function (): void {
     $user = User::factory()->create(['locale' => null]);
 
     expect(DB::table('users')->where('id', $user->id)->value('locale'))->toBeNull();

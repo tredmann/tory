@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-test('new records get a uuid as primary key', function (string $model) {
+test('new records get a uuid as primary key', function (string $model): void {
     $record = $model::factory()->create();
 
     expect(Str::isUuid($record->getKey()))->toBeTrue()
@@ -22,10 +22,10 @@ test('new records get a uuid as primary key', function (string $model) {
     Location::class,
 ]);
 
-test('spots keep their internal numeric key', function () {
+test('spots keep their internal numeric key', function (): void {
     expect(Spot::factory()->create()->getKey())->toBeInt();
 });
 
-test('sessions can reference a user by uuid', function () {
+test('sessions can reference a user by uuid', function (): void {
     expect(Schema::getColumnType('sessions', 'user_id'))->toBe('uuid');
 });

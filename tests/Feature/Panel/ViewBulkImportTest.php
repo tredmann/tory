@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
     $this->user = User::factory()->create();
@@ -59,7 +59,7 @@ function readyBulkImport(array $cardSizes, array $marks = [], array $attributes 
     ]);
 }
 
-test('a grouping bulk import shows the waiting state and polls', function () {
+test('a grouping bulk import shows the waiting state and polls', function (): void {
     $bulkImport = BulkImport::factory()->grouping()->create();
 
     Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
@@ -71,7 +71,7 @@ test('a grouping bulk import shows the waiting state and polls', function () {
         ->assertActionVisible('delete');
 });
 
-test('a ready bulk import shows its cards with counts and marks', function () {
+test('a ready bulk import shows its cards with counts and marks', function (): void {
     $spot = Spot::factory()->create(['name' => 'Werkbank']);
     $bulkImport = readyBulkImport([3, 2], [GroupMark::Merged->value, null], ['spot_id' => $spot->id]);
 
@@ -89,21 +89,21 @@ test('a ready bulk import shows its cards with counts and marks', function () {
         ->assertActionHasLabel('confirm', '2 Importe anlegen');
 });
 
-test('the review page shows the thumbnail of a group photo', function () {
+test('the review page shows the thumbnail of a group photo', function (): void {
     $bulkImport = readyBulkImport([1]);
 
     Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
         ->assertSeeHtml(PhotoLinks::thumbnail($bulkImport->groups[0]['photos'][0]));
 });
 
-test('the review page keeps no form data in its state', function () {
+test('the review page keeps no form data in its state', function (): void {
     $bulkImport = readyBulkImport([2, 1]);
 
     Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
         ->assertSet('data', []);
 });
 
-test('the last card offers no merge and discarded photos do not count', function () {
+test('the last card offers no merge and discarded photos do not count', function (): void {
     $bulkImport = readyBulkImport([2]);
     $bulkImport->update(['discarded' => [$bulkImport->groups[0]['photos'][1]]]);
 
@@ -114,7 +114,7 @@ test('the last card offers no merge and discarded photos do not count', function
         ->assertActionHasLabel('confirm', '1 Import anlegen');
 });
 
-test('the provider reason links to Eigene KI', function () {
+test('the provider reason links to Eigene KI', function (): void {
     $this->actingAs(User::factory()->admin()->create());
     $bulkImport = readyBulkImport([2], attributes: [
         'grouping_incomplete' => true,
@@ -129,7 +129,7 @@ test('the provider reason links to Eigene KI', function () {
         ->assertDontSee('Die KI-Prüfung ist nicht vollständig gelaufen.');
 });
 
-test('a member sees the provider reason without the link', function () {
+test('a member sees the provider reason without the link', function (): void {
     $bulkImport = readyBulkImport([2], attributes: [
         'grouping_incomplete' => true,
         'failure_reason' => ProviderFailureReason::KeyRejected,
@@ -142,7 +142,7 @@ test('a member sees the provider reason without the link', function () {
         ->assertDontSeeHtml('/ai-providers');
 });
 
-test('an incomplete grouping shows the general note', function () {
+test('an incomplete grouping shows the general note', function (): void {
     $bulkImport = readyBulkImport([2], attributes: ['grouping_incomplete' => true]);
 
     Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
@@ -150,7 +150,7 @@ test('an incomplete grouping shows the general note', function () {
         ->assertDontSee('Provider prüfen');
 });
 
-test('a complete grouping shows no note', function () {
+test('a complete grouping shows no note', function (): void {
     $bulkImport = readyBulkImport([2]);
 
     Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
@@ -158,7 +158,7 @@ test('a complete grouping shows no note', function () {
         ->assertDontSee('Provider prüfen');
 });
 
-test('moving, splitting, merging and discarding call through', function () {
+test('moving, splitting, merging and discarding call through', function (): void {
     $bulkImport = readyBulkImport([2, 2]);
     [$first, $second] = $bulkImport->groups;
     $page = Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()]);
@@ -181,7 +181,7 @@ test('moving, splitting, merging and discarding call through', function () {
     expect($bulkImport->fresh()->discarded)->toBe([]);
 });
 
-test('a stale edit shows the notice and the current cards', function () {
+test('a stale edit shows the notice and the current cards', function (): void {
     $bulkImport = readyBulkImport([2, 2]);
     $page = Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
         ->assertSee('Gruppe 2 · 2 Fotos');
@@ -197,7 +197,7 @@ test('a stale edit shows the notice and the current cards', function () {
     expect($bulkImport->fresh()->groups)->toBe($groups);
 });
 
-test('confirm creates the imports and redirects to the import list', function () {
+test('confirm creates the imports and redirects to the import list', function (): void {
     $bulkImport = readyBulkImport([2, 1]);
 
     Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
@@ -205,14 +205,14 @@ test('confirm creates the imports and redirects to the import list', function ()
         ->assertNotified('2 Importe angelegt')
         ->assertRedirect(ImportResource::getUrl('index'));
 
-    expect(Import::count())->toBe(2)
+    expect(Import::query()->count())->toBe(2)
         ->and(Import::query()->pluck('status')->all())->each->toBe(ImportStatus::Pending)
-        ->and(BulkImport::count())->toBe(0)
+        ->and(BulkImport::query()->count())->toBe(0)
         ->and($this->user->fresh()->last_spot_id)->toBe($bulkImport->spot_id);
     Queue::assertPushed(ExtractImport::class, 2);
 });
 
-test('confirm is disabled over twenty photos in a card', function () {
+test('confirm is disabled over twenty photos in a card', function (): void {
     $bulkImport = readyBulkImport([21, 1]);
 
     Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
@@ -220,7 +220,7 @@ test('confirm is disabled over twenty photos in a card', function () {
         ->assertActionDisabled('confirm');
 });
 
-test('delete removes the bulk import and its files', function () {
+test('delete removes the bulk import and its files', function (): void {
     $bulkImport = readyBulkImport([2]);
     $paths = $bulkImport->allPaths();
     Storage::disk('local')->assertExists($paths);
@@ -229,15 +229,15 @@ test('delete removes the bulk import and its files', function () {
         ->callAction('delete')
         ->assertRedirect(ImportResource::getUrl('index'));
 
-    expect(BulkImport::count())->toBe(0);
+    expect(BulkImport::query()->count())->toBe(0);
     Storage::disk('local')->assertMissing($paths);
 });
 
-test('an unknown record answers 404', function () {
+test('an unknown record answers 404', function (): void {
     $this->get(BulkImportResource::getUrl('view', ['record' => Str::uuid7()]))->assertNotFound();
 });
 
-test('a drop into another card moves the photo there', function () {
+test('a drop into another card moves the photo there', function (): void {
     $bulkImport = readyBulkImport([2, 1]);
     [$first, $second] = $bulkImport->groups;
 

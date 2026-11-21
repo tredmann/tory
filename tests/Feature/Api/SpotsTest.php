@@ -6,11 +6,11 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Sanctum::actingAs(User::factory()->create());
 });
 
-it('lists all spots ordered by location, name and code', function () {
+it('lists all spots ordered by location, name and code', function (): void {
     $b = Location::factory()->create(['name' => 'B-Keller']);
     $a = Location::factory()->create(['name' => 'A-Garage']);
     Spot::factory()->for($b)->create(['name' => 'Regal']);
@@ -25,7 +25,7 @@ it('lists all spots ordered by location, name and code', function () {
         ->assertJsonMissingPath('data.0.id');
 });
 
-it('shows a spot by code in any case', function () {
+it('shows a spot by code in any case', function (): void {
     $spot = Spot::factory()->create();
 
     $this->getJson('/api/v1/spots/'.strtolower($spot->code))
@@ -35,16 +35,16 @@ it('shows a spot by code in any case', function () {
         ->assertJsonPath('data.items_count', 0);
 });
 
-it('answers 404 for a code that cannot exist without querying', function () {
+it('answers 404 for a code that cannot exist without querying', function (): void {
     DB::enableQueryLog();
 
     $this->getJson('/api/v1/spots/OOOO')->assertNotFound();
 
-    $spotQueries = collect(DB::getQueryLog())->filter(fn ($q) => str_contains($q['query'], '"spots"'));
+    $spotQueries = collect(DB::getQueryLog())->filter(fn ($q): bool => str_contains($q['query'], '"spots"'));
     expect($spotQueries)->toBeEmpty();
 });
 
-it('creates a spot', function () {
+it('creates a spot', function (): void {
     $location = Location::factory()->create();
 
     $this->postJson('/api/v1/spots', ['name' => 'Regal', 'note' => null, 'location' => $location->id])
@@ -52,10 +52,10 @@ it('creates a spot', function () {
         ->assertJsonPath('data.location.id', $location->id)
         ->assertJsonPath('data.name', 'Regal');
 
-    expect(Spot::sole()->code)->toMatch('/^[2-9A-HJ-NP-Z]{4}$/');
+    expect(Spot::query()->sole()->code)->toMatch('/^[2-9A-HJ-NP-Z]{4}$/');
 });
 
-it('returns the code of a created spot', function () {
+it('returns the code of a created spot', function (): void {
     $location = Location::factory()->create();
 
     $response = $this->postJson('/api/v1/spots', ['name' => 'Regal', 'location' => $location->id]);
@@ -63,7 +63,7 @@ it('returns the code of a created spot', function () {
     expect($response->json('data.code'))->toMatch('/^[2-9A-HJ-NP-Z]{4}$/');
 });
 
-it('rejects a spot without name or with an unknown location', function () {
+it('rejects a spot without name or with an unknown location', function (): void {
     $this->postJson('/api/v1/spots', ['location' => fake()->uuid()])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['name', 'location']);

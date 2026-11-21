@@ -69,7 +69,7 @@ function germanTranslationKeys(): array
     ));
 }
 
-it('extracts translation literals from source', function () {
+it('extracts translation literals from source', function (): void {
     $source = <<<'SRC'
     <?php
     $a = __('Single quoted');
@@ -107,19 +107,19 @@ it('extracts translation literals from source', function () {
     ]);
 });
 
-it('has a German translation for every translated string', function () {
+it('has a German translation for every translated string', function (): void {
     $missing = array_values(array_diff(translationKeysInCode(), germanTranslationKeys()));
 
     expect($missing)->toBe([]);
 });
 
-it('uses every German translation', function () {
+it('uses every German translation', function (): void {
     $unused = array_values(array_diff(germanTranslationKeys(), translationKeysInCode()));
 
     expect($unused)->toBe([]);
 });
 
-it('renders placeholders in both languages', function () {
+it('renders placeholders in both languages', function (): void {
     app()->setLocale('de');
     expect(__('At most :max photos.', ['max' => 20]))->toBe('Höchstens 20 Fotos.');
 

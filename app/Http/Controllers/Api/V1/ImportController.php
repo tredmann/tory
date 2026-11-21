@@ -37,7 +37,7 @@ class ImportController extends Controller
         );
         $spotId = $request->spotId();
 
-        $import = Import::create([
+        $import = Import::query()->create([
             'user_id' => $request->user()->id,
             'spot_id' => $spotId,
             'status' => ImportStatus::Pending,

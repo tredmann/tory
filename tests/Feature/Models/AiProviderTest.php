@@ -5,7 +5,7 @@ use App\Models\AiProvider;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
-test('vendor labels and key requirement', function () {
+test('vendor labels and key requirement', function (): void {
     expect(AiVendor::Ollama->getLabel())->toBe('Ollama')
         ->and(AiVendor::Anthropic->getLabel())->toBe('Claude')
         ->and(AiVendor::OpenAi->getLabel())->toBe('OpenAI')
@@ -16,7 +16,7 @@ test('vendor labels and key requirement', function () {
         ->and(AiVendor::Mistral->requiresKey())->toBeTrue();
 });
 
-test('the key is encrypted at rest and hidden from arrays', function () {
+test('the key is encrypted at rest and hidden from arrays', function (): void {
     $provider = AiProvider::factory()->create(['api_key' => 'sk-secret-3fa9']);
 
     expect(DB::table('ai_providers')->value('api_key'))->not->toContain('sk-secret')
@@ -25,7 +25,7 @@ test('the key is encrypted at rest and hidden from arrays', function () {
         ->and($provider->attributesToArray())->not->toHaveKey('api_key');
 });
 
-test('saving a key stores its last four characters as the hint', function () {
+test('saving a key stores its last four characters as the hint', function (): void {
     $provider = AiProvider::factory()->create(['api_key' => 'sk-secret-3fa9']);
     expect($provider->key_hint)->toBe('3fa9');
 
@@ -36,7 +36,7 @@ test('saving a key stores its last four characters as the hint', function () {
     expect($provider->fresh()->key_hint)->toBe('81c2');
 });
 
-test('activating leaves exactly one active provider', function () {
+test('activating leaves exactly one active provider', function (): void {
     $first = AiProvider::factory()->active()->create();
     $second = AiProvider::factory()->create();
 
@@ -45,16 +45,16 @@ test('activating leaves exactly one active provider', function () {
     expect($first->fresh()->is_active)->toBeFalse()
         ->and($second->fresh()->is_active)->toBeTrue()
         ->and(AiProvider::active()->is($second))->toBeTrue()
-        ->and(AiProvider::where('is_active', true)->count())->toBe(1);
+        ->and(AiProvider::query()->where('is_active', true)->count())->toBe(1);
 });
 
-test('without an active provider none is returned', function () {
+test('without an active provider none is returned', function (): void {
     AiProvider::factory()->create();
 
     expect(AiProvider::active())->toBeNull();
 });
 
-test('the database refuses a second active provider', function () {
+test('the database refuses a second active provider', function (): void {
     $active = AiProvider::factory()->active()->create();
     $other = AiProvider::factory()->create();
 
@@ -69,17 +69,17 @@ test('the database refuses a second active provider', function () {
     expect($active->fresh()->is_active)->toBeTrue();
 });
 
-test('the active provider cannot be deleted', function () {
+test('the active provider cannot be deleted', function (): void {
     $active = AiProvider::factory()->active()->create();
     $inactive = AiProvider::factory()->create();
 
     expect($active->delete())->toBeFalse()
-        ->and(AiProvider::find($active->id))->not->toBeNull()
+        ->and(AiProvider::query()->find($active->id))->not->toBeNull()
         ->and($inactive->delete())->toBeTrue()
-        ->and(AiProvider::find($inactive->id))->toBeNull();
+        ->and(AiProvider::query()->find($inactive->id))->toBeNull();
 });
 
-test('an undecryptable key does not throw', function () {
+test('an undecryptable key does not throw', function (): void {
     $provider = AiProvider::factory()->create(['api_key' => 'sk-secret-3fa9']);
     DB::table('ai_providers')->where('id', $provider->id)->update(['api_key' => 'not-a-valid-payload']);
 
@@ -91,14 +91,14 @@ test('an undecryptable key does not throw', function () {
         ->and(fn () => $fresh->attributesToArray())->not->toThrow(Throwable::class);
 });
 
-test('a readable key is reported as readable', function () {
+test('a readable key is reported as readable', function (): void {
     $provider = AiProvider::factory()->create(['api_key' => 'sk-secret-3fa9']);
 
     expect($provider->readableKey())->toBe('sk-secret-3fa9')
         ->and($provider->hasUnreadableKey())->toBeFalse();
 });
 
-test('a provider without a key has neither a readable nor an unreadable key', function () {
+test('a provider without a key has neither a readable nor an unreadable key', function (): void {
     $provider = AiProvider::factory()->ollama()->create();
 
     expect($provider->readableKey())->toBeNull()
@@ -106,7 +106,7 @@ test('a provider without a key has neither a readable nor an unreadable key', fu
         ->and($provider->key_hint)->toBeNull();
 });
 
-test('scrub removes the key from text and leaves text unchanged without a key', function () {
+test('scrub removes the key from text and leaves text unchanged without a key', function (): void {
     $keyed = AiProvider::factory()->create(['api_key' => 'sk-secret-3fa9']);
     $keyless = AiProvider::factory()->ollama()->create();
 
@@ -114,12 +114,12 @@ test('scrub removes the key from text and leaves text unchanged without a key', 
         ->and($keyless->scrub('nothing to hide'))->toBe('nothing to hide');
 });
 
-test('a stale instance of a meanwhile activated provider cannot be deleted', function () {
+test('a stale instance of a meanwhile activated provider cannot be deleted', function (): void {
     $provider = AiProvider::factory()->create();
-    $stale = AiProvider::find($provider->id);
+    $stale = AiProvider::query()->find($provider->id);
 
-    AiProvider::find($provider->id)->activate();
+    AiProvider::query()->find($provider->id)->activate();
 
     expect($stale->delete())->toBeFalse()
-        ->and(AiProvider::whereKey($provider->id)->exists())->toBeTrue();
+        ->and(AiProvider::query()->whereKey($provider->id)->exists())->toBeTrue();
 });

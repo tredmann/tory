@@ -13,7 +13,7 @@ function casesDirectory(array $definitions): string
     return $directory;
 }
 
-test('a valid case loads with absolute photo paths', function () {
+test('a valid case loads with absolute photo paths', function (): void {
     $cases = EvalCase::loadAll(casesDirectory([
         ['name' => 'Fall', 'photos' => ['foto.png'], 'de' => ['search_words' => ['a'], 'title_words' => ['b'], 'forbidden_words' => ['c']]],
     ]), Language::German);
@@ -23,8 +23,8 @@ test('a valid case loads with absolute photo paths', function () {
         ->and($cases[0]->searchWords)->toBe(['a']);
 });
 
-test('a malformed case is reported with its name', function (array $definition, string $message) {
-    expect(fn () => EvalCase::loadAll(casesDirectory([$definition]), Language::German))
+test('a malformed case is reported with its name', function (array $definition, string $message): void {
+    expect(fn (): array => EvalCase::loadAll(casesDirectory([$definition]), Language::German))
         ->toThrow(RuntimeException::class, $message);
 })->with([
     'no photos' => [['name' => 'Fall', 'photos' => [], 'de' => ['search_words' => [], 'title_words' => [], 'forbidden_words' => []]], 'Fall'],
@@ -34,7 +34,7 @@ test('a malformed case is reported with its name', function (array $definition, 
     'forbidden word not a string' => [['name' => 'Fall', 'photos' => ['foto.png'], 'de' => ['search_words' => [], 'title_words' => [], 'forbidden_words' => [1]]], 'forbidden_words'],
 ]);
 
-test('the words of the requested language are loaded', function () {
+test('the words of the requested language are loaded', function (): void {
     $directory = casesDirectory([
         [
             'name' => 'Fall',
@@ -55,11 +55,11 @@ test('the words of the requested language are loaded', function () {
         ->and($english->forbiddenWords)->toBe(['box']);
 });
 
-test('a case without the requested language is reported with its name', function () {
+test('a case without the requested language is reported with its name', function (): void {
     $directory = casesDirectory([
         ['name' => 'Fall', 'photos' => ['foto.png'], 'de' => ['search_words' => [], 'title_words' => [], 'forbidden_words' => []]],
     ]);
 
-    expect(fn () => EvalCase::loadAll($directory, Language::English))
+    expect(fn (): array => EvalCase::loadAll($directory, Language::English))
         ->toThrow(RuntimeException::class, 'Fall');
 });

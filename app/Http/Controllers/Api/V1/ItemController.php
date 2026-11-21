@@ -10,6 +10,7 @@ use App\Http\Resources\Api\V1\ItemResource;
 use App\Models\Item;
 use App\Models\Spot;
 use App\Photos\PhotoStore;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -29,7 +30,7 @@ class ItemController extends Controller
             $location = $request->query('location');
 
             if (is_string($location) && Str::isUuid($location)) {
-                $query->whereHas('spot', fn ($spot) => $spot->where('location_id', $location));
+                $query->whereHas('spot', fn (Builder $spot) => $spot->where('location_id', $location));
             } else {
                 $query->whereRaw('false');
             }
@@ -42,7 +43,7 @@ class ItemController extends Controller
             if ($code === null) {
                 $query->whereRaw('false');
             } else {
-                $query->whereHas('spot', fn ($spot) => $spot->where('code', $code));
+                $query->whereHas('spot', fn (Builder $spot) => $spot->where('code', $code));
             }
         }
 
@@ -79,7 +80,7 @@ class ItemController extends Controller
                 $paths[] = $path;
             }
 
-            $item = Item::create([
+            $item = Item::query()->create([
                 'spot_id' => $spotId,
                 'title' => $request->validated('title'),
                 'description' => $request->validated('description'),

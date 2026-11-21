@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         foreach (['imports', 'items'] as $name) {
-            Schema::table($name, function (Blueprint $table) {
+            Schema::table($name, function (Blueprint $table): void {
                 $table->jsonb('search_terms')->default('[]');
             });
         }
@@ -24,7 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         foreach (['imports', 'items'] as $name) {
-            Schema::table($name, function (Blueprint $table) {
+            Schema::table($name, function (Blueprint $table): void {
                 $table->dropColumn('search_terms');
             });
         }

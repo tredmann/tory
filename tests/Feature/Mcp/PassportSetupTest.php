@@ -7,7 +7,7 @@ use Laravel\Passport\Token;
 
 use function Pest\Laravel\withToken;
 
-test('passport tokens can belong to a uuid user', function () {
+test('passport tokens can belong to a uuid user', function (): void {
     $user = User::factory()->create();
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Claude', ['https://claude.ai/api/mcp/auth_callback']);
 
@@ -21,14 +21,14 @@ test('passport tokens can belong to a uuid user', function () {
     expect($user->oauthTokens()->sole()->client_id)->toBe($client->id);
 });
 
-test('sanctum tokens still work beside passport', function () {
+test('sanctum tokens still work beside passport', function (): void {
     $user = User::factory()->create();
     $plain = $user->createToken('iPhone')->plainTextToken;
 
     withToken($plain)->getJson('/api/v1/user')->assertOk();
 });
 
-test('tokens last a hundred years', function () {
+test('tokens last a hundred years', function (): void {
     expect(Passport::tokensExpireIn()->totalYears)->toBe(100.0)
         ->and(Passport::refreshTokensExpireIn()->totalYears)->toBe(100.0);
 });

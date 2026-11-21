@@ -7,13 +7,13 @@ use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Testing\Fluent\AssertableJson;
 
-it('creates a spot in the named location', function () {
+it('creates a spot in the named location', function (): void {
     $location = Location::factory()->create(['name' => 'Keller']);
 
     ToryServer::actingAs(User::factory()->create())
         ->tool(CreateSpotTool::class, ['name' => 'Regal 5', 'location' => 'keller', 'note' => 'ganz hinten'])
         ->assertOk()
-        ->assertStructuredContent(fn (AssertableJson $json) => $json
+        ->assertStructuredContent(fn (AssertableJson $json): AssertableJson => $json
             ->where('name', 'Regal 5')
             ->where('note', 'ganz hinten')
             ->where('location', 'Keller')
@@ -26,7 +26,7 @@ it('creates a spot in the named location', function () {
         ->and($spot->code)->toHaveLength(4);
 });
 
-it('refuses an unknown location and lists the existing ones', function () {
+it('refuses an unknown location and lists the existing ones', function (): void {
     Location::factory()->create(['name' => 'Keller']);
     Location::factory()->create(['name' => 'Dachboden']);
 
@@ -37,7 +37,7 @@ it('refuses an unknown location and lists the existing ones', function () {
     expect(Spot::query()->where('name', 'Regal 5')->exists())->toBeFalse();
 });
 
-it('validates the name like the panel', function (string $name) {
+it('validates the name like the panel', function (string $name): void {
     Location::factory()->create(['name' => 'Keller']);
 
     ToryServer::actingAs(User::factory()->create())
@@ -47,10 +47,10 @@ it('validates the name like the panel', function (string $name) {
     expect(Spot::query()->count())->toBe(0);
 })->with([
     'empty' => '',
-    'too long' => fn () => str_repeat('a', 256),
+    'too long' => fn (): string => str_repeat('a', 256),
 ]);
 
-it('refuses a location name that matches several locations', function () {
+it('refuses a location name that matches several locations', function (): void {
     Location::factory()->create(['name' => 'Keller']);
     Location::factory()->create(['name' => 'keller']);
 
@@ -61,7 +61,7 @@ it('refuses a location name that matches several locations', function () {
     expect(Spot::query()->where('name', 'Regal 5')->exists())->toBeFalse();
 });
 
-it('trims the spot name', function () {
+it('trims the spot name', function (): void {
     Location::factory()->create(['name' => 'Keller']);
 
     ToryServer::actingAs(User::factory()->create())

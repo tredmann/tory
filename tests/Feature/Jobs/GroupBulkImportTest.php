@@ -2,6 +2,7 @@
 
 use App\Ai\Agents\PhotoBoundaryChecker;
 use App\Ai\ProviderFailure;
+use App\BulkImports\PhotoGroup;
 use App\Enums\BulkImportStatus;
 use App\Enums\GroupMark;
 use App\Enums\ProviderFailureReason;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
     Exceptions::fake();
@@ -56,7 +57,7 @@ function photoPaths(int ...$indexes): array
 function groupsOf(BulkImport $bulkImport): array
 {
     return array_map(
-        fn ($group): array => ['photos' => $group->photos, 'mark' => $group->mark],
+        fn (PhotoGroup $group): array => ['photos' => $group->photos, 'mark' => $group->mark],
         $bulkImport->fresh()->groupList(),
     );
 }
@@ -71,7 +72,7 @@ function runGrouping(BulkImport $bulkImport, int $nextPair = 0): void
     new GroupBulkImport($bulkImport, $nextPair)->handle();
 }
 
-test('declares one attempt, a 200 second timeout and deletes when the model is missing', function () {
+test('declares one attempt, a 200 second timeout and deletes when the model is missing', function (): void {
     $job = new GroupBulkImport(bulkImportWith(2));
 
     expect($job->tries)->toBe(1)
@@ -82,7 +83,7 @@ test('declares one attempt, a 200 second timeout and deletes when the model is m
         ->and(GroupBulkImport::BUDGET_SECONDS + GroupBulkImport::CLIENT_TIMEOUT)->toBeLessThan($job->timeout);
 });
 
-test('the AI answers replace the time cuts and the groups follow', function () {
+test('the AI answers replace the time cuts and the groups follow', function (): void {
     PhotoBoundaryChecker::fake([['boundaries' => [false, true]]]);
     $bulkImport = bulkImportWith(3, [true, false]);
 
@@ -100,7 +101,7 @@ test('the AI answers replace the time cuts and the groups follow', function () {
     expect(array_column($fresh->groups, 'id'))->each->toBeString()->not->toBeEmpty();
 });
 
-test('a merge across a time cut is marked merged', function () {
+test('a merge across a time cut is marked merged', function (): void {
     PhotoBoundaryChecker::fake([['boundaries' => [false]]]);
     $bulkImport = bulkImportWith(2, [true]);
 
@@ -111,7 +112,7 @@ test('a merge across a time cut is marked merged', function () {
     ]);
 });
 
-test('a split inside one time group is marked split', function () {
+test('a split inside one time group is marked split', function (): void {
     PhotoBoundaryChecker::fake([
         ['boundaries' => [false, false, false, false, false, true, false]],
         ['boundaries' => [false, false, false, false, false, false]],
@@ -126,22 +127,22 @@ test('a split inside one time group is marked split', function () {
     ]);
 });
 
-test('each window sends at most eight photos', function () {
+test('each window sends at most eight photos', function (): void {
     PhotoBoundaryChecker::fake(noBoundaries());
     $bulkImport = bulkImportWith(20);
 
     runGrouping($bulkImport);
 
-    PhotoBoundaryChecker::assertPrompted(fn ($prompt) => $prompt->attachments->count() <= 8);
-    PhotoBoundaryChecker::assertNotPrompted(fn ($prompt) => $prompt->attachments->count() > 8);
+    PhotoBoundaryChecker::assertPrompted(fn ($prompt): bool => $prompt->attachments->count() <= 8);
+    PhotoBoundaryChecker::assertNotPrompted(fn ($prompt): bool => $prompt->attachments->count() > 8);
     expect($bulkImport->fresh()->status)->toBe(BulkImportStatus::Ready)
         ->and(groupsOf($bulkImport))->toHaveCount(1);
 });
 
-test('a provider failure keeps the decided cuts and records the reason', function () {
+test('a provider failure keeps the decided cuts and records the reason', function (): void {
     AiProvider::factory()->active()->create(['name' => 'Claude schnell']);
     $calls = 0;
-    PhotoBoundaryChecker::fake(function () use (&$calls) {
+    PhotoBoundaryChecker::fake(function () use (&$calls): array {
         $calls++;
 
         if ($calls === 2) {
@@ -164,8 +165,8 @@ test('a provider failure keeps the decided cuts and records the reason', functio
     Exceptions::assertReported(ProviderFailure::class);
 });
 
-test('a failure without a provider marks the grouping incomplete', function () {
-    PhotoBoundaryChecker::fake(fn () => throw new RuntimeException('Connection refused'));
+test('a failure without a provider marks the grouping incomplete', function (): void {
+    PhotoBoundaryChecker::fake(fn (): never => throw new RuntimeException('Connection refused'));
     $bulkImport = bulkImportWith(3, [true, false]);
 
     runGrouping($bulkImport);
@@ -179,12 +180,12 @@ test('a failure without a provider marks the grouping incomplete', function () {
             ['photos' => photoPaths(0), 'mark' => null],
             ['photos' => photoPaths(1, 2), 'mark' => null],
         ]);
-    Exceptions::assertReported(fn (RuntimeException $e) => $e->getMessage() === 'Connection refused');
+    Exceptions::assertReported(fn (RuntimeException $e): bool => $e->getMessage() === 'Connection refused');
 });
 
-test('the job resumes with a cursor when the budget runs out', function () {
+test('the job resumes with a cursor when the budget runs out', function (): void {
     Carbon::setTestNow('2026-11-07 10:00:00');
-    PhotoBoundaryChecker::fake(function (string $prompt, Collection $attachments) {
+    PhotoBoundaryChecker::fake(function (string $prompt, Collection $attachments): array {
         Carbon::setTestNow(now()->addSeconds(GroupBulkImport::BUDGET_SECONDS + 1));
 
         return ['boundaries' => [false, false, false, true, false, false, false]];
@@ -196,12 +197,12 @@ test('the job resumes with a cursor when the budget runs out', function () {
     $fresh = $bulkImport->fresh();
     expect($fresh->status)->toBe(BulkImportStatus::Grouping)
         ->and(array_slice($fresh->cuts, 0, 6))->toBe([false, false, false, true, false, false]);
-    Queue::assertPushed(GroupBulkImport::class, fn (GroupBulkImport $job) => $job->nextPair === 6
+    Queue::assertPushed(GroupBulkImport::class, fn (GroupBulkImport $job): bool => $job->nextPair === 6
         && $job->bulkImport->is($bulkImport));
-    PhotoBoundaryChecker::assertPrompted(fn ($prompt) => $prompt->attachments->count() === 8);
+    PhotoBoundaryChecker::assertPrompted(fn ($prompt): bool => $prompt->attachments->count() === 8);
 });
 
-test('a resumed job starts at its cursor', function () {
+test('a resumed job starts at its cursor', function (): void {
     PhotoBoundaryChecker::fake([['boundaries' => [true, false, false, false, false, false]]]);
     $bulkImport = bulkImportWith(12);
 
@@ -210,11 +211,11 @@ test('a resumed job starts at its cursor', function () {
     $fresh = $bulkImport->fresh();
     expect($fresh->status)->toBe(BulkImportStatus::Ready)
         ->and($fresh->cuts)->toBe([false, false, false, false, false, false, false, false, false, false, false]);
-    PhotoBoundaryChecker::assertPrompted(fn ($prompt) => $prompt->attachments->count() === 7);
+    PhotoBoundaryChecker::assertPrompted(fn ($prompt): bool => $prompt->attachments->count() === 7);
     Queue::assertNothingPushed();
 });
 
-test('failed() leaves a ready bulk import with the time groups', function () {
+test('failed() leaves a ready bulk import with the time groups', function (): void {
     $bulkImport = bulkImportWith(3, [false, true]);
 
     new GroupBulkImport($bulkImport)->failed(new RuntimeException('killed'));
@@ -228,9 +229,9 @@ test('failed() leaves a ready bulk import with the time groups', function () {
         ]);
 });
 
-test('a deleted bulk import ends the job quietly', function () {
+test('a deleted bulk import ends the job quietly', function (): void {
     $bulkImport = bulkImportWith(12);
-    PhotoBoundaryChecker::fake(function (string $prompt, Collection $attachments) use ($bulkImport) {
+    PhotoBoundaryChecker::fake(function (string $prompt, Collection $attachments) use ($bulkImport): array {
         $bulkImport->delete();
 
         return ['boundaries' => array_fill(0, $attachments->count() - 1, false)];
@@ -241,11 +242,11 @@ test('a deleted bulk import ends the job quietly', function () {
     expect(BulkImport::query()->whereKey($bulkImport->getKey())->exists())->toBeFalse();
     Exceptions::assertNothingReported();
     Queue::assertNothingPushed();
-    PhotoBoundaryChecker::assertPrompted(fn ($prompt) => $prompt->attachments->count() === 8);
+    PhotoBoundaryChecker::assertPrompted(fn ($prompt): bool => $prompt->attachments->count() === 8);
 });
 
-test('a single photo becomes one group without calling the AI', function () {
-    PhotoBoundaryChecker::fake(fn () => throw new RuntimeException('must not be called'));
+test('a single photo becomes one group without calling the AI', function (): void {
+    PhotoBoundaryChecker::fake(fn (): never => throw new RuntimeException('must not be called'));
     $bulkImport = bulkImportWith(1);
 
     runGrouping($bulkImport);

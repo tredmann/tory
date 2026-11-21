@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::ensureVectorExtensionExists();
 
-        Schema::create('items', function (Blueprint $table) {
+        Schema::create('items', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('storage_location_id')->constrained()->restrictOnDelete();
             $table->string('title');

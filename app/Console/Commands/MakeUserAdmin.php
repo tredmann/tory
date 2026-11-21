@@ -15,7 +15,7 @@ class MakeUserAdmin extends Command
     public function handle(): int
     {
         $email = (string) $this->argument('email');
-        $user = User::firstWhere('email', $email);
+        $user = User::query()->firstWhere('email', $email);
 
         if ($user === null) {
             $this->error("Kein Nutzer mit der E-Mail {$email}.");

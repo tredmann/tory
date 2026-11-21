@@ -12,13 +12,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('ai_providers', function (Blueprint $table) {
+        Schema::table('ai_providers', function (Blueprint $table): void {
             $table->uuid('uuid')->nullable()->after('id');
         });
 
         DB::statement('UPDATE ai_providers SET uuid = gen_random_uuid()');
 
-        Schema::table('ai_providers', function (Blueprint $table) {
+        Schema::table('ai_providers', function (Blueprint $table): void {
             $table->uuid('uuid')->nullable(false)->change();
             $table->unique('uuid');
         });
@@ -29,7 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('ai_providers', function (Blueprint $table) {
+        Schema::table('ai_providers', function (Blueprint $table): void {
             $table->dropColumn('uuid');
         });
     }

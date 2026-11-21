@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
 
-test('the job stores a 1024-dimension embedding', function () {
+test('the job stores a 1024-dimension embedding', function (): void {
     Queue::fake();
     $item = Item::factory()->create();
 
@@ -17,7 +17,7 @@ test('the job stores a 1024-dimension embedding', function () {
     expect($item->fresh()->embedding)->toHaveCount(1024);
 });
 
-test('storing the embedding queues nothing', function () {
+test('storing the embedding queues nothing', function (): void {
     Queue::fake();
     $item = Item::factory()->create();
 
@@ -26,21 +26,21 @@ test('storing the embedding queues nothing', function () {
     Queue::assertPushed(EmbedItem::class, 1);
 });
 
-test('the job respects the queue timing invariant', function () {
+test('the job respects the queue timing invariant', function (): void {
     $job = new EmbedItem(Item::factory()->make());
 
     expect($job->tries)->toBe(3)->and($job->timeout)->toBe(60)->and($job->timeout)->toBeLessThan(210)
         ->and(EmbedItem::CLIENT_TIMEOUT)->toBe(45)->and(EmbedItem::CLIENT_TIMEOUT)->toBeLessThan($job->timeout);
 });
 
-test('creating an item queues its embedding', function () {
+test('creating an item queues its embedding', function (): void {
     Queue::fake();
     $item = Item::factory()->create();
 
     Queue::assertPushed(EmbedItem::class, fn (EmbedItem $job) => $job->item->is($item));
 });
 
-test('changing title or description clears the embedding and queues a new one', function (string $field) {
+test('changing title or description clears the embedding and queues a new one', function (string $field): void {
     Queue::fake();
     $item = Item::factory()->create();
     $item->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->saveQuietly();
@@ -51,7 +51,7 @@ test('changing title or description clears the embedding and queues a new one', 
     Queue::assertPushed(EmbedItem::class, 2);
 })->with(['title', 'description']);
 
-test('changing search terms clears the embedding and queues a new one', function () {
+test('changing search terms clears the embedding and queues a new one', function (): void {
     Queue::fake();
     $item = Item::factory()->create();
     $item->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->saveQuietly();
@@ -62,7 +62,7 @@ test('changing search terms clears the embedding and queues a new one', function
     Queue::assertPushed(EmbedItem::class, 2);
 });
 
-test('saving unchanged search terms queues nothing', function () {
+test('saving unchanged search terms queues nothing', function (): void {
     Queue::fake();
     $item = Item::factory()->create(['search_terms' => ['Tacker']]);
     $item->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->saveQuietly();
@@ -73,7 +73,7 @@ test('saving unchanged search terms queues nothing', function () {
     Queue::assertPushed(EmbedItem::class, 1);
 });
 
-test('moving an item keeps its embedding and queues nothing', function () {
+test('moving an item keeps its embedding and queues nothing', function (): void {
     Queue::fake();
     $item = Item::factory()->create();
     $item->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->saveQuietly();
@@ -84,20 +84,20 @@ test('moving an item keeps its embedding and queues nothing', function () {
     Queue::assertPushed(EmbedItem::class, 1);
 });
 
-test('a failing embedding leaves the item in place without an embedding', function () {
+test('a failing embedding leaves the item in place without an embedding', function (): void {
     Queue::fake();
     $item = Item::factory()->create();
-    Embeddings::fake(fn () => throw new RuntimeException('down'));
+    Embeddings::fake(fn (): never => throw new RuntimeException('down'));
 
     expect(fn () => new EmbedItem($item)->handle(app(ItemEmbedder::class)))->toThrow(RuntimeException::class);
     expect($item->fresh()->embedding)->toBeNull();
 });
 
-test('the job asks the provider with a client timeout shorter than its own', function () {
+test('the job asks the provider with a client timeout shorter than its own', function (): void {
     Queue::fake();
     $item = Item::factory()->create();
     $timeouts = [];
-    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$timeouts) {
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$timeouts): array {
         $timeouts[] = $prompt->timeout;
 
         return [Embeddings::fakeEmbedding(1024)];
@@ -108,11 +108,11 @@ test('the job asks the provider with a client timeout shorter than its own', fun
     expect($timeouts)->toBe([45]);
 });
 
-test('an embedding of text that was edited meanwhile is not stored', function () {
+test('an embedding of text that was edited meanwhile is not stored', function (): void {
     Queue::fake();
     $item = Item::factory()->create(['title' => 'Alt']);
-    Embeddings::fake(function (EmbeddingsPrompt $prompt) use ($item) {
-        Item::find($item->id)->update(['title' => 'Neu']);
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use ($item): array {
+        Item::query()->find($item->id)->update(['title' => 'Neu']);
 
         return [Embeddings::fakeEmbedding(1024)];
     });
@@ -122,7 +122,7 @@ test('an embedding of text that was edited meanwhile is not stored', function ()
     expect($item->fresh())->title->toBe('Neu')->embedding->toBeNull();
 });
 
-test('storing an embedding leaves updated_at alone', function () {
+test('storing an embedding leaves updated_at alone', function (): void {
     Queue::fake();
     $item = Item::factory()->create();
     $item->forceFill(['updated_at' => now()->subDay()])->saveQuietly();

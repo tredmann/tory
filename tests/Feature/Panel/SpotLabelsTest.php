@@ -4,6 +4,7 @@ use App\Enums\LabelSize;
 use App\Enums\Language;
 use App\Filament\Resources\Spots\Pages\ListSpots;
 use App\Filament\Resources\Spots\Pages\ViewSpot;
+use App\Filament\Resources\Spots\SpotLabel;
 use App\Filament\Resources\Spots\SpotLabelSheet;
 use App\Models\Location;
 use App\Models\Spot;
@@ -37,7 +38,7 @@ function pdfPageCount(string $pdf): int
     return preg_match_all('#/Type\s*/Page\b#', $objects);
 }
 
-test('the spot page downloads a label pdf in the chosen size', function () {
+test('the spot page downloads a label pdf in the chosen size', function (): void {
     Pdf::fake();
     $this->actingAs(User::factory()->create());
     $spot = labelledSpot('K7XM', ['name' => 'Elektronik-Kiste']);
@@ -52,7 +53,7 @@ test('the spot page downloads a label pdf in the chosen size', function () {
     Pdf::assertSee(['K7XM', 'Elektronik-Kiste']);
 });
 
-test('the label dialog requires a size', function () {
+test('the label dialog requires a size', function (): void {
     Pdf::fake();
     $this->actingAs(User::factory()->create());
     $spot = labelledSpot('K7XM');
@@ -63,7 +64,7 @@ test('the label dialog requires a size', function () {
         ->assertNoFileDownloaded();
 });
 
-test('the list downloads one label for each ticked spot and none for the others', function () {
+test('the list downloads one label for each ticked spot and none for the others', function (): void {
     Pdf::fake();
     $this->actingAs(User::factory()->create());
     $ticked = labelledSpot('AAAA', ['name' => 'Kiste Eins']);
@@ -79,7 +80,7 @@ test('the list downloads one label for each ticked spot and none for the others'
     Pdf::assertDontSee(['CCCC', 'Kiste Drei']);
 });
 
-test('the label leaves out the location', function () {
+test('the label leaves out the location', function (): void {
     Pdf::fake();
     $this->actingAs(User::factory()->create());
     $spot = labelledSpot('K7XM', ['location_id' => Location::factory()->create(['name' => 'Ferienwohnung'])->getKey()]);
@@ -90,7 +91,7 @@ test('the label leaves out the location', function () {
     Pdf::assertDontSee('Ferienwohnung');
 });
 
-test('a spot name is escaped on the label', function () {
+test('a spot name is escaped on the label', function (): void {
     Pdf::fake();
     $this->actingAs(User::factory()->create());
     $spot = labelledSpot('K7XM', ['name' => '<img src="file:///etc/passwd">']);
@@ -101,7 +102,7 @@ test('a spot name is escaped on the label', function () {
     Pdf::assertDontSee('<img src="file:///etc/passwd">');
 });
 
-test('the file name of a single label holds the spot name and the size in lowercase', function (string $name, LabelSize $size, string $fileName) {
+test('the file name of a single label holds the spot name and the size in lowercase', function (string $name, LabelSize $size, string $fileName): void {
     Pdf::fake();
     $this->actingAs(User::factory()->create());
     $spot = labelledSpot('K7XM', ['name' => $name]);
@@ -117,7 +118,7 @@ test('the file name of a single label holds the spot name and the size in lowerc
     'too long is cut without a loose hyphen' => [str_repeat('a', 99).' bbb', LabelSize::Medium, str_repeat('a', 99).'-mittel.pdf'],
 ]);
 
-test('one ticked spot in the list is named after the spot', function () {
+test('one ticked spot in the list is named after the spot', function (): void {
     Pdf::fake();
     $this->actingAs(User::factory()->create());
     $spot = labelledSpot('K7XM', ['name' => 'Elektronik-Kiste']);
@@ -128,7 +129,7 @@ test('one ticked spot in the list is named after the spot', function () {
         ->assertFileDownloaded('elektronik-kiste-mittel.pdf');
 });
 
-test('several spots of one location are named after the location', function (string $location, string $fileName) {
+test('several spots of one location are named after the location', function (string $location, string $fileName): void {
     Pdf::fake();
     $this->actingAs(User::factory()->create());
     $locationId = Location::factory()->create(['name' => $location])->getKey();
@@ -143,7 +144,7 @@ test('several spots of one location are named after the location', function (str
     'nothing usable falls back to the general name' => ['???', 'etiketten-klein.pdf'],
 ]);
 
-test('spots from several locations get the general name', function () {
+test('spots from several locations get the general name', function (): void {
     Pdf::fake();
     $this->actingAs(User::factory()->create());
     $spots = [
@@ -157,7 +158,7 @@ test('spots from several locations get the general name', function () {
         ->assertFileDownloaded('etiketten-gross.pdf');
 });
 
-test('the label prints the address of its qr code without the scheme', function () {
+test('the label prints the address of its qr code without the scheme', function (): void {
     config(['app.url' => 'https://tory.example']);
 
     [$label] = $labels = app(SpotLabelSheet::class)->labels(new Collection([labelledSpot('K7XM')]));
@@ -169,25 +170,25 @@ test('the label prints the address of its qr code without the scheme', function 
         ->not->toContain('https://');
 });
 
-test('the labels are sorted by code', function () {
+test('the labels are sorted by code', function (): void {
     $labels = app(SpotLabelSheet::class)->labels(new Collection([labelledSpot('ZZZZ'), labelledSpot('AAAA')]));
 
-    expect(array_map(fn ($label) => $label->code, $labels))->toBe(['AAAA', 'ZZZZ']);
+    expect(array_map(fn (SpotLabel $label): string => $label->code, $labels))->toBe(['AAAA', 'ZZZZ']);
 });
 
-test('each qr code holds only the address of its own spot on the installation', function () {
+test('each qr code holds only the address of its own spot on the installation', function (): void {
     config(['app.url' => 'https://tory.example']);
 
     $labels = app(SpotLabelSheet::class)->labels(new Collection([labelledSpot('AAAA'), labelledSpot('K7XM')]));
     $addresses = array_map(
-        fn ($label): string => (string) (new QRCode)->readFromBlob(base64_decode(explode(',', $label->qrCode, 2)[1])),
+        fn (SpotLabel $label): string => (string) (new QRCode)->readFromBlob(base64_decode(explode(',', $label->qrCode, 2)[1])),
         $labels,
     );
 
     expect($addresses)->toBe(['https://tory.example/spots/AAAA', 'https://tory.example/spots/K7XM']);
 });
 
-test('labels continue on the next page once a sheet is full', function (LabelSize $size, int $perSheet) {
+test('labels continue on the next page once a sheet is full', function (LabelSize $size, int $perSheet): void {
     $this->actingAs(User::factory()->create());
     $spots = Spot::factory()->count($perSheet + 1)->create();
     $pages = fn (Collection $spots): int => pdfPageCount(app(SpotLabelSheet::class)->pdf($spots, $size));
@@ -200,7 +201,7 @@ test('labels continue on the next page once a sheet is full', function (LabelSiz
     'large' => [LabelSize::Large, 8],
 ]);
 
-test('a scanned label leads through the login back to the spot', function () {
+test('a scanned label leads through the login back to the spot', function (): void {
     $spot = labelledSpot('K7XM');
     $user = User::factory()->create();
 
@@ -212,7 +213,7 @@ test('a scanned label leads through the login back to the spot', function () {
         ->assertRedirect('/spots/'.$spot->code);
 });
 
-test('an English user downloads the label pdf under an English name', function () {
+test('an English user downloads the label pdf under an English name', function (): void {
     Pdf::fake();
     $user = User::factory()->create(['locale' => Language::English]);
     app()->setLocale('en'); // a Livewire component test does not run the SetLocale middleware

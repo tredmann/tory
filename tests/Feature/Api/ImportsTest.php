@@ -14,14 +14,14 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
     $this->user = User::factory()->create();
     Sanctum::actingAs($this->user);
 });
 
-it('uploads photos and starts extraction', function () {
+it('uploads photos and starts extraction', function (): void {
     $spot = Spot::factory()->create();
 
     $response = $this->postJson('/api/v1/imports', [
@@ -32,7 +32,7 @@ it('uploads photos and starts extraction', function () {
         ->assertJsonPath('data.spot.code', $spot->code)
         ->assertJsonCount(2, 'data.photos');
 
-    $import = Import::findOrFail($response->json('data.id'));
+    $import = Import::query()->findOrFail($response->json('data.id'));
     expect($import->photos)->toHaveCount(2)
         ->and($import->user_id)->toBe($this->user->id)
         ->and($import->spot_id)->toBe($spot->id)
@@ -44,47 +44,47 @@ it('uploads photos and starts extraction', function () {
     Queue::assertPushed(ExtractImport::class);
 });
 
-it('accepts twenty photos', function () {
+it('accepts twenty photos', function (): void {
     $spot = Spot::factory()->create();
 
     $this->postJson('/api/v1/imports', [
-        'photos' => array_map(fn ($i) => UploadedFile::fake()->image("$i.jpg"), range(1, 20)),
+        'photos' => array_map(fn (int $i) => UploadedFile::fake()->image("$i.jpg"), range(1, 20)),
         'spot' => $spot->code,
     ])->assertCreated()->assertJsonCount(20, 'data.photos');
 });
 
-it('rejects photos over 70 MB in total', function () {
+it('rejects photos over 70 MB in total', function (): void {
     $spot = Spot::factory()->create();
 
     $this->postJson('/api/v1/imports', [
-        'photos' => array_map(fn ($i) => UploadedFile::fake()->create("$i.jpg", 12000, 'image/jpeg'), range(1, 6)),
+        'photos' => array_map(fn (int $i) => UploadedFile::fake()->create("$i.jpg", 12000, 'image/jpeg'), range(1, 6)),
         'spot' => $spot->code,
     ])->assertUnprocessable()
         ->assertJsonPath('errors.photos', ['Alle Fotos zusammen dürfen höchstens 70 MB groß sein.']);
 
-    expect(Import::count())->toBe(0);
+    expect(Import::query()->count())->toBe(0);
     expect(Storage::disk('local')->allFiles())->toBe([]);
 });
 
-it('rejects invalid uploads', function (Closure $payload, string $field) {
+it('rejects invalid uploads', function (Closure $payload, string $field): void {
     $spot = Spot::factory()->create();
 
     $this->postJson('/api/v1/imports', $payload($spot))
         ->assertUnprocessable()
         ->assertJsonValidationErrors($field);
 
-    expect(Import::count())->toBe(0);
+    expect(Import::query()->count())->toBe(0);
     expect(Storage::disk('local')->allFiles())->toBe([]);
     Queue::assertNothingPushed();
 })->with([
-    'twenty-one photos' => [fn (Spot $s) => ['spot' => $s->code, 'photos' => array_map(fn ($i) => UploadedFile::fake()->image("$i.jpg"), range(1, 21))], 'photos'],
-    'a pdf' => [fn (Spot $s) => ['spot' => $s->code, 'photos' => [UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')]], 'photos.0'],
-    'a 13 MB file' => [fn (Spot $s) => ['spot' => $s->code, 'photos' => [UploadedFile::fake()->create('big.jpg', 13 * 1024, 'image/jpeg')]], 'photos.0'],
-    'no spot' => [fn (Spot $s) => ['photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
-    'unknown spot' => [fn (Spot $s) => ['spot' => 'ZZZZ', 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
+    'twenty-one photos' => [fn (Spot $s): array => ['spot' => $s->code, 'photos' => array_map(fn (int $i) => UploadedFile::fake()->image("$i.jpg"), range(1, 21))], 'photos'],
+    'a pdf' => [fn (Spot $s): array => ['spot' => $s->code, 'photos' => [UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')]], 'photos.0'],
+    'a 13 MB file' => [fn (Spot $s): array => ['spot' => $s->code, 'photos' => [UploadedFile::fake()->create('big.jpg', 13 * 1024, 'image/jpeg')]], 'photos.0'],
+    'no spot' => [fn (Spot $s): array => ['photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
+    'unknown spot' => [fn (Spot $s): array => ['spot' => 'ZZZZ', 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
 ]);
 
-it('lists imports newest first with 24 per page', function () {
+it('lists imports newest first with 24 per page', function (): void {
     $old = Import::factory()->create(['created_at' => now()->subDay()]);
     Import::factory()->count(24)->create();
     $newest = Import::factory()->create(['created_at' => now()->addDay()]);
@@ -97,7 +97,7 @@ it('lists imports newest first with 24 per page', function () {
     expect($old)->not->toBeNull();
 });
 
-it('shows an import with the classified failure message and hides the raw error without debug', function () {
+it('shows an import with the classified failure message and hides the raw error without debug', function (): void {
     config(['app.debug' => false]);
     $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::KeyRejected, 'Claude')->create();
 
@@ -111,7 +111,7 @@ it('shows an import with the classified failure message and hides the raw error 
         ->assertJsonMissingPath('data.user_id');
 });
 
-it('answers an English token owner in English', function () {
+it('answers an English token owner in English', function (): void {
     $english = User::factory()->create(['locale' => Language::English]);
     Sanctum::actingAs($english);
     $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::KeyRejected, 'Claude')->create();
@@ -123,21 +123,21 @@ it('answers an English token owner in English', function () {
         ->assertJsonPath('data.failure_message', 'Claude rejected the API key.');
 });
 
-it('uses the general failure message for an unclassified failure', function () {
+it('uses the general failure message for an unclassified failure', function (): void {
     $import = Import::factory()->failed()->create();
 
     $this->getJson("/api/v1/imports/{$import->id}")
         ->assertJsonPath('data.failure_message', 'Die Analyse ist fehlgeschlagen. Bitte erneut versuchen.');
 });
 
-it('shows the raw error with debug', function () {
+it('shows the raw error with debug', function (): void {
     config(['app.debug' => true]);
     $import = Import::factory()->failed()->create();
 
     $this->getJson("/api/v1/imports/{$import->id}")->assertJsonPath('data.error', 'Connection refused');
 });
 
-it('retries a failed import', function () {
+it('retries a failed import', function (): void {
     $import = Import::factory()->failed()->create();
 
     $this->postJson("/api/v1/imports/{$import->id}/retry")
@@ -147,7 +147,7 @@ it('retries a failed import', function () {
     Queue::assertPushed(ExtractImport::class);
 });
 
-it('answers a conflict when retrying an import that has not failed', function () {
+it('answers a conflict when retrying an import that has not failed', function (): void {
     $import = Import::factory()->completed()->create();
 
     $this->postJson("/api/v1/imports/{$import->id}/retry")
@@ -156,7 +156,7 @@ it('answers a conflict when retrying an import that has not failed', function ()
     Queue::assertNothingPushed();
 });
 
-it('converts an import into an item', function () {
+it('converts an import into an item', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'x');
     $import = Import::factory()->completed()->create(['photos' => ['imports/a.jpg']]);
     $spot = Spot::factory()->create();
@@ -173,12 +173,12 @@ it('converts an import into an item', function () {
         ->assertJsonMissingPath('data.embedding')
         ->assertJsonMissingPath('data.spot_id');
 
-    expect(Import::find($import->id))->toBeNull()
+    expect(Import::query()->find($import->id))->toBeNull()
         ->and($this->user->fresh()->last_spot_id)->toBe($spot->id);
     Storage::disk('local')->assertExists('imports/a.jpg');
 });
 
-it('answers 404 on a second convert and creates nothing', function () {
+it('answers 404 on a second convert and creates nothing', function (): void {
     $import = Import::factory()->completed()->create();
     $spot = Spot::factory()->create();
     $payload = ['title' => 'Pi', 'spot' => $spot->code];
@@ -186,10 +186,10 @@ it('answers 404 on a second convert and creates nothing', function () {
     $this->postJson("/api/v1/imports/{$import->id}/convert", $payload)->assertCreated();
     $this->postJson("/api/v1/imports/{$import->id}/convert", $payload)->assertNotFound();
 
-    expect(Item::count())->toBe(1);
+    expect(Item::query()->count())->toBe(1);
 });
 
-it('validates the convert payload', function () {
+it('validates the convert payload', function (): void {
     $import = Import::factory()->completed()->create();
 
     $this->postJson("/api/v1/imports/{$import->id}/convert", [])
@@ -197,7 +197,7 @@ it('validates the convert payload', function () {
         ->assertJsonValidationErrors(['title', 'spot']);
 });
 
-it('answers a conflict when converting a running or regenerating import', function (string $state) {
+it('answers a conflict when converting a running or regenerating import', function (string $state): void {
     $import = Import::factory()->completed()->create();
     if ($state === 'running') {
         $import->update(['status' => ImportStatus::Running]);
@@ -209,29 +209,29 @@ it('answers a conflict when converting a running or regenerating import', functi
     $this->postJson("/api/v1/imports/{$import->id}/convert", ['title' => 'Pi', 'spot' => $spot->code])
         ->assertConflict()
         ->assertJsonPath('message', 'Der Import lässt sich gerade nicht übernehmen.');
-    expect(Item::count())->toBe(0);
+    expect(Item::query()->count())->toBe(0);
 })->with(['running', 'regenerating']);
 
-it('deletes a finished import with its photos', function () {
+it('deletes a finished import with its photos', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'x');
     $import = Import::factory()->failed()->create(['photos' => ['imports/a.jpg']]);
 
     $this->deleteJson("/api/v1/imports/{$import->id}")->assertNoContent();
 
-    expect(Import::find($import->id))->toBeNull();
+    expect(Import::query()->find($import->id))->toBeNull();
     Storage::disk('local')->assertMissing('imports/a.jpg');
 });
 
-it('answers a conflict when deleting a pending import', function () {
+it('answers a conflict when deleting a pending import', function (): void {
     $import = Import::factory()->pending()->create();
 
     $this->deleteJson("/api/v1/imports/{$import->id}")
         ->assertConflict()
         ->assertJsonPath('message', 'Der Import läuft noch.');
-    expect(Import::find($import->id))->not->toBeNull();
+    expect(Import::query()->find($import->id))->not->toBeNull();
 });
 
-it('lists thumbnail urls in photo order', function () {
+it('lists thumbnail urls in photo order', function (): void {
     $import = Import::factory()->create(['photos' => ['imports/b.jpg', 'photos/2026/11/a.png']]);
 
     $urls = $this->getJson("/api/v1/imports/{$import->id}")->assertOk()->json('data.thumbnails');
@@ -241,13 +241,13 @@ it('lists thumbnail urls in photo order', function () {
         ->and($urls[1])->toEndWith('/photos/a.png/thumb');
 });
 
-it('queues a thumbnail per uploaded photo', function () {
+it('queues a thumbnail per uploaded photo', function (): void {
     $response = $this->postJson('/api/v1/imports', [
         'photos' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->image('b.jpg')],
         'spot' => Spot::factory()->create()->code,
     ])->assertCreated();
 
-    foreach (Import::findOrFail($response->json('data.id'))->photos as $path) {
+    foreach (Import::query()->findOrFail($response->json('data.id'))->photos as $path) {
         Queue::assertPushedOn('thumbnails', GenerateThumbnail::class, fn (GenerateThumbnail $job): bool => $job->path === $path);
     }
     Queue::assertPushedTimes(GenerateThumbnail::class, 2);

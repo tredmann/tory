@@ -33,7 +33,7 @@ class SpotController extends Controller
 
     public function store(StoreSpotRequest $request): JsonResponse
     {
-        $spot = Spot::create([
+        $spot = Spot::query()->create([
             'name' => $request->validated('name'),
             'note' => $request->validated('note'),
             'location_id' => $request->validated('location'),

@@ -3,7 +3,7 @@
 use App\Models\User;
 use Filament\Enums\ThemeMode;
 
-test('the chosen theme is saved on the account', function (string $value, ThemeMode $saved) {
+test('the chosen theme is saved on the account', function (string $value, ThemeMode $saved): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -17,7 +17,7 @@ test('the chosen theme is saved on the account', function (string $value, ThemeM
     ['system', ThemeMode::System],
 ]);
 
-test('saving a theme only changes the account that is logged in', function () {
+test('saving a theme only changes the account that is logged in', function (): void {
     $user = User::factory()->create();
     $other = User::factory()->create(['theme_mode' => ThemeMode::Light]);
 
@@ -28,7 +28,7 @@ test('saving a theme only changes the account that is logged in', function () {
     expect($other->fresh()->theme_mode)->toBe(ThemeMode::Light);
 });
 
-test('a value that is no theme is rejected with 422 and changes nothing', function (array $payload) {
+test('a value that is no theme is rejected with 422 and changes nothing', function (array $payload): void {
     $user = User::factory()->create(['theme_mode' => ThemeMode::Dark]);
 
     $this->actingAs($user)
@@ -42,13 +42,13 @@ test('a value that is no theme is rejected with 422 and changes nothing', functi
     'missing value' => [[]],
 ]);
 
-test('a guest cannot save a theme and gets 401', function () {
+test('a guest cannot save a theme and gets 401', function (): void {
     User::factory()->create();
 
     $this->postJson('/theme', ['theme' => 'dark'])->assertUnauthorized();
 });
 
-test('an unverified user cannot save a theme and gets 403', function () {
+test('an unverified user cannot save a theme and gets 403', function (): void {
     $user = User::factory()->unverified()->create(['theme_mode' => ThemeMode::Light]);
 
     $this->actingAs($user)
@@ -58,7 +58,7 @@ test('an unverified user cannot save a theme and gets 403', function () {
     expect($user->fresh()->theme_mode)->toBe(ThemeMode::Light);
 });
 
-test('the account theme replaces the browser value before filament reads it', function () {
+test('the account theme replaces the browser value before filament reads it', function (): void {
     $this->withoutVite();
 
     $this->actingAs(User::factory()->create(['theme_mode' => ThemeMode::Dark]))
@@ -67,7 +67,7 @@ test('the account theme replaces the browser value before filament reads it', fu
         ->assertSeeInOrder(["localStorage.setItem('filament:theme:mode', 'dark')", 'const loadDarkMode'], false);
 });
 
-test('an account without a theme leaves the browser value alone but can save one', function () {
+test('an account without a theme leaves the browser value alone but can save one', function (): void {
     $this->withoutVite();
 
     $this->actingAs(User::factory()->create())
@@ -77,7 +77,7 @@ test('an account without a theme leaves the browser value alone but can save one
         ->assertSee('theme-changed', false);
 });
 
-test('the login page leaves the browser value alone and saves nothing', function () {
+test('the login page leaves the browser value alone and saves nothing', function (): void {
     $this->withoutVite();
     User::factory()->create();
 

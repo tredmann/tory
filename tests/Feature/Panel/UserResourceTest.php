@@ -7,18 +7,18 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->admin = User::factory()->admin()->create();
     $this->actingAs($this->admin);
 });
 
-test('a member cannot open the user list', function () {
+test('a member cannot open the user list', function (): void {
     $this->actingAs(User::factory()->create());
 
     $this->get('/users')->assertForbidden();
 });
 
-test('the list shows role and status', function () {
+test('the list shows role and status', function (): void {
     $invited = User::invite('Anna', 'anna@example.com', UserRole::Member);
     $locked = User::factory()->locked()->create();
 
@@ -27,28 +27,28 @@ test('the list shows role and status', function () {
         ->assertSee(['Administrator', 'Eingeladen', 'Gesperrt']);
 });
 
-test('creating a user shows the invite link once', function () {
+test('creating a user shows the invite link once', function (): void {
     Livewire::test(ManageUsers::class)
         ->callAction('create', ['name' => 'Anna', 'email' => 'anna@example.com', 'role' => UserRole::Member->value])
         ->assertActionMounted('showInviteLink')
         ->assertMountedActionModalSee(['Einladungslink', '/invite/']);
 
-    $anna = User::firstWhere('email', 'anna@example.com');
+    $anna = User::query()->firstWhere('email', 'anna@example.com');
     expect($anna->status())->toBe(UserStatus::Invited)
         ->and($anna->role)->toBe(UserRole::Member);
 });
 
-test('an existing email is refused', function () {
+test('an existing email is refused', function (): void {
     User::factory()->create(['email' => 'anna@example.com']);
 
     Livewire::test(ManageUsers::class)
         ->callAction('create', ['name' => 'Anna', 'email' => 'anna@example.com', 'role' => UserRole::Member->value])
         ->assertHasFormErrors(['email' => 'unique']);
 
-    expect(User::where('email', 'anna@example.com')->count())->toBe(1);
+    expect(User::query()->where('email', 'anna@example.com')->count())->toBe(1);
 });
 
-test('a new link invalidates the old one', function () {
+test('a new link invalidates the old one', function (): void {
     $anna = User::factory()->create();
     $old = Str::afterLast($anna->issueInviteLink(), '/invite/');
 
@@ -59,7 +59,7 @@ test('a new link invalidates the old one', function () {
     expect(User::findByInviteToken($old))->toBeNull();
 });
 
-test('an administrator locks and unlocks a user', function () {
+test('an administrator locks and unlocks a user', function (): void {
     $anna = User::factory()->create();
 
     Livewire::test(ManageUsers::class)->callTableAction('lock', $anna);
@@ -69,7 +69,7 @@ test('an administrator locks and unlocks a user', function () {
     expect($anna->fresh()->isLocked())->toBeFalse();
 });
 
-test('editing changes name, email and role', function () {
+test('editing changes name, email and role', function (): void {
     $anna = User::factory()->create();
 
     Livewire::test(ManageUsers::class)
@@ -81,7 +81,7 @@ test('editing changes name, email and role', function () {
         ->role->toBe(UserRole::Admin);
 });
 
-test('an administrator cannot lock, demote or re-invite themselves', function () {
+test('an administrator cannot lock, demote or re-invite themselves', function (): void {
     Livewire::test(ManageUsers::class)
         ->assertTableActionHidden('lock', $this->admin)
         ->assertTableActionHidden('issueInvite', $this->admin)
@@ -89,14 +89,14 @@ test('an administrator cannot lock, demote or re-invite themselves', function ()
         ->assertFormFieldIsDisabled('role');
 });
 
-test('an administrator cannot demote themselves through the edit action', function () {
+test('an administrator cannot demote themselves through the edit action', function (): void {
     Livewire::test(ManageUsers::class)
         ->callTableAction('edit', $this->admin, ['name' => $this->admin->name, 'email' => $this->admin->email, 'role' => UserRole::Member->value]);
 
     expect($this->admin->fresh()->role)->toBe(UserRole::Admin);
 });
 
-test('there is no delete', function () {
+test('there is no delete', function (): void {
     Livewire::test(ManageUsers::class)
         ->assertTableActionDoesNotExist('delete');
 });

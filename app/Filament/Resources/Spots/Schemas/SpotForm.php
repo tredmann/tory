@@ -31,7 +31,7 @@ class SpotForm
                 ->exists(Location::class, 'id')
                 ->actionSchemaModel(Location::class)
                 ->createOptionForm(LocationForm::components())
-                ->createOptionUsing(fn (array $data): string => Location::create($data)->getKey())
+                ->createOptionUsing(fn (array $data): string => Location::query()->create($data)->getKey())
                 ->default(fn (): ?string => Location::query()->count() === 1 ? Location::query()->value('id') : null),
             TextInput::make('name')
                 ->label('Name')

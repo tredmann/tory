@@ -7,7 +7,7 @@ function createLocationsMigration(): object
     return require glob(database_path('migrations/*_create_locations_table.php'))[0];
 }
 
-it('moves existing spots to a location named Allgemein', function () {
+it('moves existing spots to a location named Allgemein', function (): void {
     $migration = createLocationsMigration();
 
     DB::beginTransaction();
@@ -35,7 +35,7 @@ it('moves existing spots to a location named Allgemein', function () {
     }
 });
 
-it('creates no location for an installation without spots', function () {
+it('creates no location for an installation without spots', function (): void {
     $migration = createLocationsMigration();
 
     DB::beginTransaction();

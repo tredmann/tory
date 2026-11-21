@@ -32,7 +32,7 @@ function pingMcp(string $accessToken)
     ]);
 }
 
-it('lists one connection per client however often it refreshed', function () {
+it('lists one connection per client however often it refreshed', function (): void {
     $user = User::factory()->create();
     $tokens = issueMcpTokens($user, 'Claude Desktop');
 
@@ -47,7 +47,7 @@ it('lists one connection per client however often it refreshed', function () {
         ->and($connections->first()->host)->toBe('claude.ai');
 });
 
-it('stops tool calls and refreshes after disconnecting', function () {
+it('stops tool calls and refreshes after disconnecting', function (): void {
     $user = User::factory()->create();
     $tokens = issueMcpTokens($user);
 
@@ -60,7 +60,7 @@ it('stops tool calls and refreshes after disconnecting', function () {
     expect((new ClaudeConnections)->for($user))->toBeEmpty();
 });
 
-it('shows and disconnects only the own connections', function () {
+it('shows and disconnects only the own connections', function (): void {
     $a = User::factory()->create();
     $b = User::factory()->create();
     $tokensA = issueMcpTokens($a);
@@ -77,7 +77,7 @@ it('shows and disconnects only the own connections', function () {
     refreshMcpToken($tokensB['client_id'], $tokensB['refresh_token'])->assertOk();
 });
 
-it('dates a connection from the first token, not from a refresh', function () {
+it('dates a connection from the first token, not from a refresh', function (): void {
     $user = User::factory()->create();
     $tokens = issueMcpTokens($user);
     $connectedAt = (new ClaudeConnections)->for($user)->first()->connectedAt;
@@ -91,7 +91,7 @@ it('dates a connection from the first token, not from a refresh', function () {
         ->and($connections->first()->connectedAt->equalTo($connectedAt))->toBeTrue();
 });
 
-test('disconnecting also revokes authorization codes that were not exchanged', function () {
+test('disconnecting also revokes authorization codes that were not exchanged', function (): void {
     $user = User::factory()->create();
     $tokens = issueMcpTokens($user);
     $code = AuthCode::query()->create([

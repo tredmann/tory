@@ -4,7 +4,7 @@ use App\Models\User;
 use Filament\Auth\Pages\Login;
 use Livewire\Livewire;
 
-test('users can authenticate through the panel login', function () {
+test('users can authenticate through the panel login', function (): void {
     $user = User::factory()->create();
 
     Livewire::test(Login::class)
@@ -15,7 +15,7 @@ test('users can authenticate through the panel login', function () {
     $this->assertAuthenticatedAs($user);
 });
 
-test('users cannot authenticate with an invalid password', function () {
+test('users cannot authenticate with an invalid password', function (): void {
     $user = User::factory()->create();
 
     Livewire::test(Login::class)
@@ -26,7 +26,7 @@ test('users cannot authenticate with an invalid password', function () {
     $this->assertGuest();
 });
 
-test('users can log out', function () {
+test('users can log out', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)->post('/logout')->assertRedirect();
@@ -34,7 +34,7 @@ test('users can log out', function () {
     $this->assertGuest();
 });
 
-test('a locked user cannot log in', function () {
+test('a locked user cannot log in', function (): void {
     $user = User::factory()->locked()->create();
 
     Livewire::test(Login::class)
@@ -45,7 +45,7 @@ test('a locked user cannot log in', function () {
     $this->assertGuest();
 });
 
-test('an open session ends when the user is locked', function () {
+test('an open session ends when the user is locked', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user)->get('/')->assertOk();
 

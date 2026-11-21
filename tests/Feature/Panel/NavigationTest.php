@@ -6,7 +6,7 @@ use Filament\Facades\Filament;
 use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
 
-test('the sidebar groups the pages under Inventar and Einstellungen', function () {
+test('the sidebar groups the pages under Inventar and Einstellungen', function (): void {
     $this->actingAs(User::factory()->admin()->create())->get('/')->assertOk();
 
     $groups = collect(Filament::getNavigation())->mapWithKeys(fn (NavigationGroup $group): array => [
@@ -20,7 +20,7 @@ test('the sidebar groups the pages under Inventar and Einstellungen', function (
     ]);
 });
 
-test('the navigation groups cannot be collapsed', function () {
+test('the navigation groups cannot be collapsed', function (): void {
     $this->actingAs(User::factory()->admin()->create())->get('/')->assertOk();
 
     $labelledGroups = collect(Filament::getNavigation())->filter(fn (NavigationGroup $group): bool => filled($group->getLabel()));
@@ -29,7 +29,7 @@ test('the navigation groups cannot be collapsed', function () {
         ->each(fn ($group) => $group->isCollapsible()->toBeFalse());
 });
 
-test('an English user sees each navigation group once, in English', function () {
+test('an English user sees each navigation group once, in English', function (): void {
     $user = User::factory()->admin()->create();
     $user->forceFill(['locale' => Language::English])->save();
 

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
 });
@@ -53,7 +53,7 @@ function cardPhotos(BulkImport $bulk): array
     return array_map(fn (PhotoGroup $group): array => $group->photos, $bulk->fresh()->groupList());
 }
 
-test('a photo moves into another card at a position', function () {
+test('a photo moves into another card at a position', function (): void {
     $bulk = reviewBulk([2, 2]);
     [$a, $b] = $bulk->groupList();
 
@@ -66,7 +66,7 @@ test('a photo moves into another card at a position', function () {
     expect(cardPhotos($bulk))->toBe([[$b->photos[0], $a->photos[1], $b->photos[1], $a->photos[0]]]);
 });
 
-test('a card left empty by a move disappears', function () {
+test('a card left empty by a move disappears', function (): void {
     $bulk = reviewBulk([1, 2]);
     [$a, $b] = $bulk->groupList();
 
@@ -78,7 +78,7 @@ test('a card left empty by a move disappears', function () {
         ->and($groups[0]->photos)->toBe([$a->photos[0], ...$b->photos]);
 });
 
-test('splitting before a photo creates the next card', function () {
+test('splitting before a photo creates the next card', function (): void {
     $bulk = reviewBulk([3, 1]);
     [$a, $b] = $bulk->groupList();
 
@@ -91,7 +91,7 @@ test('splitting before a photo creates the next card', function () {
         ->and($groups[2]->id)->toBe($b->id);
 });
 
-test('splitting before the first photo of a card is stale', function () {
+test('splitting before the first photo of a card is stale', function (): void {
     $bulk = reviewBulk([2]);
     $before = $bulk->fresh()->groups;
 
@@ -99,7 +99,7 @@ test('splitting before the first photo of a card is stale', function () {
         ->and($bulk->fresh()->groups)->toBe($before);
 });
 
-test('merging appends the next card', function () {
+test('merging appends the next card', function (): void {
     $bulk = reviewBulk([1, 2, 1]);
     [$a, $b, $c] = $bulk->groupList();
 
@@ -110,7 +110,7 @@ test('merging appends the next card', function () {
         ->and($groups[0]->id)->toBe($a->id);
 });
 
-test('repeating a merge is stale and leaves the following card alone', function () {
+test('repeating a merge is stale and leaves the following card alone', function (): void {
     $bulk = reviewBulk([1, 1, 1]);
     [$a, $b, $c] = $bulk->groupList();
 
@@ -122,7 +122,7 @@ test('repeating a merge is stale and leaves the following card alone', function 
         ->and(cardPhotos($bulk)[1])->toBe($c->photos);
 });
 
-test('a merge whose expected next card is no longer next is stale', function () {
+test('a merge whose expected next card is no longer next is stale', function (): void {
     $bulk = reviewBulk([1, 1, 1]);
     [$a, $b, $c] = $bulk->groupList();
 
@@ -134,14 +134,14 @@ test('a merge whose expected next card is no longer next is stale', function () 
         ->and($bulk->fresh()->groups)->toBe($before);
 });
 
-test('merging the last card is stale', function () {
+test('merging the last card is stale', function (): void {
     $bulk = reviewBulk([1, 1]);
 
     expect(fn () => $bulk->mergeWithNext($bulk->groupList()[1]->id, $bulk->groupList()[0]->id))->toThrow(StaleBulkImport::class)
         ->and($bulk->fresh()->groupList())->toHaveCount(2);
 });
 
-test('discarding and restoring a photo', function () {
+test('discarding and restoring a photo', function (): void {
     $bulk = reviewBulk([3]);
     $group = $bulk->groupList()[0];
 
@@ -157,7 +157,7 @@ test('discarding and restoring a photo', function () {
     expect($bulk->fresh()->discarded)->toBe([]);
 });
 
-test('a card with only discarded photos stays and counts for no import', function () {
+test('a card with only discarded photos stays and counts for no import', function (): void {
     $bulk = reviewBulk([1, 2]);
     [$a] = $bulk->groupList();
 
@@ -176,21 +176,21 @@ test('a card with only discarded photos stays and counts for no import', functio
         ->and($bulk->fresh()->canConfirm())->toBeFalse();
 });
 
-test('an edit clears the AI mark of the cards it reshapes', function () {
+test('an edit clears the AI mark of the cards it reshapes', function (): void {
     $marks = [GroupMark::Merged->value, GroupMark::Split->value, GroupMark::Merged->value, GroupMark::Split->value, GroupMark::Merged->value];
     $bulk = reviewBulk([2, 2, 2, 2, 2], $marks);
     [$a, $b, $c, $d, $e] = $bulk->groupList();
 
     $bulk->movePhoto($a->photos[0], $b->id, 0);
-    expect(array_map(fn (PhotoGroup $g) => $g->mark, $bulk->fresh()->groupList()))
+    expect(array_map(fn (PhotoGroup $g): ?GroupMark => $g->mark, $bulk->fresh()->groupList()))
         ->toBe([null, null, GroupMark::Merged, GroupMark::Split, GroupMark::Merged]);
 
     $bulk->splitBefore($c->photos[1]);
-    expect(array_map(fn (PhotoGroup $g) => $g->mark, $bulk->fresh()->groupList()))
+    expect(array_map(fn (PhotoGroup $g): ?GroupMark => $g->mark, $bulk->fresh()->groupList()))
         ->toBe([null, null, null, null, GroupMark::Split, GroupMark::Merged]);
 
     $bulk->mergeWithNext($d->id, $e->id);
-    expect(array_map(fn (PhotoGroup $g) => $g->mark, $bulk->fresh()->groupList()))
+    expect(array_map(fn (PhotoGroup $g): ?GroupMark => $g->mark, $bulk->fresh()->groupList()))
         ->toBe([null, null, null, null, null]);
 
     $marked = reviewBulk([2], [GroupMark::Merged->value]);
@@ -198,7 +198,7 @@ test('an edit clears the AI mark of the cards it reshapes', function () {
     expect($marked->fresh()->groupList()[0]->mark)->toBe(GroupMark::Merged);
 });
 
-test('an unknown group or path is stale and changes nothing', function () {
+test('an unknown group or path is stale and changes nothing', function (): void {
     $bulk = reviewBulk([2, 1]);
     $other = reviewBulk([1]);
     $forged = $other->groupList()[0]->photos[0];
@@ -213,7 +213,7 @@ test('an unknown group or path is stale and changes nothing', function () {
         ->and($bulk->fresh()->only(['groups', 'discarded']))->toBe($before);
 });
 
-test('edits are refused while grouping', function () {
+test('edits are refused while grouping', function (): void {
     $bulk = BulkImport::factory()->grouping()->create();
     $path = $bulk->allPaths()[0];
 
@@ -222,7 +222,7 @@ test('edits are refused while grouping', function () {
         ->and($bulk->fresh()->discarded)->toBe([]);
 });
 
-test('more than twenty remaining photos block confirm', function () {
+test('more than twenty remaining photos block confirm', function (): void {
     $bulk = reviewBulk([21]);
 
     expect($bulk->canConfirm())->toBeFalse();
@@ -234,15 +234,15 @@ test('more than twenty remaining photos block confirm', function () {
         expect($e->errors())->toHaveKey('confirm');
     }
 
-    expect(Import::count())->toBe(0)
-        ->and(BulkImport::whereKey($bulk->id)->exists())->toBeTrue();
+    expect(Import::query()->count())->toBe(0)
+        ->and(BulkImport::query()->whereKey($bulk->id)->exists())->toBeTrue();
 
     $bulk->setDiscarded($bulk->groupList()[0]->photos[0], true);
 
     expect($bulk->fresh()->canConfirm())->toBeTrue();
 });
 
-test('confirm creates one import per card in order and hands over the files', function () {
+test('confirm creates one import per card in order and hands over the files', function (): void {
     $bulk = reviewBulk([2, 1, 3]);
     [$a, $b, $c] = $bulk->groupList();
     $bulk->setDiscarded($b->photos[0], true);
@@ -253,7 +253,7 @@ test('confirm creates one import per card in order and hands over the files', fu
     expect($imports)->toHaveCount(2)
         ->and($imports[0]->photos)->toBe($a->photos)
         ->and($imports[1]->photos)->toBe([$c->photos[0], $c->photos[2]])
-        ->and(BulkImport::whereKey($bulk->id)->exists())->toBeFalse();
+        ->and(BulkImport::query()->whereKey($bulk->id)->exists())->toBeFalse();
 
     foreach ($imports as $import) {
         $import->refresh();
@@ -267,7 +267,7 @@ test('confirm creates one import per card in order and hands over the files', fu
     }
 });
 
-test('confirm dispatches extraction for every import', function () {
+test('confirm dispatches extraction for every import', function (): void {
     $bulk = reviewBulk([1, 2]);
 
     $imports = $bulk->confirm();
@@ -278,7 +278,7 @@ test('confirm dispatches extraction for every import', function () {
     }
 });
 
-test('confirm deletes the discarded files only', function () {
+test('confirm deletes the discarded files only', function (): void {
     $bulk = reviewBulk([3]);
     $photos = $bulk->groupList()[0]->photos;
     $bulk->setDiscarded($photos[1], true);
@@ -290,18 +290,18 @@ test('confirm deletes the discarded files only', function () {
     Storage::disk('local')->assertExists($photos[2]);
 });
 
-test('a second confirm answers not found and creates nothing', function () {
+test('a second confirm answers not found and creates nothing', function (): void {
     $bulk = reviewBulk([1, 1]);
-    $first = BulkImport::find($bulk->id);
-    $second = BulkImport::find($bulk->id);
+    $first = BulkImport::query()->find($bulk->id);
+    $second = BulkImport::query()->find($bulk->id);
 
     $first->confirm();
 
     expect(fn () => $second->confirm())->toThrow(ModelNotFoundException::class)
-        ->and(Import::count())->toBe(2);
+        ->and(Import::query()->count())->toBe(2);
 });
 
-test('confirm deletes the thumbnails of discarded photos and keeps the others', function () {
+test('confirm deletes the thumbnails of discarded photos and keeps the others', function (): void {
     $bulk = reviewBulk([3]);
     $photos = $bulk->groupList()[0]->photos;
     foreach ($photos as $photo) {

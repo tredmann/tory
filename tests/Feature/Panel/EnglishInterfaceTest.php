@@ -65,12 +65,12 @@ function germanLeftover(string $text): ?string
     return null;
 }
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
 });
 
-test('the English interface contains no German', function () {
+test('the English interface contains no German', function (): void {
     $user = User::factory()->admin()->create();
     $user->forceFill(['locale' => Language::English])->save();
 
@@ -117,7 +117,7 @@ test('the English interface contains no German', function () {
     expect($leftovers)->toBe([]);
 });
 
-test('the English login page contains no German', function () {
+test('the English login page contains no German', function (): void {
     User::factory()->create();
     HouseholdSettings::current()->changeContentLanguage(Language::English);
 
@@ -127,7 +127,7 @@ test('the English login page contains no German', function () {
     expect(germanLeftover(visibleText($response->getContent())))->toBeNull();
 });
 
-test('the English modal forms contain no German', function () {
+test('the English modal forms contain no German', function (): void {
     Filament::setCurrentPanel('admin');
     $user = User::factory()->admin()->create();
     $user->forceFill(['locale' => Language::English])->save();

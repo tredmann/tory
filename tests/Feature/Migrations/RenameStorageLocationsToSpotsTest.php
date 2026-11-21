@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-it('renaming keeps spots and the items on them', function () {
+it('renaming keeps spots and the items on them', function (): void {
     $migration = require glob(database_path('migrations/*_rename_storage_locations_to_spots.php'))[0];
 
     $createLocations = require glob(database_path('migrations/*_create_locations_table.php'))[0];

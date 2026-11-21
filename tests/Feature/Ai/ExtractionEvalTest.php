@@ -2,6 +2,7 @@
 
 use App\Ai\Agents\InventoryExtractor;
 use App\Ai\Eval\EvalCase;
+use App\Ai\Eval\EvalRun;
 use App\Ai\Eval\ExtractionEval;
 use App\Enums\Language;
 use App\Models\AiProvider;
@@ -30,12 +31,12 @@ function fakeVectors(array $byInput = []): void
     ));
 }
 
-function runEval(array $cases, ?AiProvider $provider = null)
+function runEval(array $cases, ?AiProvider $provider = null): EvalRun
 {
     return app(ExtractionEval::class)->run($provider ?? AiProvider::factory()->create(), $cases, Language::German);
 }
 
-test('keyword hit is a case-insensitive substring in title, description or terms', function () {
+test('keyword hit is a case-insensitive substring in title, description or terms', function (): void {
     fakeVectors(['klammer' => axis(5), 'rode' => axis(6)]);
     InventoryExtractor::fake([
         ['title' => 'Hefter', 'description' => 'Mit Heftklammern.', 'search_terms' => ['Rode']],
@@ -47,7 +48,7 @@ test('keyword hit is a case-insensitive substring in title, description or terms
         ->and($hits['rode']->keyword)->toBeTrue();
 });
 
-test('a word that appears nowhere is no keyword hit', function () {
+test('a word that appears nowhere is no keyword hit', function (): void {
     fakeVectors(['rode' => axis(6)]);
     InventoryExtractor::fake([['title' => 'RØDE Mikrofon', 'description' => 'Schwarz.']]);
 
@@ -56,7 +57,7 @@ test('a word that appears nowhere is no keyword hit', function () {
     expect($hit->keyword)->toBeFalse()->and($hit->found())->toBeFalse();
 });
 
-test('semantic hit uses the configured threshold', function () {
+test('semantic hit uses the configured threshold', function (): void {
     config(['ai.inventory.search_min_similarity' => 0.6]);
     fakeVectors(['nah' => [3.0, 4.0, ...array_fill(0, 1022, 0.0)], 'fern' => [1.0, 2.0, ...array_fill(0, 1022, 0.0)]]);
     InventoryExtractor::fake([['title' => 'Etwas', 'description' => 'Anderes.']]);
@@ -68,7 +69,7 @@ test('semantic hit uses the configured threshold', function () {
         ->and($hits['fern']->semantic)->toBeFalse();
 });
 
-test('semantic hit uses the threshold of the active search provider', function () {
+test('semantic hit uses the threshold of the active search provider', function (): void {
     config(['ai.inventory.search_min_similarity' => 0.1]);
     AiProvider::factory()->activeForSearch()->create(['search_min_similarity' => 0.9]);
     fakeVectors(['nah' => [3.0, 4.0, ...array_fill(0, 1022, 0.0)]]);
@@ -79,7 +80,7 @@ test('semantic hit uses the threshold of the active search provider', function (
     expect($hit->similarity)->toBe(0.6)->and($hit->semantic)->toBeFalse();
 });
 
-test('a missing title word is reported', function () {
+test('a missing title word is reported', function (): void {
     fakeVectors();
     InventoryExtractor::fake([['title' => 'Mikrofon', 'description' => 'x']]);
 
@@ -88,7 +89,7 @@ test('a missing title word is reported', function () {
     expect($result->missingTitleWords)->toBe(['USV']);
 });
 
-test('forbidden words match whole words in title and description only', function () {
+test('forbidden words match whole words in title and description only', function (): void {
     fakeVectors();
     InventoryExtractor::fake([
         ['title' => 'Einplatinencomputer', 'description' => 'Grüne Platine, best quality.', 'search_terms' => ['Verpackung']],
@@ -99,14 +100,14 @@ test('forbidden words match whole words in title and description only', function
     expect($result->forbiddenFound)->toBe(['Platine', 'Best Quality']);
 });
 
-test('Platine is not hit by Einplatinencomputer', function () {
+test('Platine is not hit by Einplatinencomputer', function (): void {
     fakeVectors();
     InventoryExtractor::fake([['title' => 'Einplatinencomputer', 'description' => 'Klein.']]);
 
     expect(runEval([evalCase(forbiddenWords: ['Platine'])])->results[0]->forbiddenFound)->toBe([]);
 });
 
-test('reports a false hit on another case', function () {
+test('reports a false hit on another case', function (): void {
     fakeVectors(['hefter' => axis(7), 'mikrofon' => axis(8)]);
     InventoryExtractor::fake([
         ['title' => 'RØDE Wireless GO', 'description' => 'Ein Hefter?'],
@@ -123,10 +124,10 @@ test('reports a false hit on another case', function () {
         ->and($run->falseHits())->toBe(1);
 });
 
-test('a failing case is reported and the others still run', function () {
+test('a failing case is reported and the others still run', function (): void {
     fakeVectors();
     $calls = 0;
-    InventoryExtractor::fake(function () use (&$calls) {
+    InventoryExtractor::fake(function () use (&$calls): array {
         return ++$calls === 1
             ? throw new RuntimeException('Modell kaputt')
             : ['title' => 'Mikrofon', 'description' => 'x'];
@@ -142,28 +143,28 @@ test('a failing case is reported and the others still run', function () {
         ->and($run->allFailed())->toBeFalse();
 });
 
-test('a rejected key never reaches the result', function () {
+test('a rejected key never reaches the result', function (): void {
     fakeVectors();
     $provider = AiProvider::factory()->create(['api_key' => 'sk-secret-key-1234567890']);
-    InventoryExtractor::fake(fn () => throw new RuntimeException('Invalid key sk-secret-key-1234567890'));
+    InventoryExtractor::fake(fn (): never => throw new RuntimeException('Invalid key sk-secret-key-1234567890'));
 
     $result = runEval([evalCase()], $provider)->results[0];
 
     expect($result->error)->not->toContain('sk-secret-key-1234567890');
 });
 
-test('writes nothing', function () {
+test('writes nothing', function (): void {
     Queue::fake();
     fakeVectors();
     InventoryExtractor::fake([['title' => 'Mikrofon', 'description' => 'x']]);
 
     runEval([evalCase()]);
 
-    expect(Item::count())->toBe(0)->and(Import::count())->toBe(0);
+    expect(Item::query()->count())->toBe(0)->and(Import::query()->count())->toBe(0);
     Queue::assertNothingPushed();
 });
 
-test('uses the given provider, not the active one', function () {
+test('uses the given provider, not the active one', function (): void {
     fakeVectors();
     AiProvider::factory()->active()->create();
     $given = AiProvider::factory()->create();
@@ -171,10 +172,10 @@ test('uses the given provider, not the active one', function () {
 
     runEval([evalCase()], $given);
 
-    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->agent->aiProvider?->is($given) === true);
+    InventoryExtractor::assertPrompted(fn ($prompt): bool => $prompt->agent->aiProvider?->is($given) === true);
 });
 
-test('a failing item text embedding is noted on the case and keyword hits remain', function () {
+test('a failing item text embedding is noted on the case and keyword hits remain', function (): void {
     Embeddings::fake(fn (EmbeddingsPrompt $prompt): array => str_contains($prompt->inputs[0], 'Mikrofon')
         ? throw new RuntimeException('bge-m3 nicht geladen')
         : [axis(0)]);
@@ -189,7 +190,7 @@ test('a failing item text embedding is noted on the case and keyword hits remain
         ->and(implode(' ', $result->embeddingNotes))->toContain('bge-m3 nicht geladen');
 });
 
-test('a failing word embedding gives a keyword-only hit with a note', function () {
+test('a failing word embedding gives a keyword-only hit with a note', function (): void {
     Embeddings::fake(fn (EmbeddingsPrompt $prompt): array => $prompt->inputs[0] === 'rode'
         ? throw new RuntimeException('Zeitüberschreitung')
         : [axis(0)]);
@@ -204,11 +205,11 @@ test('a failing word embedding gives a keyword-only hit with a note', function (
         ->and(implode(' ', $result->embeddingNotes))->toContain('rode')->toContain('Zeitüberschreitung');
 });
 
-test('the photo is sent with the mime type of its file', function () {
+test('the photo is sent with the mime type of its file', function (): void {
     fakeVectors();
     InventoryExtractor::fake([['title' => 'Etwas', 'description' => 'Anderes.']]);
 
     runEval([evalCase()]);
 
-    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->attachments->first()->mimeType() === 'image/png');
+    InventoryExtractor::assertPrompted(fn ($prompt): bool => $prompt->attachments->first()->mimeType() === 'image/png');
 });

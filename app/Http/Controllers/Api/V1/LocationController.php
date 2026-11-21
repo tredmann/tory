@@ -20,7 +20,7 @@ class LocationController extends Controller
 
     public function store(StoreLocationRequest $request): JsonResponse
     {
-        $location = Location::create($request->validated());
+        $location = Location::query()->create($request->validated());
 
         return new LocationResource($location)
             ->response()

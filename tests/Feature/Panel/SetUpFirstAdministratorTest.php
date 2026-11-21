@@ -12,7 +12,7 @@ function firstAdministratorForm(): array
     return ['name' => 'Anna', 'email' => 'anna@example.com', 'password' => 'ein-langes-passwort', 'passwordConfirmation' => 'ein-langes-passwort'];
 }
 
-test('the setup page asks for the first administrator', function () {
+test('the setup page asks for the first administrator', function (): void {
     $this->get('/setup')
         ->assertOk()
         ->assertSeeText('Willkommen bei Tory')
@@ -20,7 +20,7 @@ test('the setup page asks for the first administrator', function () {
         ->assertSeeText('Administrator anlegen');
 });
 
-test('the setup page follows the browser language on a fresh install', function () {
+test('the setup page follows the browser language on a fresh install', function (): void {
     $this->withHeader('Accept-Language', 'en')
         ->get('/setup')
         ->assertOk()
@@ -28,25 +28,25 @@ test('the setup page follows the browser language on a fresh install', function 
         ->assertDontSeeText('Willkommen bei Tory');
 });
 
-test('setting up logs the new administrator in', function () {
+test('setting up logs the new administrator in', function (): void {
     Livewire::test(SetUpFirstAdministrator::class)
         ->fillForm(firstAdministratorForm())
         ->call('create')
         ->assertRedirect(filament()->getUrl());
 
-    $user = User::firstWhere('email', 'anna@example.com');
+    $user = User::query()->firstWhere('email', 'anna@example.com');
     $this->assertAuthenticatedAs($user);
     expect($user->isAdmin())->toBeTrue()
         ->and($user->hasVerifiedEmail())->toBeTrue();
 });
 
-test('the setup page is gone once a user exists', function () {
+test('the setup page is gone once a user exists', function (): void {
     User::factory()->create();
 
     $this->get('/setup')->assertNotFound();
 });
 
-test('a submit after someone else set up creates nobody and goes to the login', function () {
+test('a submit after someone else set up creates nobody and goes to the login', function (): void {
     $page = Livewire::test(SetUpFirstAdministrator::class)->fillForm(firstAdministratorForm());
     User::factory()->create();
 
@@ -56,14 +56,14 @@ test('a submit after someone else set up creates nobody and goes to the login', 
     $this->assertGuest();
 });
 
-test('the setup needs a confirmed password and a valid email', function () {
+test('the setup needs a confirmed password and a valid email', function (): void {
     Livewire::test(SetUpFirstAdministrator::class)
         ->fillForm([...firstAdministratorForm(), 'email' => 'keine-adresse', 'passwordConfirmation' => 'anders'])
         ->call('create')
         ->assertHasFormErrors(['email', 'password']);
 });
 
-test('in production the setup refuses a password shorter than 15 characters', function () {
+test('in production the setup refuses a password shorter than 15 characters', function (): void {
     $page = Livewire::test(SetUpFirstAdministrator::class)
         ->fillForm([...firstAdministratorForm(), 'password' => 'nurkleinbuchst', 'passwordConfirmation' => 'nurkleinbuchst']);
 
@@ -77,22 +77,22 @@ test('in production the setup refuses a password shorter than 15 characters', fu
     $this->assertGuest();
 });
 
-test('an empty installation sends every panel page to the setup', function (string $path) {
+test('an empty installation sends every panel page to the setup', function (string $path): void {
     $this->get($path)->assertRedirect(route('filament.admin.setup'));
 })->with(['/', '/login', '/items', '/invite/irgendwas']);
 
-test('a user created from the command line closes the setup', function () {
+test('a user created from the command line closes the setup', function (): void {
     User::factory()->unverified()->create();
 
     $this->get('/login')->assertOk();
     $this->get('/setup')->assertNotFound();
 });
 
-test('the api is not redirected on an empty installation', function () {
+test('the api is not redirected on an empty installation', function (): void {
     $this->getJson('/api/v1/user')->assertUnauthorized();
 });
 
-test('setting up in an English browser makes English the content language', function () {
+test('setting up in an English browser makes English the content language', function (): void {
     app()->setLocale('en');
 
     Livewire::test(SetUpFirstAdministrator::class)

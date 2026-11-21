@@ -19,14 +19,14 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
     $this->withoutVite();
     $this->actingAs(User::factory()->create());
 });
 
-test('the dashboard shows tory instead of the filament widgets', function () {
+test('the dashboard shows tory instead of the filament widgets', function (): void {
     $this->get('/')
         ->assertOk()
         ->assertSeeText('Übersicht')
@@ -34,19 +34,19 @@ test('the dashboard shows tory instead of the filament widgets', function () {
         ->assertDontSee('filamentphp.com');
 });
 
-test('the capture action leads to the import form', function () {
+test('the capture action leads to the import form', function (): void {
     Livewire::test(Dashboard::class)
         ->assertActionHasUrl('capture', ImportResource::getUrl('create'));
 });
 
-test('the search form leads to the item list', function () {
+test('the search form leads to the item list', function (): void {
     $this->get('/')
         ->assertSee('action="'.ItemResource::getUrl('index').'"', false)
         ->assertSee('name="search"', false)
         ->assertSee('placeholder="Wo ist …?"', false);
 });
 
-test('the search parameter filters the item list', function () {
+test('the search parameter filters the item list', function (): void {
     $drill = Item::factory()->create(['title' => 'Bohrmaschine']);
     $tent = Item::factory()->create(['title' => 'Zelt']);
 
@@ -56,7 +56,7 @@ test('the search parameter filters the item list', function () {
         ->assertCanNotSeeTableRecords([$tent]);
 });
 
-test('the recent list shows the latest eight items, newest first', function () {
+test('the recent list shows the latest eight items, newest first', function (): void {
     $items = collect(range(1, 9))->map(fn (int $age): Item => Item::factory()->create(['created_at' => now()->subDays($age)]));
 
     Livewire::test(RecentItemsWidget::class)
@@ -65,7 +65,7 @@ test('the recent list shows the latest eight items, newest first', function () {
         ->assertSeeText('9 Gegenstände');
 });
 
-test('a recent item shows its spot code and location', function () {
+test('a recent item shows its spot code and location', function (): void {
     $spot = Spot::factory()->for(Location::factory()->state(['name' => 'Keller']))->create();
     Item::factory()->for($spot)->create();
 
@@ -75,7 +75,7 @@ test('a recent item shows its spot code and location', function () {
         ->assertSeeText('1 Gegenstand');
 });
 
-test('a recent photo opens the slideshow of its item', function () {
+test('a recent photo opens the slideshow of its item', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'photo');
     Storage::disk('local')->put('imports/b.jpg', 'photo');
     Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
@@ -85,7 +85,7 @@ test('a recent photo opens the slideshow of its item', function () {
         ->assertSeeHtml('data-slideshow-index="0"');
 });
 
-test('a recent item without photos is still listed', function () {
+test('a recent item without photos is still listed', function (): void {
     $item = Item::factory()->create(['title' => 'Altes Radio', 'photos' => []]);
 
     Livewire::test(RecentItemsWidget::class)
@@ -93,16 +93,16 @@ test('a recent item without photos is still listed', function () {
         ->assertSeeText('Altes Radio');
 });
 
-test('the recent list says so when nothing is captured yet', function () {
+test('the recent list says so when nothing is captured yet', function (): void {
     Livewire::test(RecentItemsWidget::class)
         ->assertSeeText('Noch nichts erfasst');
 });
 
-test('open imports stay hidden while there are none', function () {
+test('open imports stay hidden while there are none', function (): void {
     $this->get('/')->assertDontSeeText('Offene Importe');
 });
 
-test('open imports show failed and completed imports', function () {
+test('open imports show failed and completed imports', function (): void {
     $failed = Import::factory()->failed()->create();
     $completed = Import::factory()->completed()->create();
 
@@ -114,7 +114,7 @@ test('open imports show failed and completed imports', function () {
         ->assertSeeText('Fertig');
 });
 
-test('open imports link to all imports only when more exist than fit', function () {
+test('open imports link to all imports only when more exist than fit', function (): void {
     Import::factory()->count(5)->create();
 
     Livewire::test(OpenImportsWidget::class)->assertTableActionHidden('all');
@@ -126,7 +126,7 @@ test('open imports link to all imports only when more exist than fit', function 
         ->assertCanNotSeeTableRecords([$oldest]);
 });
 
-test('locations are ranked by item count, empty ones included', function () {
+test('locations are ranked by item count, empty ones included', function (): void {
     $garage = Location::factory()->create(['name' => 'Garage']);
     $cellar = Location::factory()->create(['name' => 'Keller']);
     Location::factory()->create(['name' => 'Dachboden']);
@@ -137,7 +137,7 @@ test('locations are ranked by item count, empty ones included', function () {
         ->assertSeeTextInOrder(['Lagerorte', 'Keller', '2', 'Garage', '1', 'Dachboden', '0']);
 });
 
-test('a location links to the item list filtered by it', function () {
+test('a location links to the item list filtered by it', function (): void {
     $cellar = Location::factory()->create(['name' => 'Keller']);
     $inCellar = Item::factory()->for(Spot::factory()->for($cellar))->create();
     $elsewhere = Item::factory()->create();
@@ -152,7 +152,7 @@ test('a location links to the item list filtered by it', function () {
         ->assertCanNotSeeTableRecords([$elsewhere]);
 });
 
-test('a location name is escaped', function () {
+test('a location name is escaped', function (): void {
     Location::factory()->create(['name' => '<b>Keller</b>']);
 
     $this->get('/')
@@ -160,13 +160,13 @@ test('a location name is escaped', function () {
         ->assertSee(e('<b>Keller</b>'), false);
 });
 
-test('the dashboard offers Viele erfassen', function () {
+test('the dashboard offers Viele erfassen', function (): void {
     Livewire::test(Dashboard::class)
         ->assertActionHasUrl('captureMany', BulkImportResource::getUrl('create'))
         ->assertActionHasLabel('captureMany', 'Viele erfassen');
 });
 
-test('the dashboard lists open bulk imports with their status', function () {
+test('the dashboard lists open bulk imports with their status', function (): void {
     $bulk = BulkImport::factory()->grouping()->create();
 
     $this->get('/')->assertSeeText('Offene Bulkimporte');
@@ -177,7 +177,7 @@ test('the dashboard lists open bulk imports with their status', function () {
         ->assertSee($bulk->status->getLabel());
 });
 
-test('an open bulk import with one photo says "1 Foto"', function () {
+test('an open bulk import with one photo says "1 Foto"', function (): void {
     $bulk = BulkImport::factory()->grouping()->create();
     $bulk->update(['photos' => [$bulk->photos[0]]]);
 
@@ -186,11 +186,11 @@ test('an open bulk import with one photo says "1 Foto"', function () {
         ->assertDontSee('1 Fotos');
 });
 
-test('the dashboard hides open bulk imports when there are none', function () {
+test('the dashboard hides open bulk imports when there are none', function (): void {
     $this->get('/')->assertDontSeeText('Offene Bulkimporte');
 });
 
-test('an English user sees the dashboard widgets in English', function () {
+test('an English user sees the dashboard widgets in English', function (): void {
     $user = User::factory()->create();
     $user->forceFill(['locale' => Language::English])->save();
     app()->setLocale('en');

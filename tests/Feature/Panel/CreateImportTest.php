@@ -15,55 +15,55 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
     $this->user = User::factory()->create();
     $this->actingAs($this->user);
 });
 
-test('the create page is reachable for verified users and titled Erfassen', function () {
+test('the create page is reachable for verified users and titled Erfassen', function (): void {
     $this->get('/imports/create')->assertOk()->assertSee('Erfassen');
 });
 
-test('unverified users are redirected to the verification prompt', function () {
+test('unverified users are redirected to the verification prompt', function (): void {
     auth()->logout();
     $this->actingAs(User::factory()->unverified()->create());
 
     $this->get('/imports/create')->assertRedirect('/email-verification/prompt');
 });
 
-test('guests are redirected to login', function () {
+test('guests are redirected to login', function (): void {
     auth()->logout();
 
     $this->get('/imports/create')->assertRedirect('/login');
 });
 
-test('submitting without images fails validation and dispatches nothing', function () {
+test('submitting without images fails validation and dispatches nothing', function (): void {
     Livewire::test(CreateImport::class)
         ->fillForm(['photos' => [], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 
     Queue::assertNothingPushed();
-    expect(Import::count())->toBe(0);
+    expect(Import::query()->count())->toBe(0);
 });
 
-test('rejects a non-image file', function () {
+test('rejects a non-image file', function (): void {
     Livewire::test(CreateImport::class)
         ->fillForm(['photos' => [UploadedFile::fake()->create('notes.jpg', 10, 'text/plain')], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 });
 
-test('rejects image formats the provider cannot read', function () {
+test('rejects image formats the provider cannot read', function (): void {
     Livewire::test(CreateImport::class)
         ->fillForm(['photos' => [UploadedFile::fake()->create('photo.heic', 10, 'image/heic')], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 });
 
-test('erfassen accepts twenty photos and rejects twenty-one', function () {
+test('erfassen accepts twenty photos and rejects twenty-one', function (): void {
     $make = fn (int $n) => collect(range(1, $n))->map(fn (int $i) => UploadedFile::fake()->image("p{$i}.jpg"))->all();
     $spot = Spot::factory()->create();
 
@@ -77,17 +77,17 @@ test('erfassen accepts twenty photos and rejects twenty-one', function () {
         ->call('create')
         ->assertHasNoFormErrors();
 
-    expect(Import::sole()->photos)->toHaveCount(20);
+    expect(Import::query()->sole()->photos)->toHaveCount(20);
 });
 
-test('a valid upload stores the photos, creates a pending import, dispatches the job and redirects to the view page', function () {
+test('a valid upload stores the photos, creates a pending import, dispatches the job and redirects to the view page', function (): void {
     Livewire::test(CreateImport::class)
         ->fillForm(['photos' => [UploadedFile::fake()->image('front.jpg'), UploadedFile::fake()->image('back.jpg')], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasNoFormErrors()
-        ->assertRedirect(ImportResource::getUrl('view', ['record' => Import::first()]));
+        ->assertRedirect(ImportResource::getUrl('view', ['record' => Import::query()->first()]));
 
-    $import = Import::sole();
+    $import = Import::query()->sole();
 
     expect($import->status)->toBe(ImportStatus::Pending)
         ->and($import->user_id)->toBe($this->user->id)
@@ -103,48 +103,48 @@ test('a valid upload stores the photos, creates a pending import, dispatches the
     Queue::assertPushed(ExtractImport::class, 1);
 });
 
-test('the old synchronous page is gone', function () {
+test('the old synchronous page is gone', function (): void {
     $this->get('/erfassen')->assertNotFound();
 });
 
-test('rejects photo paths outside the imports directory', function () {
+test('rejects photo paths outside the imports directory', function (): void {
     Livewire::test(CreateImport::class)
         ->fillForm(['photos' => ['livewire-tmp/secret.jpg'], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 
-    expect(Import::count())->toBe(0);
+    expect(Import::query()->count())->toBe(0);
     Queue::assertNothingPushed();
 });
 
-test('rejects photo paths with backslashes', function () {
+test('rejects photo paths with backslashes', function (): void {
     Livewire::test(CreateImport::class)
         ->fillForm(['photos' => ['imports/..\\livewire-tmp\\secret.jpg'], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 
-    expect(Import::count())->toBe(0);
+    expect(Import::query()->count())->toBe(0);
     Queue::assertNothingPushed();
 });
 
-test('rejects the path of an existing import photo', function () {
+test('rejects the path of an existing import photo', function (): void {
     Livewire::test(CreateImport::class)
         ->fillForm(['photos' => ['imports/other.jpg'], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasFormErrors(['photos']);
 
-    expect(Import::count())->toBe(0);
+    expect(Import::query()->count())->toBe(0);
     Queue::assertNothingPushed();
 });
 
-test('a spot is required', function () {
+test('a spot is required', function (): void {
     Livewire::test(CreateImport::class)
         ->fillForm(['photos' => [UploadedFile::fake()->image('a.jpg')], 'spot_id' => null])
         ->call('create')
         ->assertHasFormErrors(['spot_id' => 'required']);
 });
 
-test('the chosen spot is stored on the import and remembered for the user', function () {
+test('the chosen spot is stored on the import and remembered for the user', function (): void {
     $spot = Spot::factory()->create();
 
     Livewire::test(CreateImport::class)
@@ -152,18 +152,18 @@ test('the chosen spot is stored on the import and remembered for the user', func
         ->call('create')
         ->assertHasNoFormErrors();
 
-    expect(Import::sole()->spot_id)->toBe($spot->id)
+    expect(Import::query()->sole()->spot_id)->toBe($spot->id)
         ->and($this->user->fresh()->last_spot_id)->toBe($spot->id);
 });
 
-test('the last used spot is preselected', function () {
+test('the last used spot is preselected', function (): void {
     $spot = Spot::factory()->create();
     $this->user->forceFill(['last_spot_id' => $spot->id])->save();
 
     Livewire::test(CreateImport::class)->assertFormSet(['spot_id' => $spot->id]);
 });
 
-test('nothing is preselected after the last used spot was deleted', function () {
+test('nothing is preselected after the last used spot was deleted', function (): void {
     $spot = Spot::factory()->create();
     $this->user->forceFill(['last_spot_id' => $spot->id])->save();
     $spot->delete();
@@ -172,7 +172,7 @@ test('nothing is preselected after the last used spot was deleted', function () 
     Livewire::test(CreateImport::class)->assertFormSet(['spot_id' => null]);
 });
 
-test('a location can be created inside the spot picker', function () {
+test('a location can be created inside the spot picker', function (): void {
     Livewire::test(CreateImport::class)
         ->callAction([
             TestAction::make('createOption')->schemaComponent('spot_id'),
@@ -180,29 +180,29 @@ test('a location can be created inside the spot picker', function () {
         ], ['name' => 'Keller'])
         ->assertHasNoFormErrors();
 
-    expect(Location::firstWhere('name', 'Keller'))->not->toBeNull();
+    expect(Location::query()->firstWhere('name', 'Keller'))->not->toBeNull();
 });
 
-test('a spot can be created through the picker', function () {
+test('a spot can be created through the picker', function (): void {
     $location = Location::factory()->create();
 
     $component = Livewire::test(CreateImport::class)
         ->callAction(TestAction::make('createOption')->schemaComponent('spot_id'), ['name' => 'Regal'])
         ->assertHasNoFormErrors();
 
-    $spot = Spot::firstWhere('name', 'Regal');
+    $spot = Spot::query()->firstWhere('name', 'Regal');
 
     expect($spot)->not->toBeNull()->and($spot->location->is($location))->toBeTrue();
     $component->assertFormSet(['spot_id' => $spot->id]);
 });
 
-test('a thumbnail is queued per photo', function () {
+test('a thumbnail is queued per photo', function (): void {
     Livewire::test(CreateImport::class)
         ->fillForm(['photos' => [UploadedFile::fake()->image('front.jpg'), UploadedFile::fake()->image('back.jpg')], 'spot_id' => Spot::factory()->create()->id])
         ->call('create')
         ->assertHasNoFormErrors();
 
-    foreach (Import::sole()->photos as $path) {
+    foreach (Import::query()->sole()->photos as $path) {
         Queue::assertPushedOn('thumbnails', GenerateThumbnail::class, fn (GenerateThumbnail $job): bool => $job->path === $path);
     }
     Queue::assertPushedTimes(GenerateThumbnail::class, 2);
