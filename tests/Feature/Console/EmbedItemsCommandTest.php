@@ -8,11 +8,11 @@ use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Queue::fake();
 });
 
-test('items:embed fills only missing embeddings', function () {
+test('items:embed fills only missing embeddings', function (): void {
     $missing = Item::factory()->create();
     $present = Item::factory()->create();
     $present->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->saveQuietly();
@@ -23,7 +23,7 @@ test('items:embed fills only missing embeddings', function () {
         ->and($present->fresh()->embedding)->toBe(array_fill(0, 1024, 0.5));
 });
 
-test('items:embed --all re-embeds everything', function () {
+test('items:embed --all re-embeds everything', function (): void {
     $present = Item::factory()->create();
     $present->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->saveQuietly();
 
@@ -33,25 +33,25 @@ test('items:embed --all re-embeds everything', function () {
         ->and($present->fresh()->embedding)->not->toBe(array_fill(0, 1024, 0.5));
 });
 
-test('items:embed carries on after one item fails', function () {
+test('items:embed carries on after one item fails', function (): void {
     Exceptions::fake();
     Item::factory()->count(2)->create();
     $calls = 0;
-    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$calls) {
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$calls): array {
         return ++$calls === 1 ? throw new RuntimeException('down') : [Embeddings::fakeEmbedding(1024)];
     });
 
     $this->artisan('items:embed')->assertSuccessful();
 
-    expect(Item::whereNotNull('embedding')->count())->toBe(1);
+    expect(Item::query()->whereNotNull('embedding')->count())->toBe(1);
     Exceptions::assertReported(RuntimeException::class);
 });
 
-test('items:embed stops after three failures in a row', function () {
+test('items:embed stops after three failures in a row', function (): void {
     Exceptions::fake();
     Item::factory()->count(5)->create();
     $calls = 0;
-    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$calls) {
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$calls): void {
         $calls++;
 
         throw new RuntimeException('down');
@@ -65,11 +65,11 @@ test('items:embed stops after three failures in a row', function () {
     Exceptions::assertReportedCount(3);
 });
 
-test('items:embed is scheduled hourly', function () {
+test('items:embed is scheduled hourly', function (): void {
     $this->artisan('schedule:list')->expectsOutputToContain('0 * * * *  php artisan items:embed');
 });
 
-test('items:embed covers a backlog larger than one page', function () {
+test('items:embed covers a backlog larger than one page', function (): void {
     EmbedItems::$pageSize = 2;
     Item::factory()->count(5)->create();
 
@@ -79,14 +79,14 @@ test('items:embed covers a backlog larger than one page', function () {
         EmbedItems::$pageSize = 500;
     }
 
-    expect(Item::whereNull('embedding')->count())->toBe(0);
+    expect(Item::query()->whereNull('embedding')->count())->toBe(0);
 });
 
-test('items:embed with an active provider stores a failure too', function () {
+test('items:embed with an active provider stores a failure too', function (): void {
     Exceptions::fake();
     $provider = AiProvider::factory()->activeForSearch()->create(['name' => 'OpenAI']);
     Item::factory()->create();
-    Embeddings::fake(fn () => throw new RuntimeException('boom'));
+    Embeddings::fake(fn (): never => throw new RuntimeException('boom'));
 
     $this->artisan('items:embed')->assertSuccessful();
 

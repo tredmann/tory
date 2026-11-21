@@ -9,7 +9,7 @@ use App\Models\Spot;
 use App\Models\User;
 use Illuminate\Testing\Fluent\AssertableJson;
 
-it('moves the item to the spot', function () {
+it('moves the item to the spot', function (): void {
     $item = Item::factory()->create();
     $spot = Spot::factory()->for(Location::factory(['name' => 'Keller']))->create(['name' => 'Regal 3']);
 
@@ -17,7 +17,7 @@ it('moves the item to the spot', function () {
         ->tool(MoveItemTool::class, ['item' => $item->id, 'spot' => $spot->code])
         ->assertOk()
         ->assertSee(['Regal 3', 'Keller'])
-        ->assertStructuredContent(fn (AssertableJson $json) => $json
+        ->assertStructuredContent(fn (AssertableJson $json): AssertableJson => $json
             ->where('id', $item->id)
             ->where('title', $item->title)
             ->where('spot.code', $spot->code)
@@ -27,7 +27,7 @@ it('moves the item to the spot', function () {
     expect($item->fresh()->spot_id)->toBe($spot->id);
 });
 
-it('accepts a lower-case code', function () {
+it('accepts a lower-case code', function (): void {
     $item = Item::factory()->create();
     $spot = Spot::factory()->create();
 
@@ -38,7 +38,7 @@ it('accepts a lower-case code', function () {
     expect($item->fresh()->spot_id)->toBe($spot->id);
 });
 
-it('refuses a value that cannot be a code', function () {
+it('refuses a value that cannot be a code', function (): void {
     $item = Item::factory()->create();
     $before = $item->spot_id;
 
@@ -49,7 +49,7 @@ it('refuses a value that cannot be a code', function () {
     expect($item->fresh()->spot_id)->toBe($before);
 });
 
-it('refuses a code that no spot has', function () {
+it('refuses a code that no spot has', function (): void {
     $item = Item::factory()->create();
 
     ToryServer::actingAs(User::factory()->create())
@@ -57,7 +57,7 @@ it('refuses a code that no spot has', function () {
         ->assertHasErrors(['Diesen Lagerplatz gibt es nicht.']);
 });
 
-it('refuses an id that is no uuid', function () {
+it('refuses an id that is no uuid', function (): void {
     $spot = Spot::factory()->create();
 
     ToryServer::actingAs(User::factory()->create())
@@ -65,7 +65,7 @@ it('refuses an id that is no uuid', function () {
         ->assertHasErrors(['Diesen Gegenstand gibt es nicht.']);
 });
 
-it('refuses while the item is regenerating', function () {
+it('refuses while the item is regenerating', function (): void {
     $item = Item::factory()->create(['regenerating_at' => now()]);
     $before = $item->spot_id;
     $spot = Spot::factory()->create();
@@ -77,7 +77,7 @@ it('refuses while the item is regenerating', function () {
     expect($item->fresh()->spot_id)->toBe($before);
 });
 
-it('leaves the last used spot alone', function () {
+it('leaves the last used spot alone', function (): void {
     $lastSpot = Spot::factory()->create();
     $user = User::factory()->create(['last_spot_id' => $lastSpot->id]);
     $item = Item::factory()->create();
@@ -90,7 +90,7 @@ it('leaves the last used spot alone', function () {
     expect($user->fresh()->last_spot_id)->toBe($lastSpot->id);
 });
 
-it('answers in English to an English token owner', function () {
+it('answers in English to an English token owner', function (): void {
     $spot = Spot::factory()->for(Location::factory(['name' => 'Keller']))->create(['name' => 'Regal 3']);
     $item = Item::factory()->create(['title' => 'Bohrmaschine']);
     $user = User::factory()->create();
@@ -101,7 +101,7 @@ it('answers in English to an English token owner', function () {
         ->assertJsonPath('result.content.0.text', "Bohrmaschine is now on Regal 3 ({$spot->code}), Keller.");
 });
 
-it('answers in German to a German token owner', function () {
+it('answers in German to a German token owner', function (): void {
     $spot = Spot::factory()->for(Location::factory(['name' => 'Keller']))->create(['name' => 'Regal 3']);
     $item = Item::factory()->create(['title' => 'Bohrmaschine']);
 

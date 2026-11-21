@@ -9,11 +9,11 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
-afterEach(function () {
+afterEach(function (): void {
     TrustProxies::flushState();
 });
 
-test('the panel has neither registration nor password reset', function () {
+test('the panel has neither registration nor password reset', function (): void {
     $panel = new AdminPanelProvider(app())->panel(Panel::make());
 
     expect($panel->hasRegistration())->toBeFalse()
@@ -22,7 +22,7 @@ test('the panel has neither registration nor password reset', function () {
         ->and($panel->hasEmailVerification())->toBeTrue();
 });
 
-test('a trusted proxy makes generated urls https', function () {
+test('a trusted proxy makes generated urls https', function (): void {
     config(['app.trusted_proxies' => '10.0.0.0/8, 127.0.0.1']);
     new AppServiceProvider(app())->boot();
     User::factory()->create();
@@ -33,7 +33,7 @@ test('a trusted proxy makes generated urls https', function () {
         ->and($response->getContent())->toMatch('#rel="icon"[^>]+href="https://[^"]+/images/tory-mark\.svg"#');
 });
 
-test('the forwarded scheme is ignored without a trusted proxy', function () {
+test('the forwarded scheme is ignored without a trusted proxy', function (): void {
     new AppServiceProvider(app())->boot();
     User::factory()->create();
 
@@ -59,27 +59,27 @@ function passwordPasses(string $password): bool
     return Validator::make(['password' => $password], ['password' => Password::default()])->passes();
 }
 
-test('in production a password of 15 characters passes without any character class', function () {
+test('in production a password of 15 characters passes without any character class', function (): void {
     app()->detectEnvironment(fn (): string => 'production');
     fakePwnedPasswords();
 
     expect(passwordPasses('nurkleinbuchsta'))->toBeTrue();
 });
 
-test('in production a password shorter than 15 characters fails', function () {
+test('in production a password shorter than 15 characters fails', function (): void {
     app()->detectEnvironment(fn (): string => 'production');
     fakePwnedPasswords();
 
     expect(passwordPasses('nurkleinbuchst'))->toBeFalse();
 });
 
-test('in production a leaked password fails', function () {
+test('in production a leaked password fails', function (): void {
     app()->detectEnvironment(fn (): string => 'production');
     fakePwnedPasswords(leaked: 'ein-geleaktes-passwort');
 
     expect(passwordPasses('ein-geleaktes-passwort'))->toBeFalse();
 });
 
-test('outside production a password of 8 characters passes', function () {
+test('outside production a password of 8 characters passes', function (): void {
     expect(passwordPasses('achtzeic'))->toBeTrue();
 });

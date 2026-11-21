@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table): void {
             $table->string('role')->default('member');
             $table->timestamp('locked_at')->nullable();
             $table->string('invite_token')->nullable()->unique();
@@ -18,7 +18,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table): void {
             $table->dropColumn(['role', 'locked_at', 'invite_token', 'invite_expires_at']);
         });
     }

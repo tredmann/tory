@@ -8,11 +8,11 @@ use Filament\Actions\ActionGroup;
 use Filament\Support\Icons\Heroicon;
 use Livewire\Livewire;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->actingAs(User::factory()->admin()->create());
 });
 
-test('every row action sits in the menu', function (string $page, array $expected) {
+test('every row action sits in the menu', function (string $page, array $expected): void {
     $actions = Livewire::test($page)->instance()->getTable()->getRecordActions();
 
     expect($actions)->toHaveCount(1)

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
     $this->actingAs(User::factory()->admin()->create());
@@ -40,7 +40,7 @@ function headerActions(object $page): array
     }, $page->getCachedHeaderActions());
 }
 
-test('only creating actions and a page\'s main step stay out of the menu', function (Closure $open, array $expected) {
+test('only creating actions and a page\'s main step stay out of the menu', function (Closure $open, array $expected): void {
     expect(headerActions($open()->instance()))->toBe($expected);
 })->with([
     'import' => [

@@ -12,13 +12,13 @@ function inviteToken(User $user): string
     return Str::afterLast($user->issueInviteLink(), '/invite/');
 }
 
-test('the invite page asks for a password', function () {
+test('the invite page asks for a password', function (): void {
     $this->get('/invite/'.inviteToken(User::invite('Anna', 'anna@example.com', UserRole::Member)))
         ->assertOk()
         ->assertSee('Passwort');
 });
 
-test('accepting the invite logs the user in with the new password', function () {
+test('accepting the invite logs the user in with the new password', function (): void {
     $user = User::invite('Anna', 'anna@example.com', UserRole::Member);
 
     Livewire::test(AcceptInvite::class, ['token' => inviteToken($user)])
@@ -30,7 +30,7 @@ test('accepting the invite logs the user in with the new password', function () 
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
 });
 
-test('the password must be confirmed', function () {
+test('the password must be confirmed', function (): void {
     $user = User::invite('Anna', 'anna@example.com', UserRole::Member);
 
     Livewire::test(AcceptInvite::class, ['token' => inviteToken($user)])
@@ -39,7 +39,7 @@ test('the password must be confirmed', function () {
         ->assertHasFormErrors(['password']);
 });
 
-test('in production the invite refuses a password shorter than 15 characters', function () {
+test('in production the invite refuses a password shorter than 15 characters', function (): void {
     $user = User::invite('Anna', 'anna@example.com', UserRole::Member);
     $page = Livewire::test(AcceptInvite::class, ['token' => inviteToken($user)])
         ->fillForm(['password' => 'nurkleinbuchst', 'passwordConfirmation' => 'nurkleinbuchst']);
@@ -54,7 +54,7 @@ test('in production the invite refuses a password shorter than 15 characters', f
     $this->assertGuest();
 });
 
-test('an unknown, used or locked link shows the invalid message', function (string $token) {
+test('an unknown, used or locked link shows the invalid message', function (string $token): void {
     $this->get('/invite/'.$token)
         ->assertSee('Dieser Link ist abgelaufen oder ungültig. Bitte frag nach einem neuen.')
         ->assertDontSee('Passwort speichern');
@@ -64,14 +64,14 @@ test('an unknown, used or locked link shows the invalid message', function (stri
 
         return Str::random(32);
     },
-    'used' => function () {
+    'used' => function (): string {
         $user = User::factory()->create();
         $token = inviteToken($user);
         $user->acceptInvite('ein-langes-passwort');
 
         return $token;
     },
-    'locked' => function () {
+    'locked' => function (): string {
         $user = User::factory()->create();
         $token = inviteToken($user);
         $user->lock();
@@ -80,7 +80,7 @@ test('an unknown, used or locked link shows the invalid message', function (stri
     },
 ]);
 
-test('a link that expires after the page loaded is refused on submit', function () {
+test('a link that expires after the page loaded is refused on submit', function (): void {
     $user = User::factory()->create();
     $before = $user->password;
     $page = Livewire::test(AcceptInvite::class, ['token' => inviteToken($user)]);
@@ -95,7 +95,7 @@ test('a link that expires after the page loaded is refused on submit', function 
     $this->assertGuest();
 });
 
-test('the invite page is throttled', function () {
+test('the invite page is throttled', function (): void {
     User::factory()->create();
 
     foreach (range(1, 10) as $attempt) {

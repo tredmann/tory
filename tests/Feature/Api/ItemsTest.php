@@ -15,13 +15,13 @@ use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
 use Laravel\Sanctum\Sanctum;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
     Sanctum::actingAs(User::factory()->create());
 });
 
-it('lists items newest first, 24 per page', function () {
+it('lists items newest first, 24 per page', function (): void {
     Item::factory()->create(['title' => 'Alt', 'created_at' => now()->subDay()]);
     Item::factory()->count(24)->create();
 
@@ -36,8 +36,8 @@ it('lists items newest first, 24 per page', function () {
         ->assertJsonPath('data.0.title', 'Alt');
 });
 
-it('searches by keyword', function () {
-    Embeddings::fake(fn (EmbeddingsPrompt $prompt) => array_map(fn () => axis(9), $prompt->inputs));
+it('searches by keyword', function (): void {
+    Embeddings::fake(fn (EmbeddingsPrompt $prompt): array => array_map(fn (): array => axis(9), $prompt->inputs));
     $match = Item::factory()->create(['title' => 'Akku Bohrer']);
     Item::factory()->create(['title' => 'Hammer']);
 
@@ -47,8 +47,8 @@ it('searches by keyword', function () {
         ->assertJsonPath('data.0.id', $match->id);
 });
 
-it('falls back to keywords when embedding fails', function () {
-    Embeddings::fake(fn () => throw new RuntimeException('down'));
+it('falls back to keywords when embedding fails', function (): void {
+    Embeddings::fake(fn (): never => throw new RuntimeException('down'));
     $match = Item::factory()->create(['title' => 'Akku Bohrer']);
     Item::factory()->create(['title' => 'Hammer']);
 
@@ -58,14 +58,14 @@ it('falls back to keywords when embedding fails', function () {
         ->assertJsonPath('data.0.id', $match->id);
 });
 
-it('treats a blank search as no search', function () {
+it('treats a blank search as no search', function (): void {
     Item::factory()->count(2)->create();
 
     $this->getJson('/api/v1/items?search=%20%20')->assertOk()->assertJsonCount(2, 'data');
 });
 
-it('filters by location and by spot code in any case, combined with search', function () {
-    Embeddings::fake(fn (EmbeddingsPrompt $prompt) => array_map(fn () => axis(9), $prompt->inputs));
+it('filters by location and by spot code in any case, combined with search', function (): void {
+    Embeddings::fake(fn (EmbeddingsPrompt $prompt): array => array_map(fn (): array => axis(9), $prompt->inputs));
     $location = Location::factory()->create();
     $spot = Spot::factory()->create(['location_id' => $location->id]);
     $otherSpot = Spot::factory()->create();
@@ -80,13 +80,13 @@ it('filters by location and by spot code in any case, combined with search', fun
         ->assertJsonPath('data.0.id', $hit->id);
 });
 
-it('gives an empty list for an unknown location or spot', function (string $query) {
+it('gives an empty list for an unknown location or spot', function (string $query): void {
     Item::factory()->create();
 
     $this->getJson("/api/v1/items?{$query}")->assertOk()->assertJsonCount(0, 'data');
 })->with(['unknown uuid' => 'location=0198a2b0-0000-7000-8000-000000000000', 'not a uuid' => 'location=abc', 'unknown spot' => 'spot=ZZZZ', 'bad spot' => 'spot=!!']);
 
-it('shows an item without its embedding', function () {
+it('shows an item without its embedding', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/abc.jpg']]);
 
     $response = $this->getJson("/api/v1/items/{$item->id}")
@@ -97,7 +97,7 @@ it('shows an item without its embedding', function () {
     expect($response->json('data.photos.0'))->toEndWith('/photos/abc.jpg');
 });
 
-it('updates only the sent fields', function () {
+it('updates only the sent fields', function (): void {
     $item = Item::factory()->create(['title' => 'Alt', 'description' => 'Text', 'notes' => 'Alt', 'search_terms' => ['a']]);
     $spot = Spot::factory()->create();
 
@@ -113,7 +113,7 @@ it('updates only the sent fields', function () {
         ->and($item->spot_id)->toBe($spot->id);
 });
 
-it('updates texts', function () {
+it('updates texts', function (): void {
     $item = Item::factory()->create();
 
     $this->patchJson("/api/v1/items/{$item->id}", ['title' => 'Neu', 'description' => null, 'search_terms' => ['x', 'y']])
@@ -124,7 +124,7 @@ it('updates texts', function () {
     expect($item->fresh()->description)->toBeNull();
 });
 
-it('changes and clears the note', function () {
+it('changes and clears the note', function (): void {
     $item = Item::factory()->create();
 
     $this->patchJson("/api/v1/items/{$item->id}", ['notes' => 'Dongle fehlt'])
@@ -137,7 +137,7 @@ it('changes and clears the note', function () {
     expect($item->fresh()->notes)->toBeNull();
 });
 
-it('rejects an empty title', function () {
+it('rejects an empty title', function (): void {
     $item = Item::factory()->create();
 
     $this->patchJson("/api/v1/items/{$item->id}", ['title' => ''])
@@ -145,7 +145,7 @@ it('rejects an empty title', function () {
         ->assertJsonValidationErrors('title');
 });
 
-it('rejects an unknown spot', function () {
+it('rejects an unknown spot', function (): void {
     $item = Item::factory()->create();
 
     $this->patchJson("/api/v1/items/{$item->id}", ['spot' => 'ZZZZ'])
@@ -153,7 +153,7 @@ it('rejects an unknown spot', function () {
         ->assertJsonValidationErrors('spot');
 });
 
-it('answers a conflict when updating during regeneration', function () {
+it('answers a conflict when updating during regeneration', function (): void {
     $item = Item::factory()->create(['title' => 'Alt']);
     $item->forceFill(['regenerating_at' => now()])->saveQuietly();
 
@@ -163,29 +163,29 @@ it('answers a conflict when updating during regeneration', function () {
     expect($item->fresh()->title)->toBe('Alt');
 });
 
-it('deletes an item with its photos', function () {
+it('deletes an item with its photos', function (): void {
     Storage::disk('local')->put('imports/abc.jpg', 'x');
     $item = Item::factory()->create(['photos' => ['imports/abc.jpg']]);
 
     $this->deleteJson("/api/v1/items/{$item->id}")->assertNoContent();
 
-    expect(Item::find($item->id))->toBeNull();
+    expect(Item::query()->find($item->id))->toBeNull();
     Storage::disk('local')->assertMissing('imports/abc.jpg');
 });
 
-it('answers 405 to PUT on an item', function () {
+it('answers 405 to PUT on an item', function (): void {
     $item = Item::factory()->create();
 
     $this->putJson("/api/v1/items/{$item->id}", ['title' => 'Neu'])->assertStatus(405);
 });
 
-it('treats an empty spot or location as no filter', function (string $query) {
+it('treats an empty spot or location as no filter', function (string $query): void {
     Item::factory()->count(2)->create();
 
     $this->getJson("/api/v1/items?{$query}")->assertOk()->assertJsonCount(2, 'data');
 })->with(['spot=', 'location=', 'search=']);
 
-it('does not fail on array filters', function (string $query, int $count) {
+it('does not fail on array filters', function (string $query, int $count): void {
     Item::factory()->count(2)->create();
 
     $this->getJson("/api/v1/items?{$query}")->assertOk()->assertJsonCount($count, 'data');
@@ -195,7 +195,7 @@ it('does not fail on array filters', function (string $query, int $count) {
     'search' => ['search[]=x', 2],
 ]);
 
-it('orders items created at the same moment by id descending', function () {
+it('orders items created at the same moment by id descending', function (): void {
     $at = now();
     $first = Item::factory()->create(['created_at' => $at]);
     $second = Item::factory()->create(['created_at' => $at]);
@@ -204,7 +204,7 @@ it('orders items created at the same moment by id descending', function () {
     expect(collect($this->getJson('/api/v1/items')->json('data'))->pluck('id')->all())->toBe($expected);
 });
 
-it('creates an item with photos and texts without extraction', function () {
+it('creates an item with photos and texts without extraction', function (): void {
     $spot = Spot::factory()->create();
     $user = auth()->user();
     $front = UploadedFile::fake()->image('front.jpg', 20, 10);
@@ -225,11 +225,11 @@ it('creates an item with photos and texts without extraction', function () {
         ->assertJsonPath('data.spot.code', $spot->code)
         ->assertJsonCount(2, 'data.photos');
 
-    $item = Item::findOrFail($response->json('data.id'));
+    $item = Item::query()->findOrFail($response->json('data.id'));
     expect($item->spot_id)->toBe($spot->id)
         ->and($item->photos)->toHaveCount(2)
         ->and($user->fresh()->last_spot_id)->toBe($spot->id)
-        ->and(Import::count())->toBe(0);
+        ->and(Import::query()->count())->toBe(0);
     foreach ($item->photos as $path) {
         Storage::disk('local')->assertExists($path);
         expect($path)->toMatch('#^photos/\d{4}/\d{2}/[^/]+$#');
@@ -240,7 +240,7 @@ it('creates an item with photos and texts without extraction', function () {
     Queue::assertNotPushed(ExtractImport::class);
 });
 
-it('creates an item without description and search terms', function () {
+it('creates an item without description and search terms', function (): void {
     $spot = Spot::factory()->create();
 
     $this->postJson('/api/v1/items', [
@@ -253,32 +253,32 @@ it('creates an item without description and search terms', function () {
         ->assertJsonPath('data.search_terms', []);
 });
 
-it('rejects an invalid new item', function (Closure $payload, string $field) {
+it('rejects an invalid new item', function (Closure $payload, string $field): void {
     $spot = Spot::factory()->create();
 
     $this->postJson('/api/v1/items', $payload($spot))
         ->assertUnprocessable()
         ->assertJsonValidationErrors($field);
 
-    expect(Item::count())->toBe(0);
+    expect(Item::query()->count())->toBe(0);
     expect(Storage::disk('local')->allFiles())->toBe([]);
 })->with([
-    'no photos' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X'], 'photos'],
-    'twenty-one photos' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'photos' => array_map(fn ($i) => UploadedFile::fake()->image("$i.jpg"), range(1, 21))], 'photos'],
-    'a pdf' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'photos' => [UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')]], 'photos.0'],
-    'a 13 MB file' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'photos' => [UploadedFile::fake()->create('big.jpg', 13 * 1024, 'image/jpeg')]], 'photos.0'],
-    'over 70 MB in total' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'photos' => array_map(fn ($i) => UploadedFile::fake()->create("$i.jpg", 12000, 'image/jpeg'), range(1, 6))], 'photos'],
-    'no title' => [fn (Spot $s) => ['spot' => $s->code, 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'title'],
-    'a too long title' => [fn (Spot $s) => ['spot' => $s->code, 'title' => str_repeat('x', 256), 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'title'],
-    'a search term that is no string' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'search_terms' => [['x']], 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'search_terms.0'],
-    'a note that is no string' => [fn (Spot $s) => ['spot' => $s->code, 'title' => 'X', 'notes' => ['x'], 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'notes'],
-    'no spot' => [fn (Spot $s) => ['title' => 'X', 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
-    'an unknown spot' => [fn (Spot $s) => ['spot' => 'ZZZZ', 'title' => 'X', 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
+    'no photos' => [fn (Spot $s): array => ['spot' => $s->code, 'title' => 'X'], 'photos'],
+    'twenty-one photos' => [fn (Spot $s): array => ['spot' => $s->code, 'title' => 'X', 'photos' => array_map(fn (int $i) => UploadedFile::fake()->image("$i.jpg"), range(1, 21))], 'photos'],
+    'a pdf' => [fn (Spot $s): array => ['spot' => $s->code, 'title' => 'X', 'photos' => [UploadedFile::fake()->create('a.pdf', 10, 'application/pdf')]], 'photos.0'],
+    'a 13 MB file' => [fn (Spot $s): array => ['spot' => $s->code, 'title' => 'X', 'photos' => [UploadedFile::fake()->create('big.jpg', 13 * 1024, 'image/jpeg')]], 'photos.0'],
+    'over 70 MB in total' => [fn (Spot $s): array => ['spot' => $s->code, 'title' => 'X', 'photos' => array_map(fn (int $i) => UploadedFile::fake()->create("$i.jpg", 12000, 'image/jpeg'), range(1, 6))], 'photos'],
+    'no title' => [fn (Spot $s): array => ['spot' => $s->code, 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'title'],
+    'a too long title' => [fn (Spot $s): array => ['spot' => $s->code, 'title' => str_repeat('x', 256), 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'title'],
+    'a search term that is no string' => [fn (Spot $s): array => ['spot' => $s->code, 'title' => 'X', 'search_terms' => [['x']], 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'search_terms.0'],
+    'a note that is no string' => [fn (Spot $s): array => ['spot' => $s->code, 'title' => 'X', 'notes' => ['x'], 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'notes'],
+    'no spot' => [fn (Spot $s): array => ['title' => 'X', 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
+    'an unknown spot' => [fn (Spot $s): array => ['spot' => 'ZZZZ', 'title' => 'X', 'photos' => [UploadedFile::fake()->image('a.jpg')]], 'spot'],
 ]);
 
-it('deletes the stored photos when the item cannot be created', function () {
+it('deletes the stored photos when the item cannot be created', function (): void {
     $spot = Spot::factory()->create();
-    Item::creating(fn () => throw new RuntimeException('database down'));
+    Item::creating(fn (): never => throw new RuntimeException('database down'));
 
     $this->withoutExceptionHandling();
 
@@ -291,7 +291,7 @@ it('deletes the stored photos when the item cannot be created', function () {
     expect(Storage::disk('local')->allFiles())->toBe([]);
 });
 
-it('requires a token to create an item', function () {
+it('requires a token to create an item', function (): void {
     $spot = Spot::factory()->create();
     auth()->forgetGuards();
 
@@ -301,10 +301,10 @@ it('requires a token to create an item', function () {
         'spot' => $spot->code,
     ])->assertUnauthorized();
 
-    expect(Item::count())->toBe(0);
+    expect(Item::query()->count())->toBe(0);
 });
 
-it('lists thumbnail urls in photo order', function () {
+it('lists thumbnail urls in photo order', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/b.jpg', 'photos/2026/11/a.png']]);
 
     $urls = $this->getJson("/api/v1/items/{$item->id}")->assertOk()->json('data.thumbnails');
@@ -314,14 +314,14 @@ it('lists thumbnail urls in photo order', function () {
         ->and($urls[1])->toEndWith('/photos/a.png/thumb');
 });
 
-it('queues a thumbnail per uploaded photo', function () {
+it('queues a thumbnail per uploaded photo', function (): void {
     $response = $this->postJson('/api/v1/items', [
         'photos' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->image('b.jpg')],
         'title' => 'Akkuschrauber',
         'spot' => Spot::factory()->create()->code,
     ])->assertCreated();
 
-    foreach (Item::findOrFail($response->json('data.id'))->photos as $path) {
+    foreach (Item::query()->findOrFail($response->json('data.id'))->photos as $path) {
         Queue::assertPushedOn('thumbnails', GenerateThumbnail::class, fn (GenerateThumbnail $job): bool => $job->path === $path);
     }
     Queue::assertPushedTimes(GenerateThumbnail::class, 2);

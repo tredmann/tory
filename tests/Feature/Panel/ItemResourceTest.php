@@ -20,13 +20,13 @@ use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
 use Livewire\Livewire;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
     $this->actingAs(User::factory()->create());
 });
 
-test('the list shows items newest first with their spot', function () {
+test('the list shows items newest first with their spot', function (): void {
     $spot = Spot::factory()->create(['name' => 'Elektronik-Kiste']);
     $old = Item::factory()->create(['spot_id' => $spot->id, 'created_at' => now()->subDay()]);
     $new = Item::factory()->create(['spot_id' => $spot->id]);
@@ -38,7 +38,7 @@ test('the list shows items newest first with their spot', function () {
         ->assertSeeHtml("/spots/{$spot->code}");
 });
 
-test('the list can still be sorted by date', function () {
+test('the list can still be sorted by date', function (): void {
     $old = Item::factory()->create(['created_at' => now()->subDay()]);
     $new = Item::factory()->create();
 
@@ -48,7 +48,7 @@ test('the list can still be sorted by date', function () {
         ->assertSeeText('Angelegt');
 });
 
-test('the list pages in full rows of tiles', function () {
+test('the list pages in full rows of tiles', function (): void {
     $items = collect(range(1, 13))->map(fn (int $age): Item => Item::factory()->create(['created_at' => now()->subDays($age)]));
 
     Livewire::test(ListItems::class)
@@ -56,12 +56,12 @@ test('the list pages in full rows of tiles', function () {
         ->assertCanNotSeeTableRecords([$items->last()]);
 });
 
-test('items cannot be created directly', function () {
+test('items cannot be created directly', function (): void {
     expect(ItemResource::canCreate())->toBeFalse()
         ->and(ItemResource::getPages())->not->toHaveKey('create');
 });
 
-test('the view page shows title, description and spot', function () {
+test('the view page shows title, description and spot', function (): void {
     $spot = Spot::factory()->create(['name' => 'Schrank']);
     $item = Item::factory()->create([
         'spot_id' => $spot->id,
@@ -77,7 +77,7 @@ test('the view page shows title, description and spot', function () {
         ->assertSeeHtml("/spots/{$spot->code}");
 });
 
-test('the view page shows the title only as its heading', function () {
+test('the view page shows the title only as its heading', function (): void {
     $item = Item::factory()->create(['title' => 'Akkuschrauber']);
 
     Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
@@ -85,7 +85,7 @@ test('the view page shows the title only as its heading', function () {
         ->assertDontSee('Titel');
 });
 
-test('the view page leaves out empty texts', function () {
+test('the view page leaves out empty texts', function (): void {
     $item = Item::factory()->create(['description' => null, 'notes' => null, 'search_terms' => []]);
 
     $page = Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
@@ -97,7 +97,7 @@ test('the view page leaves out empty texts', function () {
     expect(preg_match_all('/<section\b/', $page->html()))->toBe(2);
 });
 
-test('the view page shows search terms', function () {
+test('the view page shows search terms', function (): void {
     $item = Item::factory()->create(['search_terms' => ['Akkubohrer', 'Werkzeug']]);
 
     Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
@@ -106,7 +106,7 @@ test('the view page shows search terms', function () {
         ->assertSee('Werkzeug');
 });
 
-test('the edit page removes a search term', function () {
+test('the edit page removes a search term', function (): void {
     $item = Item::factory()->create(['search_terms' => ['A', 'B']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -117,7 +117,7 @@ test('the edit page removes a search term', function () {
     expect($item->fresh()->search_terms)->toBe(['A']);
 });
 
-test('editing changes the title and moves the item to another spot', function () {
+test('editing changes the title and moves the item to another spot', function (): void {
     $item = Item::factory()->create();
     $target = Spot::factory()->create();
 
@@ -129,7 +129,7 @@ test('editing changes the title and moves the item to another spot', function ()
     expect($item->fresh())->title->toBe('Neuer Titel')->spot_id->toBe($target->id);
 });
 
-test('title and spot are required when editing', function () {
+test('title and spot are required when editing', function (): void {
     $item = Item::factory()->create();
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -138,29 +138,29 @@ test('title and spot are required when editing', function () {
         ->assertHasFormErrors(['title' => 'required', 'spot_id' => 'required']);
 });
 
-test('the edit page offers no delete action', function () {
+test('the edit page offers no delete action', function (): void {
     $item = Item::factory()->create();
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
         ->assertActionDoesNotExist('delete');
 });
 
-test('deleting an item removes the row and its photo files', function () {
+test('deleting an item removes the row and its photo files', function (): void {
     Storage::disk('local')->put('imports/x.jpg', 'x');
     $item = Item::factory()->create(['photos' => ['imports/x.jpg']]);
 
     Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])->callAction('delete');
 
-    expect(Item::count())->toBe(0);
+    expect(Item::query()->count())->toBe(0);
     Storage::disk('local')->assertMissing('imports/x.jpg');
 });
 
-test('the search field above the list finds items by keyword and by meaning', function () {
+test('the search field above the list finds items by keyword and by meaning', function (): void {
     $keyword = Item::factory()->create(['title' => 'Kunststoffgehäuse']);
     $semantic = Item::factory()->create(['title' => 'Pi-Hülle', 'created_at' => now()->addMinute()]);
     $semantic->forceFill(['embedding' => axis(1)])->saveQuietly();
     $other = Item::factory()->create(['title' => 'Gartenschlauch']);
-    Embeddings::fake(fn (EmbeddingsPrompt $prompt) => array_map(fn () => axis(1), $prompt->inputs));
+    Embeddings::fake(fn (EmbeddingsPrompt $prompt): array => array_map(fn (): array => axis(1), $prompt->inputs));
 
     Livewire::test(ListItems::class)
         ->searchTable('Gehäuse')
@@ -168,7 +168,7 @@ test('the search field above the list finds items by keyword and by meaning', fu
         ->assertCanNotSeeTableRecords([$other]);
 });
 
-test('the list and view page show the location', function () {
+test('the list and view page show the location', function (): void {
     $spot = Spot::factory()->create([
         'location_id' => Location::factory()->create(['name' => 'Keller'])->id,
     ]);
@@ -183,7 +183,7 @@ test('the list and view page show the location', function () {
         ->assertSeeHtml("/spots/{$spot->code}");
 });
 
-test('filters items by location', function () {
+test('filters items by location', function (): void {
     $keller = Location::factory()->create(['name' => 'Keller']);
     $garage = Location::factory()->create(['name' => 'Garage']);
     $inKeller = Item::factory()->create(['spot_id' => Spot::factory()->create(['location_id' => $keller->id])->id]);
@@ -195,7 +195,7 @@ test('filters items by location', function () {
         ->assertCanNotSeeTableRecords([$inGarage]);
 });
 
-test('the location filter narrows a text search', function () {
+test('the location filter narrows a text search', function (): void {
     $keller = Location::factory()->create(['name' => 'Keller']);
     $garage = Location::factory()->create(['name' => 'Garage']);
     $kellerSpot = Spot::factory()->create(['location_id' => $keller->id]);
@@ -210,7 +210,7 @@ test('the location filter narrows a text search', function () {
         ->assertCanNotSeeTableRecords([$inGarage, $unrelated]);
 });
 
-test('a location can be created inside the spot picker on the edit page', function () {
+test('a location can be created inside the spot picker on the edit page', function (): void {
     $item = Item::factory()->create();
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -220,10 +220,10 @@ test('a location can be created inside the spot picker on the edit page', functi
         ], ['name' => 'Keller'])
         ->assertHasNoFormErrors();
 
-    expect(Location::firstWhere('name', 'Keller'))->not->toBeNull();
+    expect(Location::query()->firstWhere('name', 'Keller'))->not->toBeNull();
 });
 
-test('the edit page shows the photos field with the first photo as overview', function () {
+test('the edit page shows the photos field with the first photo as overview', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -233,7 +233,7 @@ test('the edit page shows the photos field with the first photo as overview', fu
         ->assertSeeHtml(PhotoLinks::thumbnail('imports/a.jpg'));
 });
 
-test('the photos field renders real buttons and the add tile', function () {
+test('the photos field renders real buttons and the add tile', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -246,14 +246,14 @@ test('the photos field renders real buttons and the add tile', function () {
         ->assertSeeHtml('toryPhotoUploads');
 });
 
-test('the photos field also shows on an item with one photo', function () {
+test('the photos field also shows on an item with one photo', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
         ->assertFormFieldVisible('photo_edits');
 });
 
-test('saving a chosen overview photo moves it to the front and keeps the others in order', function () {
+test('saving a chosen overview photo moves it to the front and keeps the others in order', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -264,7 +264,7 @@ test('saving a chosen overview photo moves it to the front and keeps the others 
     expect($item->fresh()->photos)->toBe(['imports/c.jpg', 'imports/a.jpg', 'imports/b.jpg']);
 });
 
-test('saving without choosing another photo keeps the order', function () {
+test('saving without choosing another photo keeps the order', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -275,7 +275,7 @@ test('saving without choosing another photo keeps the order', function () {
     expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']);
 });
 
-test('saving an item with one photo keeps the photo', function () {
+test('saving an item with one photo keeps the photo', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -286,7 +286,7 @@ test('saving an item with one photo keeps the photo', function () {
     expect($item->fresh()->photos)->toBe(['imports/a.jpg']);
 });
 
-test('an item without photos can be edited', function () {
+test('an item without photos can be edited', function (): void {
     $item = Item::factory()->create(['photos' => []]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -297,7 +297,7 @@ test('an item without photos can be edited', function () {
     expect($item->fresh())->title->toBe('Neuer Titel')->photos->toBe([]);
 });
 
-test('a path that is not a photo of the item falls back to the first remaining photo', function () {
+test('a path that is not a photo of the item falls back to the first remaining photo', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -308,7 +308,7 @@ test('a path that is not a photo of the item falls back to the first remaining p
     expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg']);
 });
 
-test('choosing an overview photo does not recompute the embedding', function () {
+test('choosing an overview photo does not recompute the embedding', function (): void {
     $embedding = array_fill(0, 1024, 0.1);
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg'], 'embedding' => $embedding]);
     Queue::fake();
@@ -322,7 +322,7 @@ test('choosing an overview photo does not recompute the embedding', function () 
     expect($item->fresh()->embedding)->not->toBeNull();
 });
 
-test('saving passes added, removed and chosen photos to the item', function () {
+test('saving passes added, removed and chosen photos to the item', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'a');
     Storage::disk('local')->put('imports/b.jpg', 'b');
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
@@ -343,7 +343,7 @@ test('saving passes added, removed and chosen photos to the item', function () {
     Storage::disk('local')->assertMissing('imports/a.jpg');
 });
 
-test('title and photos change in the same save', function () {
+test('title and photos change in the same save', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'a');
     Storage::disk('local')->put('imports/b.jpg', 'b');
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
@@ -357,7 +357,7 @@ test('title and photos change in the same save', function () {
     expect($item->fresh())->title->toBe('Neuer Titel')->photos->toBe(['imports/b.jpg']);
 });
 
-test('an invalid title changes no photos', function () {
+test('an invalid title changes no photos', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'a');
     Storage::disk('local')->put('imports/b.jpg', 'b');
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
@@ -374,7 +374,7 @@ test('an invalid title changes no photos', function () {
     expect(Storage::disk('local')->allFiles('imports'))->toHaveCount(2);
 });
 
-test('saving twice stores an added photo once', function () {
+test('saving twice stores an added photo once', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -387,7 +387,7 @@ test('saving twice stores an added photo once', function () {
         ->and(Storage::disk('local')->allFiles('photos'))->toHaveCount(1);
 });
 
-test('a file of the wrong type is rejected', function () {
+test('a file of the wrong type is rejected', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -399,7 +399,7 @@ test('a file of the wrong type is rejected', function () {
 });
 
 /** Livewire's own upload limit (12288 KB, config livewire.temporary_file_upload.rules) rejects it before the field's rule runs. */
-test('a file over 12 MB is rejected', function () {
+test('a file over 12 MB is rejected', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -410,7 +410,7 @@ test('a file over 12 MB is rejected', function () {
     expect($item->fresh()->photos)->toBe(['imports/a.jpg']);
 });
 
-test('a non-file value in the uploads state is ignored', function () {
+test('a non-file value in the uploads state is ignored', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -421,7 +421,7 @@ test('a non-file value in the uploads state is ignored', function () {
     expect($item->fresh()->photos)->toBe(['imports/a.jpg']);
 });
 
-test('a photo uploaded through the Livewire upload lands under its key and is saved', function () {
+test('a photo uploaded through the Livewire upload lands under its key and is saved', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -433,7 +433,7 @@ test('a photo uploaded through the Livewire upload lands under its key and is sa
         ->and($item->fresh()->photos[0])->toBe('imports/a.jpg');
 });
 
-test('edits cleared by a restarted field neither delete a photo nor add an upload', function () {
+test('edits cleared by a restarted field neither delete a photo nor add an upload', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'a');
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
@@ -453,7 +453,7 @@ test('edits cleared by a restarted field neither delete a photo nor add an uploa
         ->and(Storage::disk('local')->exists('imports/a.jpg'))->toBeTrue();
 });
 
-test('a new photo marked for removal is not stored and does not block the save', function () {
+test('a new photo marked for removal is not stored and does not block the save', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -467,7 +467,7 @@ test('a new photo marked for removal is not stored and does not block the save',
         ->and(Storage::disk('local')->files('imports'))->toBe([]);
 });
 
-test('a successful save tells the photos field to start over', function () {
+test('a successful save tells the photos field to start over', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -475,7 +475,7 @@ test('a successful save tells the photos field to start over', function () {
         ->assertDispatched('item-photos-saved');
 });
 
-test('saving with no photo left shows the error on the field', function () {
+test('saving with no photo left shows the error on the field', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -487,7 +487,7 @@ test('saving with no photo left shows the error on the field', function () {
     expect($item->fresh()->photos)->toBe(['imports/a.jpg']);
 });
 
-test('a save during a regeneration changes no photos', function () {
+test('a save during a regeneration changes no photos', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'a');
     Storage::disk('local')->put('imports/b.jpg', 'b');
     $item = Item::factory()->create(['photos' => ['imports/a.jpg', 'imports/b.jpg']]);
@@ -501,7 +501,7 @@ test('a save during a regeneration changes no photos', function () {
     Storage::disk('local')->assertExists('imports/a.jpg');
 });
 
-test('a failed write of an uploaded photo keeps the row and the old photo', function () {
+test('a failed write of an uploaded photo keeps the row and the old photo', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'a');
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
@@ -517,7 +517,7 @@ test('a failed write of an uploaded photo keeps the row and the old photo', func
         ->and(Storage::disk('local')->files('imports'))->toBe(['imports/a.jpg']);
 });
 
-test('a failed write removes the uploaded photos stored before it', function () {
+test('a failed write removes the uploaded photos stored before it', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'a');
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
@@ -533,7 +533,7 @@ test('a failed write removes the uploaded photos stored before it', function () 
         ->and(Storage::disk('local')->files('imports'))->toBe(['imports/a.jpg']);
 });
 
-test('a write that leaves a shorter file fails and removes that file', function () {
+test('a write that leaves a shorter file fails and removes that file', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'a');
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
@@ -549,7 +549,7 @@ test('a write that leaves a shorter file fails and removes that file', function 
         ->and(Storage::disk('local')->files('imports'))->toBe(['imports/a.jpg']);
 });
 
-test('an upload marked by a numeric key is neither checked nor stored', function () {
+test('an upload marked by a numeric key is neither checked nor stored', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/a.jpg']]);
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -562,7 +562,7 @@ test('an upload marked by a numeric key is neither checked nor stored', function
         ->and(Storage::disk('local')->files('imports'))->toBe([]);
 });
 
-test('a rejected photo change leaves the title as it was', function () {
+test('a rejected photo change leaves the title as it was', function (): void {
     Storage::disk('local')->put('imports/a.jpg', 'a');
     $item = Item::factory()->create(['title' => 'Alter Titel', 'photos' => ['imports/a.jpg']]);
 
@@ -576,7 +576,7 @@ test('a rejected photo change leaves the title as it was', function () {
     Storage::disk('local')->assertExists('imports/a.jpg');
 });
 
-test('the view page shows the note', function () {
+test('the view page shows the note', function (): void {
     $item = Item::factory()->create(['notes' => 'Netzteil fehlt']);
 
     Livewire::test(ViewItem::class, ['record' => $item->getRouteKey()])
@@ -584,7 +584,7 @@ test('the view page shows the note', function () {
         ->assertSee('Netzteil fehlt');
 });
 
-test('the edit page changes and clears the note', function () {
+test('the edit page changes and clears the note', function (): void {
     $item = Item::factory()->create();
 
     Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
@@ -600,7 +600,7 @@ test('the edit page changes and clears the note', function () {
     expect($item->fresh()->notes)->toBeNull();
 });
 
-test('an English user sees the item list in English', function () {
+test('an English user sees the item list in English', function (): void {
     $user = User::factory()->create();
     $user->forceFill(['locale' => Language::English])->save();
     app()->setLocale('en');
@@ -613,7 +613,7 @@ test('an English user sees the item list in English', function () {
         ->assertDontSee('Suchen …');
 });
 
-test('an English user sees the photo field of the edit page in English', function () {
+test('an English user sees the photo field of the edit page in English', function (): void {
     $user = User::factory()->create();
     $user->forceFill(['locale' => Language::English])->save();
     app()->setLocale('en');
@@ -625,7 +625,7 @@ test('an English user sees the photo field of the edit page in English', functio
         ->assertDontSee('Fotos');
 });
 
-test('the item photo picker gets its messages in the language of the user', function (Language $language, string $tooMany, string $unreadable) {
+test('the item photo picker gets its messages in the language of the user', function (Language $language, string $tooMany, string $unreadable): void {
     $user = User::factory()->create();
     $user->forceFill(['locale' => $language])->save();
     app()->setLocale($language->value);

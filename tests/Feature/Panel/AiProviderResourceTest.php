@@ -29,12 +29,12 @@ use Laravel\Ai\Prompts\EmbeddingsPrompt;
 use Livewire\Features\SupportFileUploads\FileUploadConfiguration;
 use Livewire\Livewire;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Cache::flush();
     $this->actingAs(User::factory()->admin()->create());
 });
 
-test('a member can neither see nor open the provider page', function () {
+test('a member can neither see nor open the provider page', function (): void {
     $this->actingAs(User::factory()->create());
 
     $this->get('/ai-providers')->assertForbidden();
@@ -50,7 +50,7 @@ function embeddedItem(): Item
     return $item;
 }
 
-test('creates a cloud provider inactive, with an encrypted key', function () {
+test('creates a cloud provider inactive, with an encrypted key', function (): void {
     Livewire::test(ManageAiProviders::class)
         ->callAction('create', data: [
             'name' => 'Mein Claude',
@@ -60,14 +60,14 @@ test('creates a cloud provider inactive, with an encrypted key', function () {
         ])
         ->assertHasNoFormErrors();
 
-    $provider = AiProvider::sole();
+    $provider = AiProvider::query()->sole();
     expect($provider->is_active)->toBeFalse()
         ->and($provider->key_hint)->toBe('1234')
         ->and($provider->api_key)->toBe('sk-abc-1234');
     expect(DB::table('ai_providers')->value('api_key'))->not->toContain('sk-abc');
 });
 
-test('an Ollama provider needs an address and no key', function () {
+test('an Ollama provider needs an address and no key', function (): void {
     Livewire::test(ManageAiProviders::class)
         ->callAction('create', data: [
             'name' => 'Lokal',
@@ -86,12 +86,12 @@ test('an Ollama provider needs an address and no key', function () {
         ])
         ->assertHasNoFormErrors();
 
-    expect(AiProvider::sole())
+    expect(AiProvider::query()->sole())
         ->api_key->toBeNull()
         ->url->toBe('http://host.docker.internal:11434');
 });
 
-test('a cloud provider needs a key on create', function () {
+test('a cloud provider needs a key on create', function (): void {
     Livewire::test(ManageAiProviders::class)
         ->callAction('create', data: [
             'name' => 'Ohne Key',
@@ -100,10 +100,10 @@ test('a cloud provider needs a key on create', function () {
         ])
         ->assertHasFormErrors(['api_key' => 'required']);
 
-    expect(AiProvider::count())->toBe(0);
+    expect(AiProvider::query()->count())->toBe(0);
 });
 
-test('provider names are unique', function () {
+test('provider names are unique', function (): void {
     AiProvider::factory()->create(['name' => 'Doppelt']);
 
     Livewire::test(ManageAiProviders::class)
@@ -116,7 +116,7 @@ test('provider names are unique', function () {
         ->assertHasFormErrors(['name' => 'unique']);
 });
 
-test('a pasted key is stored trimmed', function () {
+test('a pasted key is stored trimmed', function (): void {
     Livewire::test(ManageAiProviders::class)
         ->callAction('create', data: [
             'name' => 'Trim',
@@ -126,10 +126,10 @@ test('a pasted key is stored trimmed', function () {
         ])
         ->assertHasNoFormErrors();
 
-    expect(AiProvider::sole()->api_key)->toBe('sk-abc');
+    expect(AiProvider::query()->sole()->api_key)->toBe('sk-abc');
 });
 
-test('editing with an empty key keeps the stored key', function () {
+test('editing with an empty key keeps the stored key', function (): void {
     $provider = AiProvider::factory()->create(['api_key' => 'sk-keep-1111']);
 
     Livewire::test(ManageAiProviders::class)
@@ -140,7 +140,7 @@ test('editing with an empty key keeps the stored key', function () {
     expect($provider->api_key)->toBe('sk-keep-1111')->and($provider->model)->toBe('neu');
 });
 
-test('the vendor cannot be changed on edit', function () {
+test('the vendor cannot be changed on edit', function (): void {
     $provider = AiProvider::factory()->create();
 
     Livewire::test(ManageAiProviders::class)
@@ -150,7 +150,7 @@ test('the vendor cannot be changed on edit', function () {
     expect($provider->refresh()->vendor)->toBe(AiVendor::Anthropic);
 });
 
-test('a crafted vendor cannot give a Claude provider an embedding model', function () {
+test('a crafted vendor cannot give a Claude provider an embedding model', function (): void {
     $provider = AiProvider::factory()->create();
 
     Livewire::test(ManageAiProviders::class)
@@ -160,7 +160,7 @@ test('a crafted vendor cannot give a Claude provider an embedding model', functi
     expect($provider->refresh()->embedding_model)->toBeNull();
 });
 
-test('the key is not in the page or the edit form state', function () {
+test('the key is not in the page or the edit form state', function (): void {
     $provider = AiProvider::factory()->create(['api_key' => 'sk-secret-3fa9']);
 
     Livewire::test(ManageAiProviders::class)
@@ -175,7 +175,7 @@ test('the key is not in the page or the edit form state', function () {
         });
 });
 
-test('activate switches the active provider and shows the badge', function () {
+test('activate switches the active provider and shows the badge', function (): void {
     $old = AiProvider::factory()->active()->create();
     $new = AiProvider::factory()->create();
 
@@ -190,13 +190,13 @@ test('activate switches the active provider and shows the badge', function () {
     expect(AiProvider::active()->is($new))->toBeTrue()->and($old->refresh()->is_active)->toBeFalse();
 });
 
-test('no card is marked active while no provider is active', function () {
+test('no card is marked active while no provider is active', function (): void {
     AiProvider::factory()->create();
 
     Livewire::test(ManageAiProviders::class)->assertDontSeeHtml('tory-active-provider');
 });
 
-test('delete is disabled for the active provider and works for an inactive one', function () {
+test('delete is disabled for the active provider and works for an inactive one', function (): void {
     $active = AiProvider::factory()->active()->create();
     $inactive = AiProvider::factory()->create();
 
@@ -204,10 +204,10 @@ test('delete is disabled for the active provider and works for an inactive one',
         ->assertActionDisabled(TestAction::make('delete')->table($active))
         ->callAction(TestAction::make('delete')->table($inactive));
 
-    expect(AiProvider::find($inactive->id))->toBeNull()->and(AiProvider::find($active->id))->not->toBeNull();
+    expect(AiProvider::query()->find($inactive->id))->toBeNull()->and(AiProvider::query()->find($active->id))->not->toBeNull();
 });
 
-test('an unreadable key shows a warning and the page and edit form still work', function () {
+test('an unreadable key shows a warning and the page and edit form still work', function (): void {
     $provider = AiProvider::factory()->create();
     DB::table('ai_providers')->where('id', $provider->id)->update(['api_key' => 'kaputt']);
 
@@ -220,7 +220,7 @@ test('an unreadable key shows a warning and the page and edit form still work', 
     expect($provider->refresh()->api_key)->toBe('sk-neu-9999');
 });
 
-test('the subheading names the env fallback only without an active provider', function () {
+test('the subheading names the env fallback only without an active provider', function (): void {
     Livewire::test(ManageAiProviders::class)->assertSee('Serverkonfiguration (.env)');
 
     AiProvider::factory()->active()->create();
@@ -228,7 +228,7 @@ test('the subheading names the env fallback only without an active provider', fu
     Livewire::test(ManageAiProviders::class)->assertDontSee('Aktuell gilt die Serverkonfiguration (.env).');
 });
 
-test('export downloads a file with the key and warns about the plain text', function () {
+test('export downloads a file with the key and warns about the plain text', function (): void {
     $provider = AiProvider::factory()->create(['api_key' => 'sk-secret-3fa9']);
 
     Livewire::test(ManageAiProviders::class)
@@ -243,12 +243,12 @@ test('export downloads a file with the key and warns about the plain text', func
     expect($provider->fresh()->api_key)->toBe('sk-secret-3fa9');
 });
 
-test('export is disabled without providers', function () {
+test('export is disabled without providers', function (): void {
     Livewire::test(ManageAiProviders::class)
         ->assertActionDisabled('export');
 });
 
-test('export warns when a provider with an unreadable key is left out', function () {
+test('export warns when a provider with an unreadable key is left out', function (): void {
     $broken = AiProvider::factory()->create();
     AiProvider::factory()->create();
     DB::table('ai_providers')->where('id', $broken->id)->update(['api_key' => 'not-a-valid-payload']);
@@ -258,7 +258,7 @@ test('export warns when a provider with an unreadable key is left out', function
         ->assertNotified('1 Provider mit unlesbarem Key wurde nicht exportiert.');
 });
 
-test('import through the dialog creates providers inactive and reports the numbers', function () {
+test('import through the dialog creates providers inactive and reports the numbers', function (): void {
     Storage::fake('local');
     $existing = AiProvider::factory()->active()->create(['name' => 'OpenAI']);
     $file = UploadedFile::fake()->createWithContent('provider.json', json_encode([
@@ -281,7 +281,7 @@ test('import through the dialog creates providers inactive and reports the numbe
         ->and(AiProvider::query()->where('name', 'OpenAI (Import)')->exists())->toBeTrue();
 });
 
-test('an invalid import file shows the error and changes nothing', function () {
+test('an invalid import file shows the error and changes nothing', function (): void {
     Storage::fake('local');
     $file = UploadedFile::fake()->createWithContent('provider.json', '{"providers": [sk-secret');
 
@@ -292,7 +292,7 @@ test('an invalid import file shows the error and changes nothing', function () {
     expect(AiProvider::query()->count())->toBe(0);
 });
 
-test('the uploaded file is deleted after the import, also after a failed one', function (string $content) {
+test('the uploaded file is deleted after the import, also after a failed one', function (string $content): void {
     $uploads = Storage::fake(FileUploadConfiguration::disk());
     $file = UploadedFile::fake()->createWithContent('provider.json', $content);
 
@@ -307,15 +307,15 @@ test('the uploaded file is deleted after the import, also after a failed one', f
     'valid' => [json_encode(['format' => 'tory-ai-providers', 'version' => 1, 'providers' => []])],
 ]);
 
-test('the navigation entry sorts after Importe', function () {
+test('the navigation entry sorts after Importe', function (): void {
     expect(AiProviderResource::getNavigationSort())->toBeGreaterThan(ImportResource::getNavigationSort());
 });
 
-test('the page title is Eigene KI', function () {
+test('the page title is Eigene KI', function (): void {
     expect(Livewire::test(ManageAiProviders::class)->instance()->getTitle())->toBe('Eigene KI');
 });
 
-test('the model field suggests fetched models', function () {
+test('the model field suggests fetched models', function (): void {
     Http::fake(['http://ollama:11434/api/tags' => Http::response(['models' => [['name' => 'b:1'], ['name' => 'a:1']]])]);
 
     Livewire::test(ManageAiProviders::class)
@@ -325,7 +325,7 @@ test('the model field suggests fetched models', function () {
             && $field->getChildSchema($field::BELOW_CONTENT_SCHEMA_KEY) === null);
 });
 
-test('editing with an empty key fetches with the stored key', function () {
+test('editing with an empty key fetches with the stored key', function (): void {
     $provider = AiProvider::factory()->create(['api_key' => 'sk-stored-7777']);
     Http::fake(['https://api.anthropic.com/*' => Http::response(['data' => [['id' => 'claude-x']]])]);
 
@@ -336,7 +336,7 @@ test('editing with an empty key fetches with the stored key', function () {
     Http::assertSent(fn (Request $request): bool => $request->header('x-api-key') === ['sk-stored-7777']);
 });
 
-test('a failed fetch shows a hint and a free-text model still saves', function () {
+test('a failed fetch shows a hint and a free-text model still saves', function (): void {
     Http::fake(['*' => Http::response('boom', 500)]);
 
     Livewire::test(ManageAiProviders::class)
@@ -347,10 +347,10 @@ test('a failed fetch shows a hint and a free-text model still saves', function (
         ->callMountedAction()
         ->assertHasNoFormErrors();
 
-    expect(AiProvider::sole()->model)->toBe('mein-modell');
+    expect(AiProvider::query()->sole()->model)->toBe('mein-modell');
 });
 
-test('testing an inactive provider uses it and leaves it inactive', function () {
+test('testing an inactive provider uses it and leaves it inactive', function (): void {
     InventoryExtractor::fake([['title' => 'Rotes Quadrat', 'description' => 'Rot.']]);
     $inactive = AiProvider::factory()->create(['name' => 'Reserve']);
     $before = DB::table('ai_providers')->where('id', $inactive->id)->first();
@@ -359,12 +359,12 @@ test('testing an inactive provider uses it and leaves it inactive', function () 
         ->callAction(TestAction::make('test')->table($inactive))
         ->assertNotified('Reserve hat das Testbild beantwortet.');
 
-    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->attachments->count() === 1);
+    InventoryExtractor::assertPrompted(fn ($prompt): bool => $prompt->attachments->count() === 1);
     expect(DB::table('ai_providers')->where('id', $inactive->id)->first())->toEqual($before)
         ->and($inactive->refresh()->is_active)->toBeFalse();
 });
 
-test('a failed test notifies with the reason', function () {
+test('a failed test notifies with the reason', function (): void {
     Http::fake(['*' => Http::response([], 401)]);
     $provider = AiProvider::factory()->create(['name' => 'Claude']);
 
@@ -375,7 +375,7 @@ test('a failed test notifies with the reason', function () {
         );
 });
 
-test('a failed probe keeps the dialog closed and changes nothing', function () {
+test('a failed probe keeps the dialog closed and changes nothing', function (): void {
     Embeddings::fake([[array_fill(0, 768, 0.1)]]);
     $provider = AiProvider::factory()->embedding()->create();
 
@@ -387,7 +387,7 @@ test('a failed probe keeps the dialog closed and changes nothing', function () {
     expect($provider->fresh()->is_active_for_search)->toBeFalse();
 });
 
-test('confirming the dialog switches and queues the recomputation', function () {
+test('confirming the dialog switches and queues the recomputation', function (): void {
     Queue::fake();
     Embeddings::fake();
     $provider = AiProvider::factory()->embedding()->create();
@@ -399,7 +399,7 @@ test('confirming the dialog switches and queues the recomputation', function () 
     Queue::assertPushed(ReembedItems::class);
 });
 
-test('a failing probe at confirm changes nothing and queues nothing', function () {
+test('a failing probe at confirm changes nothing and queues nothing', function (): void {
     $item = embeddedItem();
     $probes = 0;
     Embeddings::fake(function () use (&$probes): array {
@@ -422,7 +422,7 @@ test('a failing probe at confirm changes nothing and queues nothing', function (
     Queue::assertNotPushed(ReembedItems::class);
 });
 
-test('a confirm request without a mount still probes', function () {
+test('a confirm request without a mount still probes', function (): void {
     $item = embeddedItem();
     Embeddings::fake([[array_fill(0, 768, 0.1)]]);
     $provider = AiProvider::factory()->embedding()->create();
@@ -437,7 +437,7 @@ test('a confirm request without a mount still probes', function () {
     Queue::assertNotPushed(ReembedItems::class);
 });
 
-test('a model changed between mount and confirm is probed and switches only if that passes', function (int $dimensions, bool $switches) {
+test('a model changed between mount and confirm is probed and switches only if that passes', function (int $dimensions, bool $switches): void {
     $item = embeddedItem();
     $probedModels = [];
     Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$probedModels, $dimensions): array {
@@ -464,7 +464,7 @@ test('a model changed between mount and confirm is probed and switches only if t
     'probe fails' => [768, false],
 ]);
 
-test('a model emptied between mount and confirm does not switch', function () {
+test('a model emptied between mount and confirm does not switch', function (): void {
     $item = embeddedItem();
     Embeddings::fake();
     $provider = AiProvider::factory()->embedding()->create();
@@ -481,7 +481,7 @@ test('a model emptied between mount and confirm does not switch', function () {
     Queue::assertNotPushed(ReembedItems::class);
 });
 
-test('the activation dialog names both models and the number of items', function () {
+test('the activation dialog names both models and the number of items', function (): void {
     Embeddings::fake();
     AiProvider::factory()->activeForSearch()->create(['embedding_model' => 'altes-modell']);
     $new = AiProvider::factory()->embedding('neues-modell')->create();
@@ -494,7 +494,7 @@ test('the activation dialog names both models and the number of items', function
         ->assertMountedActionModalSee(['altes-modell', 'neues-modell', '2 Gegenstände', 'unvollständig', 'Kosten']);
 });
 
-test('the activation dialog names the env fallback when no provider is active for search', function () {
+test('the activation dialog names the env fallback when no provider is active for search', function (): void {
     Embeddings::fake();
     $new = AiProvider::factory()->embedding('neues-modell')->create();
 
@@ -503,7 +503,7 @@ test('the activation dialog names the env fallback when no provider is active fo
         ->assertMountedActionModalSee([config('ai.inventory.embedding_model').' (.env)', 'neues-modell']);
 });
 
-test('activate for search is hidden without an embedding model and for the active one', function () {
+test('activate for search is hidden without an embedding model and for the active one', function (): void {
     $withoutModel = AiProvider::factory()->create();
     $active = AiProvider::factory()->activeForSearch()->create();
     $available = AiProvider::factory()->embedding()->create();
@@ -514,14 +514,14 @@ test('activate for search is hidden without an embedding model and for the activ
         ->assertActionVisible(TestAction::make('activateForSearch')->table($available));
 });
 
-test('activate is hidden without a model for object recognition', function () {
+test('activate is hidden without a model for object recognition', function (): void {
     $provider = AiProvider::factory()->embedding()->create(['model' => null]);
 
     Livewire::test(ManageAiProviders::class)
         ->assertActionHidden(TestAction::make('activate')->table($provider));
 });
 
-test('a provider needs at least one model', function () {
+test('a provider needs at least one model', function (): void {
     Livewire::test(ManageAiProviders::class)
         ->callAction('create', data: [
             'name' => 'Ohne Modell',
@@ -532,10 +532,10 @@ test('a provider needs at least one model', function () {
         ])
         ->assertHasFormErrors(['model' => 'required', 'embedding_model' => 'required']);
 
-    expect(AiProvider::count())->toBe(0);
+    expect(AiProvider::query()->count())->toBe(0);
 });
 
-test('one model is enough and the other one saves as null', function (array $models, ?string $model, ?string $embeddingModel) {
+test('one model is enough and the other one saves as null', function (array $models, ?string $model, ?string $embeddingModel): void {
     Livewire::test(ManageAiProviders::class)
         ->callAction('create', data: [
             'name' => 'Ein Modell',
@@ -545,7 +545,7 @@ test('one model is enough and the other one saves as null', function (array $mod
         ])
         ->assertHasNoFormErrors();
 
-    expect(AiProvider::sole())
+    expect(AiProvider::query()->sole())
         ->model->toBe($model)
         ->embedding_model->toBe($embeddingModel);
 })->with([
@@ -553,7 +553,7 @@ test('one model is enough and the other one saves as null', function (array $mod
     'embedding only' => [['model' => '', 'embedding_model' => ' text-embedding-3-small '], null, 'text-embedding-3-small'],
 ]);
 
-test('claude needs a model and offers no embedding fields', function () {
+test('claude needs a model and offers no embedding fields', function (): void {
     Livewire::test(ManageAiProviders::class)
         ->mountAction('create')
         ->fillForm(['name' => 'Claude', 'vendor' => AiVendor::Anthropic->value, 'api_key' => 'sk-1234', 'model' => ''])
@@ -563,7 +563,7 @@ test('claude needs a model and offers no embedding fields', function () {
         ->assertHasFormErrors(['model' => 'required']);
 });
 
-test('an embedding model typed before switching the vendor to claude is not saved', function () {
+test('an embedding model typed before switching the vendor to claude is not saved', function (): void {
     Livewire::test(ManageAiProviders::class)
         ->mountAction('create')
         ->fillForm([
@@ -576,10 +576,10 @@ test('an embedding model typed before switching the vendor to claude is not save
         ->callMountedAction()
         ->assertHasNoFormErrors();
 
-    expect(AiProvider::sole()->embedding_model)->toBeNull();
+    expect(AiProvider::query()->sole()->embedding_model)->toBeNull();
 });
 
-test('a model is still required for claude when an embedding model was typed before switching the vendor', function () {
+test('a model is still required for claude when an embedding model was typed before switching the vendor', function (): void {
     Livewire::test(ManageAiProviders::class)
         ->mountAction('create')
         ->fillForm([
@@ -593,7 +593,7 @@ test('a model is still required for claude when an embedding model was typed bef
         ->assertHasFormErrors(['model' => 'required']);
 });
 
-test('the minimum similarity must lie between 0 and 1 and defaults to 0.5', function () {
+test('the minimum similarity must lie between 0 and 1 and defaults to 0.5', function (): void {
     $component = Livewire::test(ManageAiProviders::class)
         ->mountAction('create')
         ->fillForm(['name' => 'Suche', 'vendor' => AiVendor::OpenAi->value, 'api_key' => 'sk-1234'])
@@ -608,16 +608,16 @@ test('the minimum similarity must lie between 0 and 1 and defaults to 0.5', func
             ->assertHasFormErrors(['search_min_similarity']);
     }
 
-    expect(AiProvider::count())->toBe(0);
+    expect(AiProvider::query()->count())->toBe(0);
 
     $component->fillForm(['search_min_similarity' => 0.42])
         ->callMountedAction()
         ->assertHasNoFormErrors();
 
-    expect(AiProvider::sole()->search_min_similarity)->toBe(0.42);
+    expect(AiProvider::query()->sole()->search_min_similarity)->toBe(0.42);
 });
 
-test('the minimum similarity is prefilled when an existing provider gets its first embedding model', function () {
+test('the minimum similarity is prefilled when an existing provider gets its first embedding model', function (): void {
     $provider = AiProvider::factory()->create(['vendor' => AiVendor::OpenAi]);
 
     Livewire::test(ManageAiProviders::class)
@@ -630,7 +630,7 @@ test('the minimum similarity is prefilled when an existing provider gets its fir
     expect($provider->fresh()->search_min_similarity)->toBe(0.5);
 });
 
-test('the role model cannot be emptied', function () {
+test('the role model cannot be emptied', function (): void {
     $recognition = AiProvider::factory()->embedding()->active()->create(['model' => 'gpt']);
     $search = AiProvider::factory()->activeForSearch()->create(['model' => 'gpt']);
 
@@ -647,7 +647,7 @@ test('the role model cannot be emptied', function () {
         ->and($search->fresh()->embedding_model)->toBe('text-embedding-3-small');
 });
 
-test('a changed embedding model on the active provider requires the checkbox', function () {
+test('a changed embedding model on the active provider requires the checkbox', function (): void {
     Queue::fake();
     Embeddings::fake();
     $provider = AiProvider::factory()->activeForSearch()->create();
@@ -665,7 +665,7 @@ test('a changed embedding model on the active provider requires the checkbox', f
     Queue::assertNotPushed(ReembedItems::class);
 });
 
-test('a confirmed model change probes and switches', function () {
+test('a confirmed model change probes and switches', function (): void {
     $item = embeddedItem();
     $usedKeys = [];
     Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$usedKeys): array {
@@ -695,7 +695,7 @@ test('a confirmed model change probes and switches', function () {
         ->is_active_for_search->toBeTrue();
 });
 
-test('a failed probe on edit saves nothing, not even other fields', function () {
+test('a failed probe on edit saves nothing, not even other fields', function (): void {
     $item = embeddedItem();
     Embeddings::fake([[array_fill(0, 768, 0.1)]]);
     $provider = AiProvider::factory()->activeForSearch()->create(['name' => 'Alter Name', 'api_key' => 'sk-alt-1111']);
@@ -718,7 +718,7 @@ test('a failed probe on edit saves nothing, not even other fields', function () 
         ->embedding_model->toBe('text-embedding-3-small');
 });
 
-test('editing the key, address or threshold does not recompute', function (array $attributes, array $data) {
+test('editing the key, address or threshold does not recompute', function (array $attributes, array $data): void {
     $item = embeddedItem();
     $provider = AiProvider::factory()->activeForSearch()->create($attributes);
 
@@ -740,7 +740,7 @@ test('editing the key, address or threshold does not recompute', function (array
     'model for object recognition' => [[], ['model' => 'gpt-neu']],
 ]);
 
-test('editing an inactive provider\'s embedding model does not recompute', function () {
+test('editing an inactive provider\'s embedding model does not recompute', function (): void {
     $item = embeddedItem();
     $provider = AiProvider::factory()->embedding()->create();
 
@@ -756,14 +756,14 @@ test('editing an inactive provider\'s embedding model does not recompute', funct
         ->and($provider->fresh()->embedding_model)->toBe('neues-modell');
 });
 
-test('delete is disabled for the provider active for search', function () {
+test('delete is disabled for the provider active for search', function (): void {
     $provider = AiProvider::factory()->activeForSearch()->create();
 
     Livewire::test(ManageAiProviders::class)
         ->assertActionDisabled(TestAction::make('delete')->table($provider));
 });
 
-test('the card shows both models and a badge per role', function () {
+test('the card shows both models and a badge per role', function (): void {
     AiProvider::factory()->activeForSearch()->active()->create(['model' => 'gpt-x', 'embedding_model' => 'embed-x']);
 
     Livewire::test(ManageAiProviders::class)
@@ -771,7 +771,7 @@ test('the card shows both models and a badge per role', function () {
         ->assertSeeHtml('tory-active-provider');
 });
 
-test('a card without a model for a role shows no prefix for it', function () {
+test('a card without a model for a role shows no prefix for it', function (): void {
     AiProvider::factory()->embedding()->create(['model' => null]);
 
     Livewire::test(ManageAiProviders::class)
@@ -779,13 +779,13 @@ test('a card without a model for a role shows no prefix for it', function () {
         ->assertDontSeeHtml('tory-active-provider');
 });
 
-test('a card active for search is highlighted', function () {
+test('a card active for search is highlighted', function (): void {
     AiProvider::factory()->activeForSearch()->create();
 
     Livewire::test(ManageAiProviders::class)->assertSeeHtml('tory-active-provider');
 });
 
-test('the card shows progress and the stored failure', function () {
+test('the card shows progress and the stored failure', function (): void {
     embeddedItem();
     Item::factory()->create();
     AiProvider::factory()->activeForSearch()->create(['search_failure' => 'OpenAI ist nicht erreichbar.']);
@@ -795,7 +795,7 @@ test('the card shows progress and the stored failure', function () {
         ->assertSee('OpenAI ist nicht erreichbar. Es wird stündlich erneut versucht.');
 });
 
-test('progress and failure appear only on the provider active for search', function () {
+test('progress and failure appear only on the provider active for search', function (): void {
     Queue::fake();
     Item::factory()->create();
     AiProvider::factory()->embedding()->create(['search_failure' => 'Alte Meldung.']);
@@ -805,14 +805,14 @@ test('progress and failure appear only on the provider active for search', funct
         ->assertDontSee('Alte Meldung.');
 });
 
-test('no progress is shown when every item has an embedding', function () {
+test('no progress is shown when every item has an embedding', function (): void {
     embeddedItem();
     AiProvider::factory()->activeForSearch()->create();
 
     Livewire::test(ManageAiProviders::class)->assertDontSee('Suche wird neu aufgebaut');
 });
 
-test('the page polls only while the provider active for search has items to embed', function () {
+test('the page polls only while the provider active for search has items to embed', function (): void {
     $pollingInterval = fn (): ?string => Livewire::test(ManageAiProviders::class)->instance()->getTable()->getPollingInterval();
 
     Queue::fake();
@@ -829,7 +829,7 @@ test('the page polls only while the provider active for search has items to embe
     expect($pollingInterval())->toBeNull();
 });
 
-test('the subheading names the env fallback per role', function () {
+test('the subheading names the env fallback per role', function (): void {
     Livewire::test(ManageAiProviders::class)
         ->assertSee('Aktuell gilt die Serverkonfiguration (.env).');
 
@@ -850,7 +850,7 @@ test('the subheading names the env fallback per role', function () {
         ->assertDontSee('Für die Suche gilt');
 });
 
-test('an English user sees the provider page in English', function () {
+test('an English user sees the provider page in English', function (): void {
     $user = User::factory()->admin()->create();
     $user->forceFill(['locale' => Language::English])->save();
     app()->setLocale('en');
@@ -863,7 +863,7 @@ test('an English user sees the provider page in English', function () {
         ->assertDontSee('Aktuell gilt die Serverkonfiguration');
 });
 
-test('an English user sees the stored search failure in English', function () {
+test('an English user sees the stored search failure in English', function (): void {
     $user = User::factory()->admin()->create();
     $user->forceFill(['locale' => Language::English])->save();
     app()->setLocale('en');

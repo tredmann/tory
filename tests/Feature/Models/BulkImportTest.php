@@ -19,7 +19,7 @@ function staged(string $name, ?string $time = null): StagedPhoto
     return new StagedPhoto(UploadedFile::fake()->image($name), $name, $time === null ? null : new CarbonImmutable($time));
 }
 
-test('start stores the photos, sorts them and sets time cuts', function () {
+test('start stores the photos, sorts them and sets time cuts', function (): void {
     Storage::fake('local');
     Queue::fake();
     $user = User::factory()->create();
@@ -42,7 +42,7 @@ test('start stores the photos, sorts them and sets time cuts', function () {
     }
 });
 
-test('start dispatches the grouping job after commit', function () {
+test('start dispatches the grouping job after commit', function (): void {
     Storage::fake('local');
     Queue::fake();
 
@@ -51,10 +51,10 @@ test('start dispatches the grouping job after commit', function () {
     Queue::assertPushed(GroupBulkImport::class);
 });
 
-test('start rejects more than 100 photos and stores nothing', function () {
+test('start rejects more than 100 photos and stores nothing', function (): void {
     Storage::fake('local');
     Queue::fake();
-    $photos = array_map(fn (int $i) => staged("p{$i}.jpg"), range(1, 101));
+    $photos = array_map(fn (int $i): StagedPhoto => staged("p{$i}.jpg"), range(1, 101));
 
     try {
         BulkImport::start(User::factory()->create(), Spot::factory()->create()->id, $photos);
@@ -64,10 +64,10 @@ test('start rejects more than 100 photos and stores nothing', function () {
     }
 
     expect(Storage::disk('local')->allFiles())->toBe([])
-        ->and(BulkImport::count())->toBe(0);
+        ->and(BulkImport::query()->count())->toBe(0);
 });
 
-test('deleting a bulk import deletes all its photo files', function () {
+test('deleting a bulk import deletes all its photo files', function (): void {
     Storage::fake('local');
     $bulk = BulkImport::factory()->grouping()->create();
     $bulk->update(['discarded' => ['imports/discarded.jpg']]);
@@ -83,13 +83,13 @@ test('deleting a bulk import deletes all its photo files', function () {
     }
 });
 
-test('deleting a stale instance whose row was already confirmed keeps the files', function () {
+test('deleting a stale instance whose row was already confirmed keeps the files', function (): void {
     Storage::fake('local');
     Queue::fake();
     $bulk = BulkImport::factory()->ready()->create();
     $path = $bulk->photos[0]['path'];
     Storage::disk('local')->put($path, 'x');
-    $stale = BulkImport::find($bulk->id);
+    $stale = BulkImport::query()->find($bulk->id);
 
     $bulk->confirm();
     $stale->delete();
@@ -97,7 +97,7 @@ test('deleting a stale instance whose row was already confirmed keeps the files'
     Storage::disk('local')->assertExists($path);
 });
 
-test('deleting a bulk import deletes the thumbnails with the photos', function () {
+test('deleting a bulk import deletes the thumbnails with the photos', function (): void {
     Storage::fake('local');
     $bulk = BulkImport::factory()->grouping()->create();
     $paths = $bulk->allPaths();
@@ -112,7 +112,7 @@ test('deleting a bulk import deletes the thumbnails with the photos', function (
     }
 });
 
-test('start queues a thumbnail per photo', function () {
+test('start queues a thumbnail per photo', function (): void {
     Storage::fake('local');
     Queue::fake();
 

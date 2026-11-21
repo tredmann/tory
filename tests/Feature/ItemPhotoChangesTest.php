@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
 });
 
@@ -39,7 +39,7 @@ function storedFiles(): array
     return Storage::disk('local')->files('imports');
 }
 
-test('an upload is appended and the overview photo stays first', function () {
+test('an upload is appended and the overview photo stays first', function (): void {
     $item = itemWithPhotos();
 
     $item->changePhotos([], ['k' => newPhoto()], null);
@@ -50,7 +50,7 @@ test('an upload is appended and the overview photo stays first', function () {
     Storage::disk('local')->assertExists($photos[3]);
 });
 
-test('choosing an upload puts it first', function () {
+test('choosing an upload puts it first', function (): void {
     $item = itemWithPhotos();
 
     $item->changePhotos([], ['k' => newPhoto()], 'k');
@@ -61,7 +61,7 @@ test('choosing an upload puts it first', function () {
     Storage::disk('local')->assertExists($photos[0]);
 });
 
-test('choosing an existing photo keeps the others in order', function () {
+test('choosing an existing photo keeps the others in order', function (): void {
     $item = itemWithPhotos();
 
     $item->changePhotos([], [], 'imports/c.jpg');
@@ -69,7 +69,7 @@ test('choosing an existing photo keeps the others in order', function () {
     expect($item->fresh()->photos)->toBe(['imports/c.jpg', 'imports/a.jpg', 'imports/b.jpg']);
 });
 
-test('removing the overview photo moves the next one forward', function () {
+test('removing the overview photo moves the next one forward', function (): void {
     $item = itemWithPhotos();
 
     $item->changePhotos(['imports/a.jpg'], [], 'imports/a.jpg');
@@ -79,7 +79,7 @@ test('removing the overview photo moves the next one forward', function () {
     Storage::disk('local')->assertExists(['imports/b.jpg', 'imports/c.jpg']);
 });
 
-test('the only photo can be replaced in one save', function () {
+test('the only photo can be replaced in one save', function (): void {
     $item = itemWithPhotos(['a']);
 
     $item->changePhotos(['imports/a.jpg'], ['k' => newPhoto()], null);
@@ -90,7 +90,7 @@ test('the only photo can be replaced in one save', function () {
     Storage::disk('local')->assertExists($photos[0]);
 });
 
-test('zero photos are rejected and nothing changes', function () {
+test('zero photos are rejected and nothing changes', function (): void {
     $item = itemWithPhotos();
 
     try {
@@ -104,7 +104,7 @@ test('zero photos are rejected and nothing changes', function () {
     Storage::disk('local')->assertExists(['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']);
 });
 
-test('more than twenty photos are rejected and nothing changes', function () {
+test('more than twenty photos are rejected and nothing changes', function (): void {
     $item = itemWithPhotos(range('a', 't'));
 
     try {
@@ -117,7 +117,7 @@ test('more than twenty photos are rejected and nothing changes', function () {
     expect($item->fresh()->photos)->toHaveCount(20)->and(storedFiles())->toHaveCount(20);
 });
 
-test('twenty photos are accepted', function () {
+test('twenty photos are accepted', function (): void {
     $item = itemWithPhotos(range('a', 's'));
 
     $item->changePhotos([], ['k' => newPhoto()], null);
@@ -125,7 +125,7 @@ test('twenty photos are accepted', function () {
     expect($item->fresh()->photos)->toHaveCount(20);
 });
 
-test('an item without photos may stay without photos', function () {
+test('an item without photos may stay without photos', function (): void {
     $item = Item::factory()->create(['photos' => []]);
 
     $item->changePhotos([], [], null);
@@ -133,7 +133,7 @@ test('an item without photos may stay without photos', function () {
     expect($item->fresh()->photos)->toBe([]);
 });
 
-test('a stale removal cannot bring back a deleted photo', function () {
+test('a stale removal cannot bring back a deleted photo', function (): void {
     $item = itemWithPhotos();
     Item::query()->whereKey($item->id)->update(['photos' => json_encode(['imports/b.jpg', 'imports/c.jpg'])]);
 
@@ -142,7 +142,7 @@ test('a stale removal cannot bring back a deleted photo', function () {
     expect($item->fresh()->photos)->toBe(['imports/b.jpg', 'imports/c.jpg']);
 });
 
-test('a forged removal touches no file', function () {
+test('a forged removal touches no file', function (): void {
     $item = itemWithPhotos();
     Storage::disk('local')->put('imports/other.jpg', 'other');
 
@@ -152,7 +152,7 @@ test('a forged removal touches no file', function () {
     expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']);
 });
 
-test('a forged overview falls back to the first photo', function () {
+test('a forged overview falls back to the first photo', function (): void {
     $item = itemWithPhotos();
 
     $item->changePhotos([], [], 'imports/other.jpg');
@@ -160,9 +160,9 @@ test('a forged overview falls back to the first photo', function () {
     expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']);
 });
 
-test('a failed save stores nothing and deletes nothing', function () {
+test('a failed save stores nothing and deletes nothing', function (): void {
     $item = itemWithPhotos();
-    Item::updating(function () {
+    Item::updating(function (): void {
         throw new RuntimeException('save failed');
     });
 
@@ -174,7 +174,7 @@ test('a failed save stores nothing and deletes nothing', function () {
         ->and($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']);
 });
 
-test('changing photos keeps the embedding and dispatches no job', function () {
+test('changing photos keeps the embedding and dispatches no job', function (): void {
     $item = itemWithPhotos();
     $item->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->save();
 
@@ -184,7 +184,7 @@ test('changing photos keeps the embedding and dispatches no job', function () {
     expect($item->fresh()->embedding)->not->toBeNull();
 });
 
-test('a failed file write stores nothing and deletes nothing', function () {
+test('a failed file write stores nothing and deletes nothing', function (): void {
     $item = itemWithPhotos(['a']);
     breakLocalDisk(writesBeforeFailure: 1);
 
@@ -196,7 +196,7 @@ test('a failed file write stores nothing and deletes nothing', function () {
         ->and($item->fresh()->photos)->toBe(['imports/a.jpg']);
 });
 
-test('a removed file stays until the commit and a rollback keeps it', function () {
+test('a removed file stays until the commit and a rollback keeps it', function (): void {
     $item = itemWithPhotos();
 
     expect(fn () => DB::transaction(function () use ($item): void {
@@ -209,7 +209,7 @@ test('a removed file stays until the commit and a rollback keeps it', function (
     expect($item->fresh()->photos)->toBe(['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg']);
 });
 
-test('a file that cannot be deleted is reported and the save stands', function () {
+test('a file that cannot be deleted is reported and the save stands', function (): void {
     $item = itemWithPhotos();
     breakLocalDisk(failsDeletes: true);
     Exceptions::fake();
@@ -220,7 +220,7 @@ test('a file that cannot be deleted is reported and the save stands', function (
     expect($item->fresh()->photos)->toBe(['imports/b.jpg', 'imports/c.jpg']);
 });
 
-test('a model that lags behind the row still writes the change', function () {
+test('a model that lags behind the row still writes the change', function (): void {
     $item = itemWithPhotos(['a', 'b']);
     Item::query()->whereKey($item->id)->update(['photos' => json_encode(['imports/b.jpg'])]);
     $stale = $item->fresh();
@@ -233,7 +233,7 @@ test('a model that lags behind the row still writes the change', function () {
     Storage::disk('local')->assertExists('imports/b.jpg');
 });
 
-test('removing a photo removes its thumbnail', function () {
+test('removing a photo removes its thumbnail', function (): void {
     $item = itemWithPhotos();
     Storage::disk('local')->put(PhotoStore::thumbnailPath('imports/a.jpg'), 'thumb');
     Storage::disk('local')->put(PhotoStore::thumbnailPath('imports/b.jpg'), 'thumb');
@@ -244,7 +244,7 @@ test('removing a photo removes its thumbnail', function () {
     Storage::disk('local')->assertExists(PhotoStore::thumbnailPath('imports/b.jpg'));
 });
 
-test('only added photos get a thumbnail queued', function () {
+test('only added photos get a thumbnail queued', function (): void {
     $item = itemWithPhotos(['a']);
 
     $item->changePhotos([], ['k' => newPhoto()], null);

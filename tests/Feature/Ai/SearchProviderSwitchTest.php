@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Embeddings;
 
-test('switching activates the provider, empties all embeddings and queues the job', function () {
+test('switching activates the provider, empties all embeddings and queues the job', function (): void {
     Queue::fake();
     $old = AiProvider::factory()->activeForSearch()->create();
     $new = AiProvider::factory()->embedding()->create();
@@ -31,7 +31,7 @@ test('switching activates the provider, empties all embeddings and queues the jo
     Queue::assertPushed(ReembedItems::class);
 });
 
-test('switching clears a stored failure', function () {
+test('switching clears a stored failure', function (): void {
     Queue::fake();
     $provider = AiProvider::factory()->embedding()->create();
     $provider->forceFill(['search_failure' => 'kaputt', 'search_failure_generic' => true])->saveQuietly();
@@ -42,14 +42,14 @@ test('switching clears a stored failure', function () {
         ->and($provider->searchFailureMessage())->toBeNull();
 });
 
-test('the probe returns null for a good model', function () {
+test('the probe returns null for a good model', function (): void {
     Embeddings::fake();
     $provider = AiProvider::factory()->embedding()->create();
 
     expect(app(SearchProviderSwitch::class)->probe($provider, 'text-embedding-3-small'))->toBeNull();
 });
 
-test('the probe names the wrong dimensions', function () {
+test('the probe names the wrong dimensions', function (): void {
     Embeddings::fake([[array_fill(0, 768, 0.1)]]);
     $provider = AiProvider::factory()->embedding()->create(['name' => 'OpenAI']);
 
@@ -57,7 +57,7 @@ test('the probe names the wrong dimensions', function () {
         ->toBe('Das Embedding-Modell von OpenAI liefert 768 statt 1024 Dimensionen.');
 });
 
-test('the probe reports an unreadable key instead of throwing', function () {
+test('the probe reports an unreadable key instead of throwing', function (): void {
     $provider = AiProvider::factory()->embedding()->create(['name' => 'OpenAI']);
     DB::table('ai_providers')->where('id', $provider->id)->update(['api_key' => 'kaputt']);
 
@@ -65,15 +65,15 @@ test('the probe reports an unreadable key instead of throwing', function () {
         ->toBe('Der gespeicherte API-Key von OpenAI ist nicht mehr lesbar.');
 });
 
-test('the probe falls back to a generic message for an unclassified failure', function () {
-    Embeddings::fake(fn () => throw new RuntimeException('boom'));
+test('the probe falls back to a generic message for an unclassified failure', function (): void {
+    Embeddings::fake(fn (): never => throw new RuntimeException('boom'));
     $provider = AiProvider::factory()->embedding()->create();
 
     expect(app(SearchProviderSwitch::class)->probe($provider, 'x'))
         ->toBe(ProviderFailure::genericEmbeddingMessage());
 });
 
-test('switching gives a missing threshold the default and keeps an existing one', function () {
+test('switching gives a missing threshold the default and keeps an existing one', function (): void {
     Queue::fake();
     $without = AiProvider::factory()->embedding()->create();
     $with = AiProvider::factory()->embedding()->create(['search_min_similarity' => 0.7]);
@@ -90,7 +90,7 @@ test('switching gives a missing threshold the default and keeps an existing one'
     expect($with->fresh()->search_min_similarity)->toBe(0.7);
 });
 
-test('switching to a deleted provider throws and changes nothing', function () {
+test('switching to a deleted provider throws and changes nothing', function (): void {
     Queue::fake();
     $old = AiProvider::factory()->activeForSearch()->create();
     $gone = AiProvider::factory()->embedding()->create();

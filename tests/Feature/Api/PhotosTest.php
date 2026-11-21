@@ -10,11 +10,11 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
 });
 
-it('streams an item photo with its content type', function () {
+it('streams an item photo with its content type', function (): void {
     Sanctum::actingAs(User::factory()->create());
     Storage::disk('local')->put('imports/abc.jpg', 'jpeg-bytes');
     $item = Item::factory()->create(['photos' => ['imports/abc.jpg']]);
@@ -24,7 +24,7 @@ it('streams an item photo with its content type', function () {
         ->assertHeader('Content-Type', 'image/jpeg');
 });
 
-it('streams an import photo', function () {
+it('streams an import photo', function (): void {
     Sanctum::actingAs(User::factory()->create());
     Storage::disk('local')->put('imports/abc.jpg', 'jpeg-bytes');
     $import = Import::factory()->create(['photos' => ['imports/abc.jpg']]);
@@ -34,7 +34,7 @@ it('streams an import photo', function () {
         ->assertHeader('Content-Type', 'image/jpeg');
 });
 
-it('answers 404 for a file of another record', function () {
+it('answers 404 for a file of another record', function (): void {
     Sanctum::actingAs(User::factory()->create());
     Storage::disk('local')->put('imports/abc.jpg', 'jpeg-bytes');
     Item::factory()->create(['photos' => ['imports/abc.jpg']]);
@@ -43,7 +43,7 @@ it('answers 404 for a file of another record', function () {
     $this->get("/api/v1/items/{$other->id}/photos/abc.jpg")->assertNotFound();
 });
 
-it('answers 404 for a path-like name', function () {
+it('answers 404 for a path-like name', function (): void {
     Sanctum::actingAs(User::factory()->create());
     Storage::disk('local')->put('imports/abc.jpg', 'jpeg-bytes');
     $item = Item::factory()->create(['photos' => ['imports/abc.jpg']]);
@@ -51,13 +51,13 @@ it('answers 404 for a path-like name', function () {
     $this->get("/api/v1/items/{$item->id}/photos/..%2Fabc.jpg")->assertNotFound();
 });
 
-it('requires a token', function () {
+it('requires a token', function (): void {
     $item = Item::factory()->create();
 
     $this->getJson("/api/v1/items/{$item->id}/photos/item.jpg")->assertUnauthorized();
 });
 
-it('lists photo urls in photo order', function () {
+it('lists photo urls in photo order', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/b.jpg', 'imports/a.png']]);
 
     expect(PhotoUrls::for('api.v1.items.photos.show', $item))->toBe([
@@ -66,21 +66,21 @@ it('lists photo urls in photo order', function () {
     ]);
 });
 
-it('answers 401 to an image request without a token', function () {
+it('answers 401 to an image request without a token', function (): void {
     $item = Item::factory()->create(['photos' => ['imports/abc.jpg']]);
 
     $this->get("/api/v1/items/{$item->id}/photos/abc.jpg", ['Accept' => 'image/*'])
         ->assertUnauthorized();
 });
 
-it('answers 404 when the file is missing on disk', function () {
+it('answers 404 when the file is missing on disk', function (): void {
     Sanctum::actingAs(User::factory()->create());
     $item = Item::factory()->create(['photos' => ['imports/gone.jpg']]);
 
     $this->get("/api/v1/items/{$item->id}/photos/gone.jpg")->assertNotFound();
 });
 
-it('streams a stored item thumbnail as webp', function () {
+it('streams a stored item thumbnail as webp', function (): void {
     Sanctum::actingAs(User::factory()->create());
     Storage::disk('local')->put('photos/2026/11/abc.jpg', jpeg(800, 600));
     (new Thumbnails)->generate('photos/2026/11/abc.jpg');
@@ -91,7 +91,7 @@ it('streams a stored item thumbnail as webp', function () {
         ->assertHeader('Content-Type', 'image/webp');
 });
 
-it('answers a missing import thumbnail with the placeholder and queues it', function () {
+it('answers a missing import thumbnail with the placeholder and queues it', function (): void {
     Queue::fake();
     Sanctum::actingAs(User::factory()->create());
     Storage::disk('local')->put('imports/abc.png', png(800, 600));
@@ -105,7 +105,7 @@ it('answers a missing import thumbnail with the placeholder and queues it', func
     Queue::assertPushedOn('thumbnails', GenerateThumbnail::class, fn (GenerateThumbnail $job): bool => $job->path === 'imports/abc.png');
 });
 
-it('finds a photo in a month folder', function () {
+it('finds a photo in a month folder', function (): void {
     Sanctum::actingAs(User::factory()->create());
     Storage::disk('local')->put('photos/2026/11/abc.jpg', jpeg(10, 10));
     $item = Item::factory()->create(['photos' => ['photos/2026/11/abc.jpg']]);
@@ -113,7 +113,7 @@ it('finds a photo in a month folder', function () {
     $this->get("/api/v1/items/{$item->id}/photos/abc.jpg")->assertOk();
 });
 
-it('answers 404 for a thumbnail of another record', function () {
+it('answers 404 for a thumbnail of another record', function (): void {
     Sanctum::actingAs(User::factory()->create());
     Storage::disk('local')->put('imports/abc.jpg', jpeg(10, 10));
     Item::factory()->create(['photos' => ['imports/abc.jpg']]);
@@ -122,7 +122,7 @@ it('answers 404 for a thumbnail of another record', function () {
     $this->get("/api/v1/items/{$other->id}/photos/abc.jpg/thumb")->assertNotFound();
 });
 
-it('requires a token for thumbnails', function () {
+it('requires a token for thumbnails', function (): void {
     $item = Item::factory()->create();
 
     $this->getJson("/api/v1/items/{$item->id}/photos/item.jpg/thumb")->assertUnauthorized();

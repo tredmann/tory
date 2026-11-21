@@ -49,7 +49,7 @@ dataset('failures', [
     'overloaded' => [503, [], null],
 ]);
 
-test('classifies vendor failures the same way for every vendor', function (int $status, array $body, ?ProviderFailureReason $expected) {
+test('classifies vendor failures the same way for every vendor', function (int $status, array $body, ?ProviderFailureReason $expected): void {
     foreach (AiVendor::cases() as $vendor) {
         Http::fake(['*' => Http::response($body, $status)]);
 
@@ -57,22 +57,22 @@ test('classifies vendor failures the same way for every vendor', function (int $
     }
 })->with('failures');
 
-test('a connection failure is unreachable', function () {
-    Http::fake(['*' => fn () => throw new ConnectionException('Connection refused')]);
+test('a connection failure is unreachable', function (): void {
+    Http::fake(['*' => fn (): never => throw new ConnectionException('Connection refused')]);
 
     expect(ProviderFailureReason::fromThrowable(failureFrom(AiVendor::Ollama)))->toBe(ProviderFailureReason::Unreachable);
 });
 
-test('DecryptException is an unreadable key', function () {
+test('DecryptException is an unreadable key', function (): void {
     expect(ProviderFailureReason::fromThrowable(new DecryptException('The payload is invalid.')))
         ->toBe(ProviderFailureReason::KeyUnreadable);
 });
 
-test('other exceptions are unclassified', function () {
+test('other exceptions are unclassified', function (): void {
     expect(ProviderFailureReason::fromThrowable(new RuntimeException('boom')))->toBeNull();
 });
 
-test('every reason names the provider in a fixed sentence', function (ProviderFailureReason $reason, string $sentence) {
+test('every reason names the provider in a fixed sentence', function (ProviderFailureReason $reason, string $sentence): void {
     expect($reason->message('Claude'))->toBe($sentence);
 })->with([
     [ProviderFailureReason::KeyRejected, 'Claude hat den API-Key abgelehnt.'],
@@ -82,7 +82,7 @@ test('every reason names the provider in a fixed sentence', function (ProviderFa
     [ProviderFailureReason::Unreachable, 'Claude ist nicht erreichbar.'],
 ]);
 
-test('ProviderFailure scrubs the key and drops the previous exception', function () {
+test('ProviderFailure scrubs the key and drops the previous exception', function (): void {
     $provider = AiProvider::factory()->create(['name' => 'Claude schnell', 'api_key' => 'sk-secret-3fa9']);
 
     $failure = ProviderFailure::from(new RuntimeException('bad key sk-secret-3fa9'), $provider);
@@ -93,7 +93,7 @@ test('ProviderFailure scrubs the key and drops the previous exception', function
         ->and($failure->reason)->toBeNull();
 });
 
-test('user message is the dimensions text, else the reason message', function () {
+test('user message is the dimensions text, else the reason message', function (): void {
     $provider = AiProvider::factory()->create(['name' => 'Claude']);
 
     $dimensions = ProviderFailure::from(new WrongEmbeddingDimensions(768), $provider);

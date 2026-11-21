@@ -44,7 +44,7 @@ function authorizeQuery(string $clientId, string $redirect): string
     ]);
 }
 
-test('the protected resource and authorization server are discoverable', function () {
+test('the protected resource and authorization server are discoverable', function (): void {
     getJson('/.well-known/oauth-protected-resource')
         ->assertOk()
         ->assertJsonStructure(['resource', 'authorization_servers']);
@@ -60,13 +60,13 @@ test('the protected resource and authorization server are discoverable', functio
         ->assertJsonPath('registration_endpoint', route('mcp.oauth.register'));
 });
 
-test('any client may register', function () {
+test('any client may register', function (): void {
     registerClient('Irgendwas', 'https://example.org/cb');
 
     expect(Client::query()->where('name', 'Irgendwas')->exists())->toBeTrue();
 });
 
-test('an unauthenticated mcp request is told how to log in', function () {
+test('an unauthenticated mcp request is told how to log in', function (): void {
     $response = postJson('/mcp', initializeMessage())
         ->assertUnauthorized()
         ->assertHeaderMissing('Location');
@@ -74,7 +74,7 @@ test('an unauthenticated mcp request is told how to log in', function () {
     expect($response->headers->get('WWW-Authenticate'))->toContain('oauth-protected-resource');
 });
 
-test('an unauthenticated mcp request is not redirected even without a json accept header', function () {
+test('an unauthenticated mcp request is not redirected even without a json accept header', function (): void {
     $response = $this->call('POST', '/mcp', content: json_encode(initializeMessage()), server: [
         'CONTENT_TYPE' => 'application/json',
         'HTTP_ACCEPT' => 'text/event-stream',
@@ -85,7 +85,7 @@ test('an unauthenticated mcp request is not redirected even without a json accep
     expect($response->headers->get('WWW-Authenticate'))->toContain('oauth-protected-resource');
 });
 
-test('a guest is sent to the tory login before authorizing', function () {
+test('a guest is sent to the tory login before authorizing', function (): void {
     $clientId = registerClient('Claude', 'https://claude.ai/api/mcp/auth_callback');
 
     get(authorizeQuery($clientId, 'https://claude.ai/api/mcp/auth_callback'))
@@ -93,7 +93,7 @@ test('a guest is sent to the tory login before authorizing', function () {
         ->assertSessionHas('url.intended', fn (string $intended): bool => str_starts_with($intended, url('/oauth/authorize?')));
 });
 
-test('the consent page names the requesting program', function () {
+test('the consent page names the requesting program', function (): void {
     $clientId = registerClient('Claude', 'https://claude.ai/api/mcp/auth_callback');
 
     actingAs(User::factory()->create())
@@ -106,7 +106,7 @@ test('the consent page names the requesting program', function () {
         ->assertSee('Ablehnen');
 });
 
-test('the consent page escapes the client name', function () {
+test('the consent page escapes the client name', function (): void {
     $clientId = registerClient('<script>alert(1)</script>', 'https://evil.example/cb');
 
     actingAs(User::factory()->create())
@@ -116,7 +116,7 @@ test('the consent page escapes the client name', function () {
         ->assertSeeHtml('&lt;script&gt;alert(1)&lt;/script&gt;');
 });
 
-test('a connected client can list the tools', function () {
+test('a connected client can list the tools', function (): void {
     $tokens = issueMcpTokens(User::factory()->create());
 
     expect($tokens['refresh_token'])->not->toBeEmpty();
@@ -127,7 +127,7 @@ test('a connected client can list the tools', function () {
         ->assertJsonStructure(['result' => ['tools']]);
 });
 
-test('an unverified user cannot use the server', function () {
+test('an unverified user cannot use the server', function (): void {
     $tokens = issueMcpTokens(User::factory()->unverified()->create());
 
     withToken($tokens['access_token'])
@@ -135,7 +135,7 @@ test('an unverified user cannot use the server', function () {
         ->assertForbidden();
 });
 
-test('client registration is throttled', function () {
+test('client registration is throttled', function (): void {
     foreach (range(1, 10) as $number) {
         postJson('/oauth/register', ['client_name' => "Client {$number}", 'redirect_uris' => ['https://example.org/cb']])->assertCreated();
     }
@@ -143,7 +143,7 @@ test('client registration is throttled', function () {
     postJson('/oauth/register', ['client_name' => 'Zu viel', 'redirect_uris' => ['https://example.org/cb']])->assertTooManyRequests();
 });
 
-test('a locked user is sent to the login instead of the consent page', function () {
+test('a locked user is sent to the login instead of the consent page', function (): void {
     $clientId = registerClient('Claude', 'https://claude.ai/api/mcp/auth_callback');
 
     actingAs(User::factory()->locked()->create())
@@ -153,7 +153,7 @@ test('a locked user is sent to the login instead of the consent page', function 
     $this->assertGuest();
 });
 
-test('mcp refuses a locked user', function () {
+test('mcp refuses a locked user', function (): void {
     $user = User::factory()->create();
     $tokens = issueMcpTokens($user);
     $user->lock();
@@ -162,7 +162,7 @@ test('mcp refuses a locked user', function () {
         ->assertForbidden();
 });
 
-test('mcp tells a locked English user in English', function () {
+test('mcp tells a locked English user in English', function (): void {
     $user = User::factory()->create(['locale' => Language::English]);
     $tokens = issueMcpTokens($user);
     $user->lock();

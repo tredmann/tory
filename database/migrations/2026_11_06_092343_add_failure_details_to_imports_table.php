@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('imports', function (Blueprint $table) {
+        Schema::table('imports', function (Blueprint $table): void {
             $table->string('failure_reason')->nullable();
             $table->string('failure_provider')->nullable();
         });
@@ -22,7 +22,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('imports', function (Blueprint $table) {
+        Schema::table('imports', function (Blueprint $table): void {
             $table->dropColumn(['failure_reason', 'failure_provider']);
         });
     }

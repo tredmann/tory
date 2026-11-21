@@ -6,6 +6,7 @@ use App\Ai\ProviderFailure;
 use App\Enums\AiVendor;
 use App\Enums\ProviderFailureReason;
 use Database\Factories\AiProviderFactory;
+use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -109,7 +110,7 @@ class AiProvider extends Model
 
         static::deleting(fn (self $provider): bool => ! static::query()
             ->whereKey($provider->getKey())
-            ->where(fn ($query) => $query->where('is_active', true)->orWhere('is_active_for_search', true))
+            ->where(fn (Builder $query) => $query->where('is_active', true)->orWhere('is_active_for_search', true))
             ->exists());
     }
 

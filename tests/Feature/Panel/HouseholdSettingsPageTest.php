@@ -13,7 +13,7 @@ use Livewire\Livewire;
 
 beforeEach(fn () => Filament::setCurrentPanel('admin'));
 
-test('an administrator finds the household page under Einstellungen', function () {
+test('an administrator finds the household page under Einstellungen', function (): void {
     $this->actingAs(User::factory()->admin()->create())->get('/')->assertOk();
 
     $settings = collect(Filament::getNavigation())
@@ -22,7 +22,7 @@ test('an administrator finds the household page under Einstellungen', function (
     expect(collect($settings->getItems())->map(fn (NavigationItem $item): string => $item->getLabel())->all())->toContain('Haushalt');
 });
 
-test('the page offers the content language, preset to Deutsch', function () {
+test('the page offers the content language, preset to Deutsch', function (): void {
     $this->actingAs(User::factory()->admin()->create());
 
     Livewire::test(HouseholdSettingsPage::class)
@@ -31,7 +31,7 @@ test('the page offers the content language, preset to Deutsch', function () {
         ->assertFormSet(['content_language' => 'de']);
 });
 
-test('a plain user gets 403 and no navigation entry', function () {
+test('a plain user gets 403 and no navigation entry', function (): void {
     $this->actingAs(User::factory()->create());
 
     $this->get('/household')->assertForbidden();
@@ -40,7 +40,7 @@ test('a plain user gets 403 and no navigation entry', function () {
     expect($labels->all())->not->toContain('Haushalt');
 });
 
-test('saving changes the content language and leaves items and the queue alone', function () {
+test('saving changes the content language and leaves items and the queue alone', function (): void {
     $item = Item::factory()->create(['title' => 'Gartenschlauch', 'description' => 'Grün.', 'search_terms' => ['Schlauch']]);
     Queue::fake();
     $this->actingAs(User::factory()->admin()->create());

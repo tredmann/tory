@@ -20,7 +20,7 @@ class SpotSelect
             ->getOptionLabelUsing(fn (mixed $value): ?string => Spot::query()->whereKey($value)->first()?->label)
             ->exists(Spot::class, 'id')
             ->createOptionForm(SpotForm::components())
-            ->createOptionUsing(fn (array $data): int => Spot::create($data)->getKey());
+            ->createOptionUsing(fn (array $data): int => Spot::query()->create($data)->getKey());
     }
 
     /**

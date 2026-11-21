@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Vite;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
     $this->actingAs(User::factory()->create());
@@ -90,7 +90,7 @@ function storePhotos(array $photos): void
     }
 }
 
-test('the imports list thumbnail opens all photos of its import from the first', function () {
+test('the imports list thumbnail opens all photos of its import from the first', function (): void {
     $photos = ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg'];
     storePhotos($photos);
 
@@ -105,7 +105,7 @@ test('the imports list thumbnail opens all photos of its import from the first',
     expect($images[0]['urls'][2])->toContain('c.jpg');
 });
 
-test('each view page thumbnail starts at its own photo', function (string $surface) {
+test('each view page thumbnail starts at its own photo', function (string $surface): void {
     $photos = ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg'];
     storePhotos($photos);
 
@@ -117,7 +117,7 @@ test('each view page thumbnail starts at its own photo', function (string $surfa
     expect($images[2]['urls'][0])->toEndWith('/photos/imports/a.jpg');
 })->with('view pages');
 
-test('a photo whose file is missing is left out and the positions match the rest', function () {
+test('a photo whose file is missing is left out and the positions match the rest', function (): void {
     $photos = ['imports/missing.jpg', 'imports/b.jpg', 'imports/c.jpg'];
     storePhotos(['imports/b.jpg', 'imports/c.jpg']);
 
@@ -128,7 +128,7 @@ test('a photo whose file is missing is left out and the positions match the rest
     expect($images[1]['urls'][1])->toContain('c.jpg');
 });
 
-test('a list tile skips a missing first photo', function (string $surface) {
+test('a list tile skips a missing first photo', function (string $surface): void {
     storePhotos(['imports/b.jpg']);
 
     $html = photoSurface($surface, ['imports/missing.jpg', 'imports/b.jpg'])->html();
@@ -140,13 +140,13 @@ test('a list tile skips a missing first photo', function (string $surface) {
     expect($images[0]['urls'])->toBe([PhotoLinks::original('imports/b.jpg')]);
 })->with('lists');
 
-test('thumbnails show the small variant', function (string $surface) {
+test('thumbnails show the small variant', function (string $surface): void {
     storePhotos(['imports/a.jpg']);
 
     expect(photoSurface($surface, ['imports/a.jpg'])->html())->toContain(PhotoLinks::thumbnail('imports/a.jpg'));
 })->with('all surfaces');
 
-test('a path with special characters stays a valid attribute', function (string $surface) {
+test('a path with special characters stays a valid attribute', function (string $surface): void {
     $photos = ['imports/a "b" & c.jpg'];
     storePhotos($photos);
 
@@ -156,11 +156,11 @@ test('a path with special characters stays a valid attribute', function (string 
     expect($images[0]['urls'])->toBeArray()->toHaveCount(1);
 })->with('all surfaces');
 
-test('a record without photos renders without slideshow data', function (string $surface) {
+test('a record without photos renders without slideshow data', function (string $surface): void {
     expect(slideshowImages(photoSurface($surface, [])->assertOk()->html()))->toBeEmpty();
 })->with('all surfaces');
 
-test('view page thumbnails are large and side by side', function (string $surface) {
+test('view page thumbnails are large and side by side', function (string $surface): void {
     storePhotos(['imports/a.jpg']);
 
     photoSurface($surface, ['imports/a.jpg'])
@@ -169,19 +169,19 @@ test('view page thumbnails are large and side by side', function (string $surfac
         ->assertDontSeeHtml('fi-stacked');
 })->with('view pages');
 
-test('import list thumbnails are large', function () {
+test('import list thumbnails are large', function (): void {
     storePhotos(['imports/a.jpg']);
 
     photoSurface('imports list', ['imports/a.jpg'])->assertSeeHtml('height: 80px');
 });
 
-test('item lists show their photo across the whole tile', function (string $surface) {
+test('item lists show their photo across the whole tile', function (string $surface): void {
     storePhotos(['imports/a.jpg']);
 
     photoSurface($surface, ['imports/a.jpg'])->assertSeeHtml('width: 100%');
 })->with(['items list', 'spot items list']);
 
-test('an item tile shows three photos that each open the slideshow at their own', function (string $surface) {
+test('an item tile shows three photos that each open the slideshow at their own', function (string $surface): void {
     $photos = ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg', 'imports/d.jpg', 'imports/e.jpg'];
     storePhotos($photos);
 
@@ -192,7 +192,7 @@ test('an item tile shows three photos that each open the slideshow at their own'
     expect($images[2]['urls'][2])->toContain('c.jpg');
 })->with(['items list', 'spot items list']);
 
-test('an item tile loads its further photos lazily', function () {
+test('an item tile loads its further photos lazily', function (): void {
     $photos = ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg'];
     storePhotos($photos);
 
@@ -206,13 +206,13 @@ test('an item tile loads its further photos lazily', function () {
     expect($images->item(2)->getAttribute('loading'))->toBe('lazy');
 });
 
-test('an item tile with one photo is no gallery', function () {
+test('an item tile with one photo is no gallery', function (): void {
     storePhotos(['imports/a.jpg']);
 
     photoSurface('items list', ['imports/a.jpg'])->assertDontSeeHtml('tory-gallery');
 });
 
-test('list rows still link to the detail page', function () {
+test('list rows still link to the detail page', function (): void {
     $item = Item::factory()->create();
     $import = Import::factory()->create();
     $spot = Spot::factory()->create();
@@ -224,7 +224,7 @@ test('list rows still link to the detail page', function () {
         ->assertSeeHtml(ItemResource::getUrl('view', ['record' => $itemOnSpot]));
 });
 
-test('the import view page keeps the slideshow data on a re-render', function () {
+test('the import view page keeps the slideshow data on a re-render', function (): void {
     storePhotos(['imports/a.jpg']);
     $import = Import::factory()->running()->create(['photos' => ['imports/a.jpg']]);
 
@@ -233,7 +233,7 @@ test('the import view page keeps the slideshow data on a re-render', function ()
     expect(slideshowImages($page->html()))->toHaveCount(1);
 });
 
-test('the panel loads the slideshow script', function () {
+test('the panel loads the slideshow script', function (): void {
     $hotFile = tempnam(sys_get_temp_dir(), 'hot');
     file_put_contents($hotFile, 'http://vite.test');
 
@@ -245,7 +245,7 @@ test('the panel loads the slideshow script', function () {
     unlink($hotFile);
 });
 
-test('a view page checks each photo file only once', function () {
+test('a view page checks each photo file only once', function (): void {
     $photos = ['imports/a.jpg', 'imports/b.jpg', 'imports/c.jpg'];
     storePhotos($photos);
     $record = Item::factory()->create(['photos' => $photos])->getKey();

@@ -5,7 +5,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 
-it('login returns a token named after the device', function () {
+it('login returns a token named after the device', function (): void {
     $user = User::factory()->create(['password' => 'secret-pass']);
 
     $response = $this->postJson('/api/v1/login', [
@@ -19,7 +19,7 @@ it('login returns a token named after the device', function () {
     expect($user->tokens()->sole()->name)->toBe('iPhone');
 });
 
-it('login rejects wrong credentials', function () {
+it('login rejects wrong credentials', function (): void {
     $user = User::factory()->create();
 
     $this->postJson('/api/v1/login', [
@@ -32,7 +32,7 @@ it('login rejects wrong credentials', function () {
     expect(DB::table('personal_access_tokens')->count())->toBe(0);
 });
 
-it('login refuses an unverified user', function () {
+it('login refuses an unverified user', function (): void {
     $user = User::factory()->unverified()->create(['password' => 'secret-pass']);
 
     $this->postJson('/api/v1/login', [
@@ -45,7 +45,7 @@ it('login refuses an unverified user', function () {
     expect(DB::table('personal_access_tokens')->count())->toBe(0);
 });
 
-it('login is rate limited', function () {
+it('login is rate limited', function (): void {
     $user = User::factory()->create();
     $payload = ['email' => $user->email, 'password' => 'wrong', 'device_name' => 'iPhone'];
 
@@ -56,7 +56,7 @@ it('login is rate limited', function () {
     $this->postJson('/api/v1/login', $payload)->assertTooManyRequests();
 });
 
-it('login requires a device name', function () {
+it('login requires a device name', function (): void {
     $user = User::factory()->create(['password' => 'secret-pass']);
 
     $this->postJson('/api/v1/login', [
@@ -65,7 +65,7 @@ it('login requires a device name', function () {
     ])->assertUnprocessable()->assertJsonValidationErrors(['device_name']);
 });
 
-it('logout revokes only the current token', function () {
+it('logout revokes only the current token', function (): void {
     $user = User::factory()->create();
     $first = $user->createToken('one')->plainTextToken;
     $user->createToken('two');
@@ -75,7 +75,7 @@ it('logout revokes only the current token', function () {
     expect($user->tokens()->pluck('name')->all())->toBe(['two']);
 });
 
-it('user returns the current user with the last spot code', function () {
+it('user returns the current user with the last spot code', function (): void {
     $spot = Spot::factory()->create();
     $user = User::factory()->create(['last_spot_id' => $spot->id]);
     Sanctum::actingAs($user);
@@ -86,11 +86,11 @@ it('user returns the current user with the last spot code', function () {
         ->assertJsonMissingPath('data.last_spot_id');
 });
 
-it('requests without a token are unauthorized', function () {
+it('requests without a token are unauthorized', function (): void {
     $this->getJson('/api/v1/user')->assertUnauthorized();
 });
 
-it('an unverified user with a token is forbidden', function () {
+it('an unverified user with a token is forbidden', function (): void {
     Sanctum::actingAs(User::factory()->unverified()->create());
 
     $this->getJson('/api/v1/user')
@@ -98,11 +98,11 @@ it('an unverified user with a token is forbidden', function () {
         ->assertJson(['message' => 'Bitte bestätige zuerst deine E-Mail-Adresse.']);
 });
 
-it('answers 401 as JSON without an Accept header', function () {
+it('answers 401 as JSON without an Accept header', function (): void {
     $this->get('/api/v1/user')->assertUnauthorized();
 });
 
-it('answers 403 as JSON to an unverified token holder without an Accept header', function () {
+it('answers 403 as JSON to an unverified token holder without an Accept header', function (): void {
     Sanctum::actingAs(User::factory()->unverified()->create());
 
     $this->get('/api/v1/user')
@@ -110,7 +110,7 @@ it('answers 403 as JSON to an unverified token holder without an Accept header',
         ->assertJson(['message' => 'Bitte bestätige zuerst deine E-Mail-Adresse.']);
 });
 
-test('a locked user gets no token', function () {
+test('a locked user gets no token', function (): void {
     $user = User::factory()->locked()->create();
 
     $this->postJson('/api/v1/login', ['email' => $user->email, 'password' => 'password', 'device_name' => 'iPhone'])
@@ -118,7 +118,7 @@ test('a locked user gets no token', function () {
         ->assertJsonPath('message', 'Dieses Konto ist gesperrt.');
 });
 
-test('a token stops working while its user is locked and works again after unlocking', function () {
+test('a token stops working while its user is locked and works again after unlocking', function (): void {
     $user = User::factory()->create();
     $token = $user->createToken('iPhone')->plainTextToken;
 

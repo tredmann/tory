@@ -8,13 +8,13 @@ use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 
-test('a new spot gets a four character code without ambiguous characters', function () {
-    $spot = Spot::create(['name' => 'Elektronik-Kiste', 'location_id' => Location::factory()->create()->id]);
+test('a new spot gets a four character code without ambiguous characters', function (): void {
+    $spot = Spot::query()->create(['name' => 'Elektronik-Kiste', 'location_id' => Location::factory()->create()->id]);
 
     expect($spot->code)->toMatch('/^[2-9A-HJ-NP-Z]{4}$/');
 });
 
-test('the code cannot be changed', function () {
+test('the code cannot be changed', function (): void {
     $spot = Spot::factory()->create(['code' => '7KQ3']);
 
     $spot->update(['code' => 'AAAA', 'name' => 'Schrank']);
@@ -22,25 +22,25 @@ test('the code cannot be changed', function () {
     expect($spot->fresh())->code->toBe('7KQ3')->name->toBe('Schrank');
 });
 
-test('two spots cannot share a code', function () {
+test('two spots cannot share a code', function (): void {
     Spot::factory()->create(['code' => '7KQ3']);
 
     expect(fn () => Spot::factory()->create(['code' => '7KQ3']))->toThrow(UniqueConstraintViolationException::class);
 });
 
-test('the label shows code and name', function () {
+test('the label shows code and name', function (): void {
     $spot = Spot::factory()->create(['name' => 'Elektronik-Kiste']);
 
     expect($spot->label)->toBe("{$spot->code} · Elektronik-Kiste");
 });
 
-test('a spot holding items cannot be deleted', function () {
+test('a spot holding items cannot be deleted', function (): void {
     $item = Item::factory()->create();
 
     expect(fn () => $item->spot->delete())->toThrow(QueryException::class);
 });
 
-test('deleting a spot clears it from imports and users', function () {
+test('deleting a spot clears it from imports and users', function (): void {
     $spot = Spot::factory()->create();
     $import = Import::factory()->create(['spot_id' => $spot->id]);
     $user = User::factory()->create();
@@ -52,7 +52,7 @@ test('deleting a spot clears it from imports and users', function () {
         ->and($user->fresh()->last_spot_id)->toBeNull();
 });
 
-test('a spot exposes its items and imports', function () {
+test('a spot exposes its items and imports', function (): void {
     $spot = Spot::factory()->create();
     $item = Item::factory()->create(['spot_id' => $spot->id]);
     $import = Import::factory()->create(['spot_id' => $spot->id]);
@@ -61,7 +61,7 @@ test('a spot exposes its items and imports', function () {
         ->and($spot->imports->modelKeys())->toBe([$import->id]);
 });
 
-test('the full label names the location', function () {
+test('the full label names the location', function (): void {
     $spot = Spot::factory()->create([
         'name' => 'Regal',
         'location_id' => Location::factory()->create(['name' => 'Keller'])->id,
@@ -70,11 +70,11 @@ test('the full label names the location', function () {
     expect($spot->full_label)->toBe("Keller → {$spot->code} · Regal");
 });
 
-test('normalizeCode accepts any case', function () {
+test('normalizeCode accepts any case', function (): void {
     expect(Spot::normalizeCode('k7xm'))->toBe('K7XM');
 });
 
-test('normalizeCode rejects look-alikes and wrong length', function () {
+test('normalizeCode rejects look-alikes and wrong length', function (): void {
     expect(Spot::normalizeCode('K7X0'))->toBeNull()
         ->and(Spot::normalizeCode('K7XMM'))->toBeNull()
         ->and(Spot::normalizeCode('K7X'))->toBeNull();

@@ -28,7 +28,7 @@ class Location extends Model
     /**
      * Locations whose name equals the given one, ignoring case and surrounding spaces.
      *
-     * @param  Builder<Location>  $query
+     * @param  Builder<static>  $query
      */
     #[Scope]
     protected function named(Builder $query, string $name): void

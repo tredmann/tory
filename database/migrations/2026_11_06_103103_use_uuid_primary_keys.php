@@ -18,11 +18,11 @@ return new class extends Migration
     {
         DB::table('sessions')->delete();
 
-        Schema::table('sessions', function (Blueprint $table) {
+        Schema::table('sessions', function (Blueprint $table): void {
             $table->dropColumn('user_id');
         });
 
-        Schema::table('sessions', function (Blueprint $table) {
+        Schema::table('sessions', function (Blueprint $table): void {
             $table->uuid('user_id')->nullable()->index();
         });
 
@@ -43,7 +43,7 @@ return new class extends Migration
             DB::statement("ALTER TABLE {$tableName} ADD PRIMARY KEY (id)");
         }
 
-        Schema::table('imports', function (Blueprint $table) {
+        Schema::table('imports', function (Blueprint $table): void {
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
 
@@ -60,11 +60,11 @@ return new class extends Migration
     {
         DB::table('sessions')->delete();
 
-        Schema::table('sessions', function (Blueprint $table) {
+        Schema::table('sessions', function (Blueprint $table): void {
             $table->dropColumn('user_id');
         });
 
-        Schema::table('sessions', function (Blueprint $table) {
+        Schema::table('sessions', function (Blueprint $table): void {
             $table->foreignId('user_id')->nullable()->index();
         });
 
@@ -84,7 +84,7 @@ return new class extends Migration
             DB::statement("ALTER TABLE {$tableName} ADD PRIMARY KEY (id)");
         }
 
-        Schema::table('imports', function (Blueprint $table) {
+        Schema::table('imports', function (Blueprint $table): void {
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
 

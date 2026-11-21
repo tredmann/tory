@@ -22,19 +22,19 @@ function userWithLocale(Language $language): User
 
 beforeEach(fn () => Filament::setCurrentPanel('admin'));
 
-test('a German user is offered English in the user menu', function () {
+test('a German user is offered English in the user menu', function (): void {
     $this->actingAs(userWithLocale(Language::German));
 
     Livewire::test(Topbar::class)->assertSee('English')->assertDontSee('Deutsch');
 });
 
-test('an English user is offered German in the user menu', function () {
+test('an English user is offered German in the user menu', function (): void {
     $this->actingAs(userWithLocale(Language::English));
 
     Livewire::test(Topbar::class)->assertSee('Deutsch')->assertDontSee('English');
 });
 
-test('the language action saves the other language on the user', function (Language $from, Language $to) {
+test('the language action saves the other language on the user', function (Language $from, Language $to): void {
     $user = userWithLocale($from);
     $this->actingAs($user);
 
@@ -46,7 +46,7 @@ test('the language action saves the other language on the user', function (Langu
     'English to German' => [Language::English, Language::German],
 ]);
 
-test('table dates follow the interface language', function (Language $language, string $expected, string $unexpected) {
+test('table dates follow the interface language', function (Language $language, string $expected, string $unexpected): void {
     $this->actingAs(userWithLocale($language));
     Import::factory()->completed()->create(['created_at' => '2026-11-05 14:30:00']);
 

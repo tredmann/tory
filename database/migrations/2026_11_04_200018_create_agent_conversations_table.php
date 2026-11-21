@@ -14,7 +14,7 @@ return new class extends AiMigration
         $conversationsTable = config('ai.conversations.tables.conversations', 'agent_conversations');
         $messagesTable = config('ai.conversations.tables.messages', 'agent_conversation_messages');
 
-        Schema::create($conversationsTable, function (Blueprint $table) {
+        Schema::create($conversationsTable, function (Blueprint $table): void {
             $table->string('id', 36)->primary();
             $table->string('participant_type')->nullable();
             $table->unsignedBigInteger('participant_id')->nullable();
@@ -24,7 +24,7 @@ return new class extends AiMigration
             $table->index(['participant_type', 'participant_id', 'updated_at'], 'participant_updated_at_index');
         });
 
-        Schema::create($messagesTable, function (Blueprint $table) {
+        Schema::create($messagesTable, function (Blueprint $table): void {
             $table->string('id', 36)->primary();
             $table->string('conversation_id', 36)->index();
             $table->string('participant_type')->nullable();

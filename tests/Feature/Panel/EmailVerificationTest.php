@@ -2,13 +2,13 @@
 
 use App\Models\User;
 
-test('unverified users are sent to the verification prompt', function () {
+test('unverified users are sent to the verification prompt', function (): void {
     $user = User::factory()->unverified()->create();
 
     $this->actingAs($user)->get('/')->assertRedirect('/email-verification/prompt');
 });
 
-test('verified users see the dashboard at the root', function () {
+test('verified users see the dashboard at the root', function (): void {
     $user = User::factory()->create();
 
     $this->actingAs($user)->get('/')->assertOk()->assertSee($user->name);

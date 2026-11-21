@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('storage_locations', function (Blueprint $table) {
+        Schema::create('storage_locations', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->text('note')->nullable();

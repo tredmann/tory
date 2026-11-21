@@ -8,23 +8,23 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
 });
 
-test('an item cannot exist without a spot', function () {
+test('an item cannot exist without a spot', function (): void {
     expect(fn () => Item::factory()->create(['spot_id' => null]))->toThrow(QueryException::class);
 });
 
-test('an item belongs to a spot and casts its photos', function () {
+test('an item belongs to a spot and casts its photos', function (): void {
     $item = Item::factory()->create();
 
     expect($item->fresh()->spot)->toBeInstanceOf(Spot::class)
         ->and($item->fresh()->photos)->toBe(['imports/item.jpg']);
 });
 
-test('the embedding round-trips as 1024 floats and stays out of the array form', function () {
+test('the embedding round-trips as 1024 floats and stays out of the array form', function (): void {
     $item = Item::factory()->create();
     $item->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->save();
 
@@ -32,7 +32,7 @@ test('the embedding round-trips as 1024 floats and stays out of the array form',
         ->and($item->fresh()->toArray())->not->toHaveKey('embedding');
 });
 
-test('deleting an item deletes its photo files', function () {
+test('deleting an item deletes its photo files', function (): void {
     Storage::disk('local')->put('imports/x.jpg', 'x');
     $item = Item::factory()->create(['photos' => ['imports/x.jpg']]);
 
@@ -41,14 +41,14 @@ test('deleting an item deletes its photo files', function () {
     Storage::disk('local')->assertMissing('imports/x.jpg');
 });
 
-test('deleting an item quietly keeps its photo files', function () {
+test('deleting an item quietly keeps its photo files', function (): void {
     Storage::disk('local')->put('imports/x.jpg', 'x');
     Item::factory()->create(['photos' => ['imports/x.jpg']])->deleteQuietly();
 
     Storage::disk('local')->assertExists('imports/x.jpg');
 });
 
-test('deleting an item deletes the thumbnails with the photos', function () {
+test('deleting an item deletes the thumbnails with the photos', function (): void {
     Storage::disk('local')->put('imports/x.jpg', 'x');
     Storage::disk('local')->put(PhotoStore::thumbnailPath('imports/x.jpg'), 'thumb');
     $item = Item::factory()->create(['photos' => ['imports/x.jpg']]);
@@ -59,7 +59,7 @@ test('deleting an item deletes the thumbnails with the photos', function () {
     Storage::disk('local')->assertMissing(PhotoStore::thumbnailPath('imports/x.jpg'));
 });
 
-test('changing the note does not recompute the embedding', function () {
+test('changing the note does not recompute the embedding', function (): void {
     $item = Item::factory()->create();
     Queue::fake();
 

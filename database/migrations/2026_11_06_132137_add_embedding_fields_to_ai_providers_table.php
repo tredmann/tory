@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('ai_providers', function (Blueprint $table) {
+        Schema::table('ai_providers', function (Blueprint $table): void {
             $table->string('model')->nullable()->change();
             $table->string('embedding_model')->nullable();
             $table->float('search_min_similarity')->nullable();
@@ -30,7 +30,7 @@ return new class extends Migration
     {
         DB::statement('DROP INDEX IF EXISTS ai_providers_one_search_active');
 
-        Schema::table('ai_providers', function (Blueprint $table) {
+        Schema::table('ai_providers', function (Blueprint $table): void {
             $table->dropColumn(['embedding_model', 'search_min_similarity', 'is_active_for_search', 'search_failure']);
         });
     }

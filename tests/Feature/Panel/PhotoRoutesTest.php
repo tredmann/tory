@@ -7,13 +7,13 @@ use App\Photos\Thumbnails;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Queue::fake();
     $this->actingAs(User::factory()->create());
 });
 
-it('serves an original with immutable caching', function () {
+it('serves an original with immutable caching', function (): void {
     Storage::disk('local')->put('photos/2026/11/a.jpg', jpeg(20, 10));
 
     $response = $this->get('/photos/2026/11/a.jpg');
@@ -24,13 +24,13 @@ it('serves an original with immutable caching', function () {
         ->and($response->headers->hasCacheControlDirective('private'))->toBeTrue();
 });
 
-it('serves an old photo', function () {
+it('serves an old photo', function (): void {
     Storage::disk('local')->put('imports/a.jpg', jpeg(20, 10));
 
     $this->get('/photos/imports/a.jpg')->assertOk()->assertHeader('Content-Type', 'image/jpeg');
 });
 
-it('serves a stored webp thumbnail', function () {
+it('serves a stored webp thumbnail', function (): void {
     Storage::disk('local')->put('photos/2026/11/a.jpg', jpeg(800, 600));
     (new Thumbnails)->generate('photos/2026/11/a.jpg');
 
@@ -41,7 +41,7 @@ it('serves a stored webp thumbnail', function () {
     Queue::assertNothingPushed();
 });
 
-it('answers a missing thumbnail with the placeholder and queues it', function () {
+it('answers a missing thumbnail with the placeholder and queues it', function (): void {
     Storage::disk('local')->put('photos/2026/11/a.jpg', jpeg(800, 600));
 
     $response = $this->get('/photos/thumb/2026/11/a.jpg');
@@ -54,7 +54,7 @@ it('answers a missing thumbnail with the placeholder and queues it', function ()
     Storage::disk('local')->assertMissing('thumbs/photos/2026/11/a.jpg.webp');
 });
 
-it('answers the placeholder for a corrupt photo, not the original', function () {
+it('answers the placeholder for a corrupt photo, not the original', function (): void {
     Storage::disk('local')->put('imports/broken.jpg', 'not an image');
 
     $response = $this->get('/photos/thumb/imports/broken.jpg');
@@ -62,7 +62,7 @@ it('answers the placeholder for a corrupt photo, not the original', function () 
     expect($response->getFile()->getPathname())->toBe(resource_path('images/thumbnail-placeholder.png'));
 });
 
-it('answers 404 outside the photo folders', function (string $url) {
+it('answers 404 outside the photo folders', function (string $url): void {
     Storage::disk('local')->put('evals/x.json', '{}');
     Storage::disk('local')->put('livewire-tmp/x.jpg', jpeg(20, 10));
 
@@ -84,20 +84,20 @@ it('answers 404 outside the photo folders', function (string $url) {
     'trailing newline' => '/photos/imports/a.jpg%0A',
 ]);
 
-it('sends guests to the login', function () {
+it('sends guests to the login', function (): void {
     auth()->logout();
 
     $this->get('/photos/imports/a.jpg')->assertRedirect('/login');
 });
 
-it('sends unverified users to the verification prompt', function () {
+it('sends unverified users to the verification prompt', function (): void {
     auth()->logout();
     $this->actingAs(User::factory()->unverified()->create());
 
     $this->get('/photos/imports/a.jpg')->assertRedirect('/email-verification/prompt');
 });
 
-it('builds links to both routes', function () {
+it('builds links to both routes', function (): void {
     Storage::disk('local')->put('imports/b.jpg', jpeg(20, 10));
 
     expect(PhotoLinks::original('photos/2026/11/a.jpg'))->toEndWith('/photos/2026/11/a.jpg')

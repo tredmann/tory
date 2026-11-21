@@ -3,15 +3,15 @@
 use App\BulkImports\BoundaryWindow;
 use App\BulkImports\BoundaryWindows;
 
-test('fewer than two photos need no window', function (int $count) {
+test('fewer than two photos need no window', function (int $count): void {
     expect(BoundaryWindows::for($count))->toBe([]);
 })->with([0, 1]);
 
-test('up to eight photos fit one window deciding every pair', function () {
+test('up to eight photos fit one window deciding every pair', function (): void {
     expect(BoundaryWindows::for(8))->toEqual([new BoundaryWindow(0, 7, 0, 6)]);
 });
 
-test('every pair is decided by exactly one window', function () {
+test('every pair is decided by exactly one window', function (): void {
     foreach (range(2, 100) as $count) {
         $decided = [];
 
@@ -26,7 +26,7 @@ test('every pair is decided by exactly one window', function () {
     }
 });
 
-test('no window holds more than eight photos', function () {
+test('no window holds more than eight photos', function (): void {
     foreach (range(2, 100) as $count) {
         foreach (BoundaryWindows::for($count) as $window) {
             expect($window->lastPhoto - $window->firstPhoto + 1)->toBeLessThanOrEqual(BoundaryWindows::SIZE);
@@ -34,6 +34,6 @@ test('no window holds more than eight photos', function () {
     }
 });
 
-test('a hundred photos need at most twenty windows', function () {
+test('a hundred photos need at most twenty windows', function (): void {
     expect(count(BoundaryWindows::for(100)))->toBeLessThanOrEqual(20);
 });

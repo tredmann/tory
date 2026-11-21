@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Storage::fake('local');
     Storage::disk('local')->put('imports/a.jpg', base64_decode('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q=='));
     $this->makeRecord = fn (string $kind) => $kind === 'item'
@@ -24,13 +24,13 @@ beforeEach(function () {
         : Import::factory()->completed()->create(['title' => 'Alt', 'description' => 'Alte Beschreibung', 'search_terms' => ['alt'], 'photos' => ['imports/a.jpg'], 'regenerating_at' => now()]);
 });
 
-test('declares one attempt and a 200 second timeout', function () {
+test('declares one attempt and a 200 second timeout', function (): void {
     $job = new RegenerateTexts(Item::factory()->create());
 
     expect($job->tries)->toBe(1)->and($job->timeout)->toBe(200)->and($job->deleteWhenMissingModels)->toBeTrue();
 });
 
-test('replaces title, description and terms and clears the running state', function (string $kind) {
+test('replaces title, description and terms and clears the running state', function (string $kind): void {
     Queue::fake();
     InventoryExtractor::fake([['title' => 'Neu', 'description' => 'Neue Beschreibung', 'search_terms' => ['neu', 'frisch']]]);
     $record = ($this->makeRecord)($kind);
@@ -50,7 +50,7 @@ test('replaces title, description and terms and clears the running state', funct
     }
 })->with(['item', 'import']);
 
-test('a changed item text dispatches EmbedItem', function () {
+test('a changed item text dispatches EmbedItem', function (): void {
     Queue::fake();
     InventoryExtractor::fake([['title' => 'Neu', 'description' => 'D', 'search_terms' => []]]);
     $item = ($this->makeRecord)('item');
@@ -61,9 +61,9 @@ test('a changed item text dispatches EmbedItem', function () {
     Queue::assertPushed(EmbedItem::class);
 });
 
-test('keeps the old texts when the extractor fails', function (string $kind) {
+test('keeps the old texts when the extractor fails', function (string $kind): void {
     Exceptions::fake();
-    InventoryExtractor::fake(fn () => throw new RuntimeException('Connection refused'));
+    InventoryExtractor::fake(fn (): never => throw new RuntimeException('Connection refused'));
     $record = ($this->makeRecord)($kind);
     $job = new RegenerateTexts($record);
 
@@ -78,7 +78,7 @@ test('keeps the old texts when the extractor fails', function (string $kind) {
         ->regeneration_error->toBe('Connection refused');
 })->with(['item', 'import']);
 
-test('keeps the old texts when a photo is missing', function () {
+test('keeps the old texts when a photo is missing', function (): void {
     Exceptions::fake();
     InventoryExtractor::fake();
     $item = ($this->makeRecord)('item');
@@ -92,7 +92,7 @@ test('keeps the old texts when a photo is missing', function () {
     expect($item->fresh())->title->toBe('Alt')->regenerating_at->toBeNull()->regeneration_error->not->toBeNull();
 });
 
-test('stores the failure reason and provider for an active provider', function () {
+test('stores the failure reason and provider for an active provider', function (): void {
     Exceptions::fake();
     Http::fake(['*' => Http::response([], 401)]);
     AiProvider::factory()->active()->create(['name' => 'Claude schnell']);
@@ -113,7 +113,7 @@ test('stores the failure reason and provider for an active provider', function (
         ->regeneration_failure_provider->toBe('Claude schnell');
 });
 
-test('failed without an exception clears the running state', function () {
+test('failed without an exception clears the running state', function (): void {
     $item = ($this->makeRecord)('item');
 
     new RegenerateTexts($item)->failed(null);
@@ -121,10 +121,10 @@ test('failed without an exception clears the running state', function () {
     expect($item->fresh())->regenerating_at->toBeNull()->regeneration_error->toBe('Der Auftrag wurde abgebrochen.');
 });
 
-test('a record deleted during the run ends quietly', function () {
+test('a record deleted during the run ends quietly', function (): void {
     Queue::fake();
     $item = ($this->makeRecord)('item');
-    InventoryExtractor::fake(function () use ($item) {
+    InventoryExtractor::fake(function () use ($item): array {
         Item::query()->whereKey($item->getKey())->delete();
 
         return ['title' => 'Neu', 'description' => 'D', 'search_terms' => []];
@@ -132,19 +132,19 @@ test('a record deleted during the run ends quietly', function () {
 
     new RegenerateTexts($item)->handle();
 
-    expect(Item::count())->toBe(0);
+    expect(Item::query()->count())->toBe(0);
 });
 
-test('failed on a deleted record does nothing', function () {
+test('failed on a deleted record does nothing', function (): void {
     $item = ($this->makeRecord)('item');
     Item::query()->whereKey($item->getKey())->delete();
 
     new RegenerateTexts($item)->failed(new RuntimeException('x'));
 
-    expect(Item::count())->toBe(0);
+    expect(Item::query()->count())->toBe(0);
 });
 
-test('keeps the note of an item', function () {
+test('keeps the note of an item', function (): void {
     Queue::fake();
     InventoryExtractor::fake([['title' => 'Neu', 'description' => 'D', 'search_terms' => []]]);
     $item = ($this->makeRecord)('item');
@@ -155,12 +155,12 @@ test('keeps the note of an item', function () {
     expect($item->fresh())->title->toBe('Neu')->notes->toBe('Dongle fehlt');
 });
 
-test('regenerates the texts in the household content language', function () {
+test('regenerates the texts in the household content language', function (): void {
     Queue::fake();
     HouseholdSettings::current()->changeContentLanguage(Language::English);
     InventoryExtractor::fake([['title' => 'Stapler', 'description' => 'A red stapler.']]);
 
     new RegenerateTexts(($this->makeRecord)('item'))->handle();
 
-    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->agent->language === Language::English);
+    InventoryExtractor::assertPrompted(fn ($prompt): bool => $prompt->agent->language === Language::English);
 });

@@ -2,7 +2,7 @@
 
 use App\Models\User;
 
-test('the panel shows the tory logo in light and dark mode', function () {
+test('the panel shows the tory logo in light and dark mode', function (): void {
     $this->actingAs(User::factory()->create())
         ->get('/')
         ->assertOk()
@@ -11,7 +11,7 @@ test('the panel shows the tory logo in light and dark mode', function () {
         ->assertSee('fi-logo-dark', escape: false);
 });
 
-test('the login page uses the tory mark as favicon', function () {
+test('the login page uses the tory mark as favicon', function (): void {
     User::factory()->create();
 
     $this->get('/login')

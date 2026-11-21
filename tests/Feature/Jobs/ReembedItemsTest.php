@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Queue;
 use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Queue::fake();
     Exceptions::fake();
 });
@@ -36,7 +36,7 @@ function rejectedKey(): RequestException
     return new RequestException(new Response(new PsrResponse(401, [], '{}')));
 }
 
-test('it embeds every item without an embedding and leaves others alone', function () {
+test('it embeds every item without an embedding and leaves others alone', function (): void {
     $missing = Item::factory()->create();
     $present = Item::factory()->create();
     storeVector($present);
@@ -47,17 +47,17 @@ test('it embeds every item without an embedding and leaves others alone', functi
         ->and($present->fresh()->embedding)->toBe(array_fill(0, 1024, 0.5));
 });
 
-test('it respects the queue timing invariant', function () {
+test('it respects the queue timing invariant', function (): void {
     $job = new ReembedItems;
 
     expect($job->tries)->toBe(1)->and($job->timeout)->toBe(200)
         ->and(ReembedItems::BUDGET_SECONDS + EmbedItem::CLIENT_TIMEOUT)->toBeLessThan($job->timeout);
 });
 
-test('it passes the client timeout to the provider', function () {
+test('it passes the client timeout to the provider', function (): void {
     Item::factory()->create();
     $timeouts = [];
-    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$timeouts) {
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$timeouts): array {
         $timeouts[] = $prompt->timeout;
 
         return [Embeddings::fakeEmbedding(1024)];
@@ -68,11 +68,11 @@ test('it passes the client timeout to the provider', function () {
     expect($timeouts)->toBe([EmbedItem::CLIENT_TIMEOUT]);
 });
 
-test('it stops after three failures in a row and stores the reason', function () {
+test('it stops after three failures in a row and stores the reason', function (): void {
     $provider = AiProvider::factory()->activeForSearch()->create(['name' => 'OpenAI']);
     Item::factory()->count(5)->create();
     $calls = 0;
-    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$calls) {
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$calls): void {
         $calls++;
 
         throw rejectedKey();
@@ -84,10 +84,10 @@ test('it stops after three failures in a row and stores the reason', function ()
         ->and($provider->fresh()->searchFailureMessage())->toContain('OpenAI hat den API-Key abgelehnt.');
 });
 
-test('it does not store a key in the failure', function () {
+test('it does not store a key in the failure', function (): void {
     $provider = AiProvider::factory()->activeForSearch()->create();
     Item::factory()->create();
-    Embeddings::fake(fn () => throw new RuntimeException('boom sk-secret-9999'));
+    Embeddings::fake(fn (): never => throw new RuntimeException('boom sk-secret-9999'));
 
     runReembed();
 
@@ -95,7 +95,7 @@ test('it does not store a key in the failure', function () {
         ->toBe('Das Embedding ist fehlgeschlagen. Bitte Modell und Zugangsdaten prüfen.');
 });
 
-test('a run without failures clears the stored failure', function () {
+test('a run without failures clears the stored failure', function (): void {
     $provider = AiProvider::factory()->activeForSearch()->create();
     DB::table('ai_providers')->where('id', $provider->getKey())->update(['search_failure' => 'alt']);
     Item::factory()->create();
@@ -105,10 +105,10 @@ test('a run without failures clears the stored failure', function () {
     expect($provider->fresh()->search_failure)->toBeNull();
 });
 
-test('it stores nothing for a provider that is no longer active for search', function () {
+test('it stores nothing for a provider that is no longer active for search', function (): void {
     $provider = AiProvider::factory()->activeForSearch()->create();
     Item::factory()->create();
-    Embeddings::fake(function () use ($provider) {
+    Embeddings::fake(function () use ($provider): void {
         $provider->forceFill(['is_active_for_search' => false])->saveQuietly();
 
         throw new RuntimeException('down');
@@ -119,10 +119,10 @@ test('it stores nothing for a provider that is no longer active for search', fun
     expect($provider->fresh()->search_failure)->toBeNull();
 });
 
-test('it dispatches itself with a cursor when the budget runs out', function () {
+test('it dispatches itself with a cursor when the budget runs out', function (): void {
     $first = Item::factory()->create();
     Item::factory()->count(2)->create();
-    Embeddings::fake(function () {
+    Embeddings::fake(function (): array {
         $this->travel(151)->seconds();
 
         return [Embeddings::fakeEmbedding(1024)];
@@ -130,11 +130,11 @@ test('it dispatches itself with a cursor when the budget runs out', function () 
 
     runReembed();
 
-    expect(Item::whereNotNull('embedding')->count())->toBe(1);
-    Queue::assertPushed(ReembedItems::class, fn (ReembedItems $job) => $job->afterId === $first->id);
+    expect(Item::query()->whereNotNull('embedding')->count())->toBe(1);
+    Queue::assertPushed(ReembedItems::class, fn (ReembedItems $job): bool => $job->afterId === $first->id);
 });
 
-test('it does not dispatch itself when the run completes', function () {
+test('it does not dispatch itself when the run completes', function (): void {
     Item::factory()->count(2)->create();
 
     runReembed();
@@ -142,11 +142,11 @@ test('it does not dispatch itself when the run completes', function () {
     Queue::assertNotPushed(ReembedItems::class);
 });
 
-test('an item that always fails does not loop', function () {
+test('an item that always fails does not loop', function (): void {
     $first = Item::factory()->create(['title' => 'Kaputt']);
     $second = Item::factory()->create(['title' => 'Heil']);
     $broken = 0;
-    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$broken) {
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$broken): array {
         if ($prompt->contains('Kaputt')) {
             $broken++;
             $this->travel(151)->seconds();
@@ -159,18 +159,18 @@ test('an item that always fails does not loop', function () {
 
     runReembed();
 
-    Queue::assertPushed(ReembedItems::class, fn (ReembedItems $job) => $job->afterId === $first->id);
+    Queue::assertPushed(ReembedItems::class, fn (ReembedItems $job): bool => $job->afterId === $first->id);
 
     runReembed($first->id);
 
     expect($broken)->toBe(1)->and($second->fresh()->embedding)->toHaveCount(1024);
 });
 
-test('it continues with the newest target after a switch', function () {
+test('it continues with the newest target after a switch', function (): void {
     $old = AiProvider::factory()->activeForSearch()->create(['name' => 'Alt']);
     Item::factory()->count(2)->create();
     $models = [];
-    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$models, $old) {
+    Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$models, $old): array {
         $models[] = $prompt->model;
 
         if (count($models) === 1) {
@@ -186,7 +186,7 @@ test('it continues with the newest target after a switch', function () {
     expect($models)->toBe(['text-embedding-3-small', 'neues-modell']);
 });
 
-test('failed() stores only the generic text for a raw exception', function () {
+test('failed() stores only the generic text for a raw exception', function (): void {
     $provider = AiProvider::factory()->activeForSearch()->create();
 
     (new ReembedItems)->failed(new RuntimeException('boom sk-secret-9999'));
@@ -194,7 +194,7 @@ test('failed() stores only the generic text for a raw exception', function () {
     expect($provider->fresh()->searchFailureMessage())->toBe(ProviderFailure::genericEmbeddingMessage());
 });
 
-test('failed() stores the message of a provider failure with a reason', function () {
+test('failed() stores the message of a provider failure with a reason', function (): void {
     $provider = AiProvider::factory()->activeForSearch()->create(['name' => 'OpenAI']);
 
     (new ReembedItems)->failed(new ProviderFailure('x sk-secret-9999', ProviderFailureReason::KeyRejected, 'OpenAI'));
@@ -202,7 +202,7 @@ test('failed() stores the message of a provider failure with a reason', function
     expect($provider->fresh()->searchFailureMessage())->toBe('OpenAI hat den API-Key abgelehnt.');
 });
 
-test('failed() writes nothing and does not throw without a provider active for search', function () {
+test('failed() writes nothing and does not throw without a provider active for search', function (): void {
     $provider = AiProvider::factory()->embedding()->create();
 
     (new ReembedItems)->failed(null);

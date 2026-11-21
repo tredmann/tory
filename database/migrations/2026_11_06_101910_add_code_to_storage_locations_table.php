@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('storage_locations', function (Blueprint $table) {
+        Schema::table('storage_locations', function (Blueprint $table): void {
             $table->string('code', 4)->nullable()->after('id');
         });
 
@@ -30,7 +30,7 @@ return new class extends Migration
             DB::table('storage_locations')->where('id', $id)->update(['code' => $code]);
         }
 
-        Schema::table('storage_locations', function (Blueprint $table) {
+        Schema::table('storage_locations', function (Blueprint $table): void {
             $table->string('code', 4)->nullable(false)->change();
             $table->unique('code');
         });
@@ -41,7 +41,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('storage_locations', function (Blueprint $table) {
+        Schema::table('storage_locations', function (Blueprint $table): void {
             $table->dropColumn('code');
         });
     }

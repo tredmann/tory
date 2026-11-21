@@ -6,24 +6,24 @@ use App\Models\Spot;
 use App\Models\User;
 use Filament\Facades\Filament;
 
-test('guests are redirected from the panel root to the login page', function () {
+test('guests are redirected from the panel root to the login page', function (): void {
     User::factory()->create();
 
     $this->get('/')->assertRedirect('/login');
 });
 
-test('the login page is served at the root and registration does not exist', function () {
+test('the login page is served at the root and registration does not exist', function (): void {
     User::factory()->create();
 
     $this->get('/login')->assertOk();
     $this->get('/register')->assertNotFound();
 });
 
-test('filament assets are published', function () {
+test('filament assets are published', function (): void {
     expect(public_path('css/filament/filament/app.css'))->toBeFile();
 });
 
-test('record pages answer 404 for a key that is no valid key', function (string $path) {
+test('record pages answer 404 for a key that is no valid key', function (string $path): void {
     $this->actingAs(User::factory()->create());
 
     $this->get($path)->assertNotFound();
@@ -44,7 +44,7 @@ test('record pages answer 404 for a key that is no valid key', function (string 
     '/imports/019a0000-0000-7000-8000-000000000000',
 ]);
 
-test('record pages still open for an existing record', function (string $prefix, string $model) {
+test('record pages still open for an existing record', function (string $prefix, string $model): void {
     $this->actingAs(User::factory()->create());
     $record = $model::factory()->create();
 
@@ -55,19 +55,19 @@ test('record pages still open for an existing record', function (string $prefix,
     ['/imports', Import::class],
 ]);
 
-test('the provider page is served at its english address', function () {
+test('the provider page is served at its english address', function (): void {
     $this->actingAs(User::factory()->admin()->create());
 
     $this->get('/ai-providers')->assertOk();
 });
 
-test('old german addresses are gone', function (string $path) {
+test('old german addresses are gone', function (string $path): void {
     $this->actingAs(User::factory()->create());
 
     $this->get($path)->assertNotFound();
 })->with(['/lagerorte', '/gegenstaende', '/importe', '/eigene-ki']);
 
-test('global search is disabled for a signed-in user', function () {
+test('global search is disabled for a signed-in user', function (): void {
     $this->actingAs(User::factory()->create());
 
     expect(Filament::isGlobalSearchEnabled())->toBeFalse();

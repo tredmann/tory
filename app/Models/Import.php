@@ -129,7 +129,7 @@ class Import extends Model
                 throw (new ModelNotFoundException)->setModel(static::class, [$this->getKey()]);
             }
 
-            return Item::create([
+            return Item::query()->create([
                 'spot_id' => $spotId,
                 'title' => $title,
                 'description' => $description,

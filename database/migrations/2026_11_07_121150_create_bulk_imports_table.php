@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bulk_imports', function (Blueprint $table) {
+        Schema::create('bulk_imports', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('spot_id')->constrained()->restrictOnDelete();

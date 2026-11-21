@@ -6,18 +6,18 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-test('a new user is a member', function () {
+test('a new user is a member', function (): void {
     expect(User::factory()->create()->role)->toBe(UserRole::Member);
 });
 
-test('an invited user is unverified and cannot log in with a guessable password', function () {
+test('an invited user is unverified and cannot log in with a guessable password', function (): void {
     $user = User::invite('Anna', 'anna@example.com', UserRole::Member);
 
     expect($user->status())->toBe(UserStatus::Invited)
         ->and(Hash::check('password', $user->password))->toBeFalse();
 });
 
-test('the invite link is short, path-only and stores only a hash', function () {
+test('the invite link is short, path-only and stores only a hash', function (): void {
     $user = User::factory()->create();
 
     $link = $user->issueInviteLink();
@@ -28,7 +28,7 @@ test('the invite link is short, path-only and stores only a hash', function () {
         ->and(User::findByInviteToken($token)?->is($user))->toBeTrue();
 });
 
-test('an invite link expires after 24 hours', function () {
+test('an invite link expires after 24 hours', function (): void {
     $user = User::factory()->create();
     $token = Str::afterLast($user->issueInviteLink(), '/invite/');
 
@@ -38,7 +38,7 @@ test('an invite link expires after 24 hours', function () {
     expect(User::findByInviteToken($token))->toBeNull();
 });
 
-test('a new link replaces the old one', function () {
+test('a new link replaces the old one', function (): void {
     $user = User::factory()->create();
     $old = Str::afterLast($user->issueInviteLink(), '/invite/');
     $user->issueInviteLink();
@@ -46,7 +46,7 @@ test('a new link replaces the old one', function () {
     expect(User::findByInviteToken($old))->toBeNull();
 });
 
-test('accepting an invite sets the password, verifies and uses up the link', function () {
+test('accepting an invite sets the password, verifies and uses up the link', function (): void {
     $user = User::invite('Anna', 'anna@example.com', UserRole::Member);
     $token = Str::afterLast($user->issueInviteLink(), '/invite/');
 
@@ -57,7 +57,7 @@ test('accepting an invite sets the password, verifies and uses up the link', fun
         ->and(User::findByInviteToken($token))->toBeNull();
 });
 
-test('locking clears an open link and unlocking restores the status', function () {
+test('locking clears an open link and unlocking restores the status', function (): void {
     $user = User::factory()->create();
     $token = Str::afterLast($user->issueInviteLink(), '/invite/');
 
@@ -69,7 +69,7 @@ test('locking clears an open link and unlocking restores the status', function (
     expect($user->status())->toBe(UserStatus::Active);
 });
 
-test('the first administrator is created verified and as administrator', function () {
+test('the first administrator is created verified and as administrator', function (): void {
     $user = User::createFirstAdministrator('Anna', 'anna@example.com', 'ein-langes-passwort');
 
     expect($user->isAdmin())->toBeTrue()
@@ -77,7 +77,7 @@ test('the first administrator is created verified and as administrator', functio
         ->and(Hash::check('ein-langes-passwort', $user->password))->toBeTrue();
 });
 
-test('no first administrator is created once any user exists', function () {
+test('no first administrator is created once any user exists', function (): void {
     User::factory()->unverified()->create();
 
     expect(User::createFirstAdministrator('Anna', 'anna@example.com', 'ein-langes-passwort'))->toBeNull()
