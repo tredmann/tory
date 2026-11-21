@@ -1,6 +1,9 @@
 <?php
 
 use App\Enums\Language;
+use App\Filament\Resources\AiProviders\Pages\ManageAiProviders;
+use App\Filament\Resources\Locations\Pages\ManageLocations;
+use App\Filament\Resources\Users\Pages\ManageUsers;
 use App\Models\AiProvider;
 use App\Models\BulkImport;
 use App\Models\HouseholdSettings;
@@ -9,8 +12,11 @@ use App\Models\Item;
 use App\Models\Location;
 use App\Models\Spot;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 
 /**
  * German phrases of lang/de.json that differ from their English key, so umlaut-free German is caught too.
@@ -29,12 +35,14 @@ function germanPhrases(): array
 }
 
 /**
- * The text a visitor reads: no tags, no script or style contents, entities decoded.
+ * The text a visitor reads: tags and script or style contents removed, the values of placeholder, aria-label,
+ * title and alt attributes added, entities decoded.
  */
 function visibleText(string $html): string
 {
     $html = preg_replace('#<(script|style)\b.*?</\1>#is', ' ', $html);
-    $text = html_entity_decode(strip_tags(preg_replace('/<[^>]+>/', ' ', $html)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    preg_match_all('/\s(?:placeholder|aria-label|title|alt)="([^"]*)"/i', $html, $attributes);
+    $text = html_entity_decode(preg_replace('/<[^>]+>/', ' ', $html).' '.implode(' ', $attributes[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
     return preg_replace('/\s+/u', ' ', $text);
 }
@@ -91,6 +99,7 @@ test('the English interface contains no German', function () {
         'users' => '/users',
         'ai providers' => '/ai-providers',
         'tory in claude' => '/tory-in-claude',
+        'household' => '/household',
         'profile' => '/profile',
     ];
 
@@ -116,4 +125,36 @@ test('the English login page contains no German', function () {
     $response->assertOk();
 
     expect(germanLeftover(visibleText($response->getContent())))->toBeNull();
+});
+
+test('the English modal forms contain no German', function () {
+    Filament::setCurrentPanel('admin');
+    $user = User::factory()->admin()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+    app()->setLocale('en');
+    $this->actingAs($user);
+
+    $location = Location::factory()->create(['name' => 'Basement shelf']);
+    $provider = AiProvider::factory()->create(['name' => 'Cloud model']);
+
+    $mounted = [
+        'create location' => Livewire::test(ManageLocations::class)->mountAction('create'),
+        'edit location' => Livewire::test(ManageLocations::class)->mountAction(TestAction::make('edit')->table($location)),
+        'create user' => Livewire::test(ManageUsers::class)->mountAction('create'),
+        'edit user' => Livewire::test(ManageUsers::class)->mountAction(TestAction::make('edit')->table($user)),
+        'create provider' => Livewire::test(ManageAiProviders::class)->mountAction('create'),
+        'edit provider' => Livewire::test(ManageAiProviders::class)->mountAction(TestAction::make('edit')->table($provider)),
+    ];
+
+    $leftovers = [];
+
+    foreach ($mounted as $name => $component) {
+        $component->assertHasNoErrors();
+
+        if ($leftover = germanLeftover(visibleText($component->html()))) {
+            $leftovers[] = "{$name}: {$leftover}";
+        }
+    }
+
+    expect($leftovers)->toBe([]);
 });

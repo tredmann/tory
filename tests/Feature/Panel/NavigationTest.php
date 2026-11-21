@@ -16,7 +16,7 @@ test('the sidebar groups the pages under Inventar and Einstellungen', function (
     expect($groups->all())->toBe([
         '' => ['Übersicht'],
         'Inventar' => ['Gegenstände', 'Lagerplätze', 'Lagerorte', 'Importe'],
-        'Einstellungen' => ['Tory in Claude', 'Eigene KI', 'Nutzer'],
+        'Einstellungen' => ['Tory in Claude', 'Eigene KI', 'Nutzer', 'Haushalt'],
     ]);
 });
 
