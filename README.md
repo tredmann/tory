@@ -23,6 +23,16 @@ The Filament panel is the whole app and answers at `/`. Development happens enti
 
 Each feature has a design document in `docs/superpowers/specs/` and a plan in `docs/superpowers/plans/`. `SECURITY.md` holds a security self-assessment and the contact for reporting a vulnerability.
 
+## Requirements
+
+For development you only need Docker with Compose; PHP, Composer and Node run in containers. The Compose stack brings the database along.
+
+- **Postgres 18 with the pgvector extension.** Version 18 is required because a migration uses `uuidv7()`. The image `pgvector/pgvector:pg18-trixie` has both.
+- **An AI provider for object recognition:** a local Ollama or an API key for Claude, OpenAI or Mistral. Without one, imports fail.
+- **Optionally an embedding model with 1024 dimensions** for search by meaning (default `bge-m3` on Ollama). Without one, search works by keyword only.
+
+The production image contains everything else. To run Tory without it you need PHP 8.5 with the extensions `pdo_pgsql`, `pgsql`, `intl`, `zip`, `gd`, `pcntl`, `bcmath` and `exif`, WeasyPrint for the spot labels, and Node 22 to build the assets. The release workflow builds the image for arm64 only; build it yourself for another platform.
+
 ## Getting started
 
 ```sh
