@@ -14,4 +14,4 @@ Route::post('oauth/register', OAuthRegisterController::class)
     ->middleware('throttle:10,1')
     ->name('mcp.oauth.register');
 
-Mcp::web('/mcp', ToryServer::class)->middleware(['auth:api', EnsureUserIsActive::class, SetLocale::class]);
+Mcp::web('/mcp', ToryServer::class)->middleware(['auth:api', SetLocale::class, EnsureUserIsActive::class]);

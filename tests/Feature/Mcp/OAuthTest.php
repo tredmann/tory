@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Language;
 use App\Models\User;
 use Laravel\Passport\Client;
 
@@ -159,4 +160,15 @@ test('mcp refuses a locked user', function () {
 
     withToken($tokens['access_token'])->postJson('/mcp', initializeMessage())
         ->assertForbidden();
+});
+
+test('mcp tells a locked English user in English', function () {
+    $user = User::factory()->create(['locale' => Language::English]);
+    $tokens = issueMcpTokens($user);
+    $user->lock();
+    app()->setLocale('de'); // the app instance outlives the authorize request, which set English
+
+    withToken($tokens['access_token'])->postJson('/mcp', initializeMessage())
+        ->assertForbidden()
+        ->assertSee('This account is locked.');
 });
