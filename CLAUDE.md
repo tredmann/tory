@@ -32,6 +32,7 @@ docker compose exec app php artisan <command>
 docker compose exec app composer <command>
 docker compose exec app php artisan test --compact [tests/Feature/Panel/ViewImportTest.php] [--filter=retry]
 docker compose exec app ./vendor/bin/pint --dirty
+docker compose exec app ./vendor/bin/rector process [--dry-run]
 docker compose exec app ./vendor/bin/phpstan analyse
 docker compose exec app php artisan make:filament-user --name=Admin --email=admin@example.com --password=secret
 docker compose exec app php artisan users:make-admin admin@example.com
@@ -107,7 +108,7 @@ docker compose exec db psql -U tory -d tory
 - **YAGNI:** build only what is needed now; no speculative options, abstractions or extension points.
 - **Standard libraries over custom code:** prefer what Laravel, Filament or an established library already provides. A new dependency still needs approval.
 - **Primary keys:** UUIDs (`HasUuids`, version 7) unless specified otherwise. `Spot` is the exception (bigint `id` plus `code`); framework tables stay as they are. `HasUuids` answers 404 for a route key that is no UUID.
-- **DTOs over arrays:** pass and return structured data as DTOs. Arrays remain where a framework API demands them (Filament schemas, `$fillable`, casts).
+- **DTOs over arrays:** pass and return structured data as DTOs. Arrays remain where a framework API demands them (Filament schemas, `#[Fillable]`, casts).
 - **Constructor injection** instead of `resolve()` or `app()`. Where the framework rules out a constructor, use its injection: typed parameters on Filament closures (`->action(fn (ProviderTransfer $transfer) => ...)`), `$this->app` in service providers. Logic that needs a service goes in a class of its own (`ItemSearch`), not on a model.
 
 ## Testing conventions
@@ -116,7 +117,7 @@ docker compose exec db psql -U tory -d tory
 - A panel test that requests a guest page (`/login`, `/invite/…`, `/theme` as guest) needs a user in the database first; on an empty database every panel request redirects to `/setup`.
 - Use `Storage::fake('local')` for uploads and `Queue::fake()` unless the job itself is under test. `TestCase::setUp()` calls `Embeddings::fake()`; override it to test `ItemEmbedder`, `EmbedItem` and search.
 - With `AiProvider::factory()->active()` in a job test, failures arrive wrapped in `ProviderFailure` (scrubbed, no `previous`): assert on `failure_reason`/`failure_provider`. Vendor calls are tested with `Http::fake()`, the extractor with `InventoryExtractor::fake(...)`. No automated test talks to Ollama.
-- Write a failing test before production code. Run Pint and PHPStan before committing.
+- Write a failing test before production code. Run Rector, Pint and PHPStan before committing (Rector first, Pint tidies its output). `composer test` checks all three, as CI does.
 
 ## Laravel Boost
 
