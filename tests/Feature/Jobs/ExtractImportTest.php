@@ -4,9 +4,11 @@ use App\Ai\Agents\InventoryExtractor;
 use App\Ai\ProviderFailure;
 use App\Enums\AiVendor;
 use App\Enums\ImportStatus;
+use App\Enums\Language;
 use App\Enums\ProviderFailureReason;
 use App\Jobs\ExtractImport;
 use App\Models\AiProvider;
+use App\Models\HouseholdSettings;
 use App\Models\Import;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
@@ -243,4 +245,14 @@ test('failed clears the search terms', function () {
     (new ExtractImport($import))->failed(new RuntimeException('x'));
 
     expect($import->fresh()->search_terms)->toBe([]);
+});
+
+test('writes the texts in the household content language', function () {
+    HouseholdSettings::current()->changeContentLanguage(Language::English);
+    InventoryExtractor::fake([['title' => 'Stapler', 'description' => 'A red stapler.']]);
+
+    (new ExtractImport(Import::factory()->create()))->handle();
+
+    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->agent->language === Language::English
+        && $prompt->prompt === 'Analyze the photos and provide a title, a description and search terms.');
 });

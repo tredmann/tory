@@ -4,6 +4,7 @@ namespace App\Ai;
 
 use App\Ai\Agents\InventoryExtractor;
 use App\Models\AiProvider;
+use App\Models\HouseholdSettings;
 use Laravel\Ai\Files\Image;
 use Throwable;
 
@@ -48,7 +49,10 @@ final class ProviderTester
     private function extractionReason(AiProvider $provider): ?string
     {
         try {
-            InventoryExtractor::make(aiProvider: $provider)->extract(
+            InventoryExtractor::make(
+                aiProvider: $provider,
+                language: HouseholdSettings::current()->content_language,
+            )->extract(
                 [Image::fromPath(resource_path('ai/test-image.png'), 'image/png')],
                 self::TIMEOUT_SECONDS,
             );

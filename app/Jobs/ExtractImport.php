@@ -7,6 +7,7 @@ use App\Ai\PhotoAttachments;
 use App\Ai\ProviderFailure;
 use App\Enums\ImportStatus;
 use App\Models\AiProvider;
+use App\Models\HouseholdSettings;
 use App\Models\Import;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -39,7 +40,10 @@ class ExtractImport implements ShouldQueue
 
             $aiProvider = AiProvider::active();
 
-            $result = InventoryExtractor::make(aiProvider: $aiProvider)->extract($attachments);
+            $result = InventoryExtractor::make(
+                aiProvider: $aiProvider,
+                language: HouseholdSettings::current()->content_language,
+            )->extract($attachments);
 
             $this->import->update([
                 'title' => $result->title,
