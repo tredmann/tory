@@ -8,9 +8,21 @@ on:
 permissions:
   contents: read
 
+env:
+  IMAGE: tredmann/tory
+
 jobs:
-  build-and-push:
-    runs-on: ubuntu-24.04-arm
+  # Each platform builds on a native runner; emulation takes over 20 minutes.
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Checkout code
@@ -18,13 +30,11 @@ jobs:
         with:
           persist-credentials: false
 
-      # The API token is both user name and password and does not expire during the build.
-      - name: Log in to DigitalOcean Container Registry
+      - name: Log in to Docker Hub
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
-          registry: registry.digitalocean.com
-          username: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          password: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -35,12 +45,35 @@ jobs:
           context: .
           file: docker/Dockerfile
           target: prod
-          platforms: linux/arm64
+          platforms: linux/${{ matrix.arch }}
           build-args: |
             APP_VERSION=${{ github.ref_name }}
           push: true
-          tags: |
-            registry.digitalocean.com/${{ secrets.DIGITALOCEAN_REGISTRY }}/tory:${{ github.ref_name }}
-            registry.digitalocean.com/${{ secrets.DIGITALOCEAN_REGISTRY }}/tory:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ env.IMAGE }}:${{ github.ref_name }}-${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+
+  # Joins the two platform images into the tags people pull.
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Publish the multi-platform tags
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          docker buildx imagetools create \
+            --tag "$IMAGE:$VERSION" \
+            --tag "$IMAGE:latest" \
+            "$IMAGE:$VERSION-amd64" \
+            "$IMAGE:$VERSION-arm64"
