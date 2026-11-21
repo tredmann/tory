@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 
-#[Description('Legt einen Gegenstand auf einen anderen Lagerplatz. Braucht die genaue ID des Gegenstands und den Code des Lagerplatzes aus einer vorherigen Suche.')]
+#[Description('Puts an item on another spot. Needs the exact ID of the item and the code of the spot from a previous search.')]
 #[IsIdempotent]
 class MoveItemTool extends Tool
 {
@@ -24,8 +24,8 @@ class MoveItemTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'item' => $schema->string()->description('ID des Gegenstands aus der Suche.')->required(),
-            'spot' => $schema->string()->description('Code des Ziel-Lagerplatzes aus der Suche, zum Beispiel "K7XM".')->required(),
+            'item' => $schema->string()->description('ID of the item from the search.')->required(),
+            'spot' => $schema->string()->description('Code of the target spot from the search, for example "K7XM".')->required(),
         ];
     }
 
@@ -40,25 +40,25 @@ class MoveItemTool extends Tool
         $item = Str::isUuid($itemId) ? Item::query()->find($itemId) : null;
 
         if ($item === null) {
-            return Response::error('Diesen Gegenstand gibt es nicht.');
+            return Response::error(__('This item does not exist.'));
         }
 
         $code = Spot::normalizeCode(trim($validated['spot']));
         $spot = $code === null ? null : Spot::query()->with('location')->firstWhere('code', $code);
 
         if ($spot === null) {
-            return Response::error('Diesen Lagerplatz gibt es nicht.');
+            return Response::error(__('This spot does not exist.'));
         }
 
         if (Item::query()->whereKey($item->getKey())->whereNotNull('regenerating_at')->exists()) {
-            return Response::error('Der Gegenstand wird gerade neu generiert. Bitte versuch es gleich noch einmal.');
+            return Response::error(__('The item is being regenerated right now. Please try again in a moment.'));
         }
 
         $item->update(['spot_id' => $spot->id]);
 
         $summary = SpotSummary::of($spot);
 
-        return Response::make(Response::text("{$item->title} liegt jetzt auf {$summary['name']} ({$summary['code']}), {$summary['location']}."))
+        return Response::make(Response::text(__(':title is now on :spot (:code), :location.', ['title' => $item->title, 'spot' => $summary['name'], 'code' => $summary['code'], 'location' => $summary['location']])))
             ->withStructuredContent(['id' => $item->id, 'title' => $item->title, 'spot' => $summary]);
     }
 }
