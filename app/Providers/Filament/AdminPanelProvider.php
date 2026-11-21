@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Auth\AcceptInvite;
+use App\Filament\Auth\SetUpFirstAdministrator;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SaveThemeMode;
 use App\Http\Middleware\LogOutLockedUser;
@@ -46,7 +47,10 @@ class AdminPanelProvider extends PanelProvider
                     ->icon(Heroicon::OutlinedInformationCircle)
                     ->disabled(),
             ])
-            ->routes(fn () => Route::get('/invite/{token}', AcceptInvite::class)->middleware('throttle:10,1')->name('invite'))
+            ->routes(function (): void {
+                Route::get('/invite/{token}', AcceptInvite::class)->middleware('throttle:10,1')->name('invite');
+                Route::get('/setup', SetUpFirstAdministrator::class)->middleware('throttle:10,1')->name('setup');
+            })
             ->authenticatedRoutes(function (Panel $panel): void {
                 Route::post('/theme', SaveThemeMode::class)
                     ->middleware($panel->getEmailVerifiedMiddleware())
