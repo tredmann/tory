@@ -81,7 +81,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Date::use(CarbonImmutable::class);
 
-        $dateTimeFormat = fn (): string => app()->getLocale() === Language::German->value ? 'd.m.Y H:i' : 'd M Y, H:i';
+        $dateTimeFormat = fn (): string => match (Language::from(app()->getLocale())) {
+            Language::German => 'd.m.Y H:i',
+            Language::English => 'j M Y, H:i',
+        };
 
         Table::configureUsing(fn (Table $table): Table => $table->defaultDateTimeDisplayFormat($dateTimeFormat));
         Schema::configureUsing(fn (Schema $schema): Schema => $schema->defaultDateTimeDisplayFormat($dateTimeFormat));

@@ -51,8 +51,7 @@ class AdminPanelProvider extends PanelProvider
                     ->label(fn (): string => Language::from(app()->getLocale())->other()->getLabel())
                     ->icon(Heroicon::OutlinedLanguage)
                     ->action(function (Component $livewire): void {
-                        $user = Filament::auth()->user();
-                        $user->forceFill(['locale' => Language::from(app()->getLocale())->other()])->save();
+                        Filament::auth()->user()?->forceFill(['locale' => Language::from(app()->getLocale())->other()])->save();
 
                         $livewire->js('window.location.reload()');
                     }),

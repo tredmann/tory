@@ -48,10 +48,10 @@ test('the language action saves the other language on the user', function (Langu
 
 test('table dates follow the interface language', function (Language $language, string $expected) {
     $this->actingAs(userWithLocale($language));
-    Import::factory()->completed()->create(['created_at' => '2026-11-21 14:30:00']);
+    Import::factory()->completed()->create(['created_at' => '2026-11-05 14:30:00']);
 
     Livewire::test(ListImports::class)->assertSee($expected);
 })->with([
-    'German' => [Language::German, '21.11.2026 14:30'],
-    'English' => [Language::English, '21 Nov 2026, 14:30'],
+    'German' => [Language::German, '05.11.2026 14:30'],
+    'English' => [Language::English, '5 Nov 2026, 14:30'],
 ]);
