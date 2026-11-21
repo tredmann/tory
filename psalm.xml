@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+    Psalm runs only its taint analysis here (user input reaching SQL, HTML, shell, headers, files, ...).
+    Type checking is PHPStan's job; with runTaintAnalysis Psalm 6 reports nothing but Tainted* issues.
+-->
+<psalm
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    errorLevel="8"
+    findUnusedCode="false"
+    runTaintAnalysis="true"
+>
+    <projectFiles>
+        <directory name="app"/>
+        <file name="bootstrap/app.php"/>
+        <directory name="config"/>
+        <directory name="database"/>
+        <directory name="routes"/>
+        <ignoreFiles>
+            <directory name="vendor"/>
+        </ignoreFiles>
+    </projectFiles>
+
+    <plugins>
+        <pluginClass class="Psalm\LaravelPlugin\Plugin"/>
+    </plugins>
+</psalm>
