@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Language;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\BulkImports\BulkImportResource;
 use App\Filament\Resources\Imports\ImportResource;
@@ -187,4 +188,24 @@ test('an open bulk import with one photo says "1 Foto"', function () {
 
 test('the dashboard hides open bulk imports when there are none', function () {
     $this->get('/')->assertDontSeeText('Offene Bulkimporte');
+});
+
+test('an English user sees the dashboard widgets in English', function () {
+    $user = User::factory()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+    app()->setLocale('en');
+    $this->actingAs($user);
+    BulkImport::factory()->grouping()->create();
+    Import::factory()->create();
+    Location::factory()->create();
+
+    $this->get('/')
+        ->assertSee('placeholder="Where is …?"', false)
+        ->assertSee('aria-label="Search items"', false)
+        ->assertSeeText('Open bulk imports')
+        ->assertSeeText('Open imports')
+        ->assertSeeText('Recently added')
+        ->assertSeeText('3 photos')
+        ->assertDontSee('Wo ist')
+        ->assertDontSeeText('Offene Importe');
 });

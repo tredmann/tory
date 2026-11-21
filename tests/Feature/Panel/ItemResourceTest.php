@@ -624,3 +624,18 @@ test('an English user sees the photo field of the edit page in English', functio
         ->assertSee('Photos')
         ->assertDontSee('Fotos');
 });
+
+test('the item photo picker gets its messages in the language of the user', function (Language $language, string $tooMany, string $unreadable) {
+    $user = User::factory()->create();
+    $user->forceFill(['locale' => $language])->save();
+    app()->setLocale($language->value);
+    $this->actingAs($user);
+    $item = Item::factory()->create();
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->assertSee($tooMany, false)
+        ->assertSee($unreadable, false);
+})->with([
+    'German' => [Language::German, 'Höchstens :max Fotos.', 'Dieses Bild lässt sich nicht lesen.'],
+    'English' => [Language::English, 'At most :max photos.', 'This image cannot be read.'],
+]);

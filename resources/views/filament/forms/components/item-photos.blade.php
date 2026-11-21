@@ -10,7 +10,12 @@
     <div
         wire:ignore
         wire:key="{{ $statePath }}.{{ md5(implode("\n", array_column($photos, 'path'))) }}"
-        x-data="itemPhotos(@js(['statePath' => $statePath, 'photos' => $photos, 'maxPhotos' => \App\Models\Import::MAX_PHOTOS], JSON_UNESCAPED_SLASHES))"
+        x-data="itemPhotos(@js(['statePath' => $statePath, 'photos' => $photos, 'messages' => [
+            'tooMany' => __('At most :max photos.'),
+            'uploadFailed' => __('Upload failed.'),
+            'unreadable' => __('This image cannot be read.'),
+            'notAllowed' => __('Only JPEG, PNG, WebP or GIF images up to 12 MB are allowed.'),
+        ], 'maxPhotos' => \App\Models\Import::MAX_PHOTOS], JSON_UNESCAPED_SLASHES))"
         x-on:item-photos-saved.window="reset()"
         {{ $getExtraAttributeBag()->class(['tory-photo-picker']) }}
     >

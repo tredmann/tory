@@ -23,11 +23,11 @@ class OpenBulkImportsWidget extends TableWidget
     {
         return $table
             ->query(fn (): Builder => BulkImport::query()->latest())
-            ->heading('Offene Bulkimporte')
+            ->heading(__('Open bulk imports'))
             ->columns([
                 Split::make([
                     TextColumn::make('photos')
-                        ->state(fn (BulkImport $record): string => count($record->photos).(count($record->photos) === 1 ? ' Foto' : ' Fotos')),
+                        ->state(fn (BulkImport $record): string => trans_choice(':count photo|:count photos', count($record->photos))),
                     TextColumn::make('status')
                         ->badge()
                         ->grow(false),

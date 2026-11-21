@@ -1,7 +1,7 @@
 @use('App\Filament\Resources\Items\ItemResource')
 
 <x-filament-widgets::widget>
-    <x-filament::section heading="Lagerorte">
+    <x-filament::section heading="{{ __('Locations') }}">
         <ul class="tory-locations">
             @foreach ($locations as $location)
                 <li>

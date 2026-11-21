@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\BulkImportStatus;
+use App\Enums\Language;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\BulkImports\BulkImportResource;
 use App\Filament\Resources\BulkImports\Pages\CreateBulkImport;
@@ -179,3 +180,17 @@ test('the bulk import page is titled Bulkimport below the imports', function () 
         ->and(array_keys($breadcrumbs))->toBe([Dashboard::getUrl(), ImportResource::getUrl('index')])
         ->and(array_values(array_slice($breadcrumbs, 1)))->toBe(['Importe']);
 });
+
+test('the photo picker gets its messages in the language of the user', function (Language $language, string $uploadFailed, string $tooMany) {
+    $user = User::factory()->create();
+    $user->forceFill(['locale' => $language])->save();
+    app()->setLocale($language->value);
+    $this->actingAs($user);
+
+    Livewire::test(CreateBulkImport::class)
+        ->assertSee($uploadFailed, false)
+        ->assertSee($tooMany, false);
+})->with([
+    'German' => [Language::German, 'Hochladen fehlgeschlagen.', 'Höchstens :max Fotos pro Bulkimport.'],
+    'English' => [Language::English, 'Upload failed.', 'At most :max photos per bulk import.'],
+]);

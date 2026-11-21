@@ -57,7 +57,7 @@ export const exceedsLimit = (photoCount, files, maxPhotos) => photoCount + files
  * Adds a tile per file, a rejected file with its message, and counts the uploads that start.
  * Returns the reactive tiles that upload, each with its file.
  */
-export function addTiles(tiles, files, extra = {}) {
+export function addTiles(tiles, files, messages, extra = {}) {
     return files.flatMap((file) => {
         const acceptable = isAcceptable(file);
 
@@ -66,7 +66,7 @@ export function addTiles(tiles, files, extra = {}) {
             url: acceptable ? URL.createObjectURL(file) : null,
             name: file.name,
             uploading: acceptable,
-            message: acceptable ? null : 'Nur JPEG-, PNG-, WebP- oder GIF-Bilder bis 12 MB sind erlaubt.',
+            message: acceptable ? null : messages.notAllowed,
             ...extra,
         });
 
@@ -114,7 +114,7 @@ export function rejectTile(tile, message) {
  * Shrinks the file and uploads it to the property, unless the tile's upload ended meanwhile.
  * Resolves when Livewire is done, so uploads can run one after the other.
  */
-export async function uploadTile(wire, property, tile, file, uploaded) {
+export async function uploadTile(wire, property, tile, file, messages, uploaded) {
     if (!tile.uploading) {
         return;
     }
@@ -124,7 +124,7 @@ export async function uploadTile(wire, property, tile, file, uploaded) {
     try {
         fitted = await fitWithinLimit(file);
     } catch {
-        rejectTile(tile, 'Dieses Bild lässt sich nicht lesen.');
+        rejectTile(tile, messages.unreadable);
 
         return;
     }
@@ -145,7 +145,7 @@ export async function uploadTile(wire, property, tile, file, uploaded) {
                 resolve();
             },
             () => {
-                rejectTile(tile, 'Hochladen fehlgeschlagen.');
+                rejectTile(tile, messages.uploadFailed);
                 resolve();
             },
             () => {},

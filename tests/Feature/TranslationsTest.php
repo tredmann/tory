@@ -17,7 +17,7 @@ function isPhpFileTranslationKey(string $key): bool
  */
 function translationKeysIn(string $source): array
 {
-    $pattern = '/(?<![\w$])(?<!->)(?<!::)__\(\s*(?:\'((?:[^\'\\\\]|\\\\.)*)\'|"((?:[^"\\\\]|\\\\.)*)")/s';
+    $pattern = '/(?<![\w$])(?<!->)(?<!::)(?:__|trans_choice)\(\s*(?:\'((?:[^\'\\\\]|\\\\.)*)\'|"((?:[^"\\\\]|\\\\.)*)")/s';
     $keys = [];
 
     preg_match_all($pattern, $source, $matches, PREG_SET_ORDER);
@@ -87,6 +87,7 @@ it('extracts translation literals from source', function () {
     $j = $obj->__('Method call');
     $k = $__('Variable call');
     $l = Foo::__('Static call');
+    $m = trans_choice(':count apple|:count apples', 3);
     SRC;
 
     $blade = "<p>{{ __('Blade text') }}</p><b>__('Bare after tag')</b>";
@@ -100,6 +101,7 @@ it('extracts translation literals from source', function () {
         'Multi line :max',
         'Say "hi"',
         'Saved.',
+        ':count apple|:count apples',
         'Blade text',
         'Bare after tag',
     ]);
@@ -115,4 +117,12 @@ it('uses every German translation', function () {
     $unused = array_values(array_diff(germanTranslationKeys(), translationKeysInCode()));
 
     expect($unused)->toBe([]);
+});
+
+it('renders placeholders in both languages', function () {
+    app()->setLocale('de');
+    expect(__('At most :max photos.', ['max' => 20]))->toBe('Höchstens 20 Fotos.');
+
+    app()->setLocale('en');
+    expect(__('At most :max photos.', ['max' => 20]))->toBe('At most 20 photos.');
 });

@@ -25,7 +25,7 @@ async function takenAt(file) {
  * The server counts a file only while its key is in `meta`. A key gets there once its upload
  * finished and leaves with ✕, so an upload that lands after its cancellation stays unused.
  */
-const bulkPhotos = ({ statePath, maxPhotos }) => {
+const bulkPhotos = ({ statePath, maxPhotos, messages }) => {
     // Uploads run one after the other, so a hundred photos never compete for the connection.
     let queue = Promise.resolve();
     let wire;
@@ -53,13 +53,13 @@ const bulkPhotos = ({ statePath, maxPhotos }) => {
             this.message = null;
 
             if (exceedsLimit(this.photoCount, files, maxPhotos)) {
-                this.message = `Höchstens ${maxPhotos} Fotos pro Bulkimport.`;
+                this.message = messages.tooMany.replace(':max', maxPhotos);
 
                 return;
             }
 
-            addTiles(this.tiles, files).forEach(({ tile, file }) => {
-                queue = queue.then(() => this.upload(tile, file)).catch(() => rejectTile(tile, 'Hochladen fehlgeschlagen.'));
+            addTiles(this.tiles, files, messages).forEach(({ tile, file }) => {
+                queue = queue.then(() => this.upload(tile, file)).catch(() => rejectTile(tile, messages.uploadFailed));
             });
         },
 
@@ -70,7 +70,7 @@ const bulkPhotos = ({ statePath, maxPhotos }) => {
 
             const time = await takenAt(file);
 
-            await uploadTile(wire, `${statePath}.uploads.${tile.id}`, tile, file, () => {
+            await uploadTile(wire, `${statePath}.uploads.${tile.id}`, tile, file, messages, () => {
                 meta[tile.id] = { name: file.name, taken_at: time };
                 this.syncMeta();
             });

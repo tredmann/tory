@@ -14,7 +14,7 @@ const storedTiles = (photos) =>
 // A finish request already under way can still store a cancelled upload on the server, so its key stays marked.
 const abandonedUploads = new Set();
 
-const itemPhotos = ({ statePath, photos, maxPhotos }) => {
+const itemPhotos = ({ statePath, photos, maxPhotos, messages }) => {
     // Uploads run one after the other: the server keeps new photos in the order they finish.
     let queue = Promise.resolve();
     let wire;
@@ -106,18 +106,18 @@ const itemPhotos = ({ statePath, photos, maxPhotos }) => {
             this.message = null;
 
             if (exceedsLimit(this.photoCount, files, maxPhotos)) {
-                this.message = `Höchstens ${maxPhotos} Fotos.`;
+                this.message = messages.tooMany.replace(':max', maxPhotos);
 
                 return;
             }
 
-            addTiles(this.tiles, files, { marked: false }).forEach(({ tile, file }) => {
-                queue = queue.then(() => this.upload(tile, file)).catch(() => rejectTile(tile, 'Hochladen fehlgeschlagen.'));
+            addTiles(this.tiles, files, messages, { marked: false }).forEach(({ tile, file }) => {
+                queue = queue.then(() => this.upload(tile, file)).catch(() => rejectTile(tile, messages.uploadFailed));
             });
         },
 
         upload(tile, file) {
-            return uploadTile(wire, `${statePath}.uploads.${tile.id}`, tile, file, () => {
+            return uploadTile(wire, `${statePath}.uploads.${tile.id}`, tile, file, messages, () => {
                 if (this.overview === null) {
                     this.overview = tile.id;
                     this.syncMarks();

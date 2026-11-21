@@ -8,7 +8,12 @@
 >
     <div
         wire:ignore
-        x-data="bulkPhotos(@js(['statePath' => $statePath, 'maxPhotos' => \App\Models\BulkImport::MAX_PHOTOS]))"
+        x-data="bulkPhotos(@js(['statePath' => $statePath, 'messages' => [
+            'tooMany' => __('At most :max photos per bulk import.'),
+            'uploadFailed' => __('Upload failed.'),
+            'unreadable' => __('This image cannot be read.'),
+            'notAllowed' => __('Only JPEG, PNG, WebP or GIF images up to 12 MB are allowed.'),
+        ], 'maxPhotos' => \App\Models\BulkImport::MAX_PHOTOS]))"
         x-on:bulk-photos-sync.window="syncMeta()"
         {{ $getExtraAttributeBag()->class(['tory-photo-picker', 'tory-bulk-photos']) }}
     >
