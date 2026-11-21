@@ -33,6 +33,7 @@ docker compose exec app composer <command>
 docker compose exec app php artisan test --compact [tests/Feature/Panel/ViewImportTest.php] [--filter=retry]
 docker compose exec app ./vendor/bin/pint --dirty
 docker compose exec app ./vendor/bin/rector process [--dry-run]
+docker compose exec app ./vendor/bin/psalm
 docker compose exec app ./vendor/bin/phpstan analyse
 docker compose exec app php artisan make:filament-user --name=Admin --email=admin@example.com --password=secret
 docker compose exec app php artisan users:make-admin admin@example.com
@@ -117,7 +118,8 @@ docker compose exec db psql -U tory -d tory
 - A panel test that requests a guest page (`/login`, `/invite/…`, `/theme` as guest) needs a user in the database first; on an empty database every panel request redirects to `/setup`.
 - Use `Storage::fake('local')` for uploads and `Queue::fake()` unless the job itself is under test. `TestCase::setUp()` calls `Embeddings::fake()`; override it to test `ItemEmbedder`, `EmbedItem` and search.
 - With `AiProvider::factory()->active()` in a job test, failures arrive wrapped in `ProviderFailure` (scrubbed, no `previous`): assert on `failure_reason`/`failure_provider`. Vendor calls are tested with `Http::fake()`, the extractor with `InventoryExtractor::fake(...)`. No automated test talks to Ollama.
-- Write a failing test before production code. Run Rector, Pint and PHPStan before committing (Rector first, Pint tidies its output). `composer test` checks all three, as CI does.
+- Write a failing test before production code. Run Rector, Pint and PHPStan before committing (Rector first, Pint tidies its output). `composer test` checks all three plus Psalm, as CI does.
+- **Psalm does taint analysis only** (`psalm.xml`, `runTaintAnalysis`; Psalm 6 with `psalm/plugin-laravel` 3.x, because Psalm 7 always adds type checks). It fails on user input reaching SQL, HTML, shell, headers or files. Fix a finding; only a proven false positive gets `@psalm-suppress Tainted…` with the reason at that line, never a baseline.
 
 ## Laravel Boost
 

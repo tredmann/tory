@@ -34,7 +34,9 @@
         "pestphp/pest": "^5.3",
         "pestphp/pest-plugin-laravel": "^5.0",
         "phpunit/phpunit": "^13.4",
-        "rector/rector": "^2.8"
+        "psalm/plugin-laravel": "^3.17",
+        "rector/rector": "^2.8",
+        "vimeo/psalm": "^6.21"
     },
     "autoload": {
         "psr-4": {
@@ -81,11 +83,15 @@
         "refactor:check": [
             "rector process --dry-run"
         ],
+        "security:check": [
+            "psalm --no-progress"
+        ],
         "test": [
             "@php artisan config:clear --ansi",
             "@lint:check",
             "@refactor:check",
             "@types:check",
+            "@security:check",
             "@php artisan test"
         ],
         "post-autoload-dump": [
