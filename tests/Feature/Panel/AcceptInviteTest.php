@@ -59,7 +59,11 @@ test('an unknown, used or locked link shows the invalid message', function (stri
         ->assertSee('Dieser Link ist abgelaufen oder ungültig. Bitte frag nach einem neuen.')
         ->assertDontSee('Passwort speichern');
 })->with([
-    'unknown' => fn () => Str::random(32),
+    'unknown' => function () {
+        User::factory()->create();
+
+        return Str::random(32);
+    },
     'used' => function () {
         $user = User::factory()->create();
         $token = inviteToken($user);
@@ -92,6 +96,8 @@ test('a link that expires after the page loaded is refused on submit', function 
 });
 
 test('the invite page is throttled', function () {
+    User::factory()->create();
+
     foreach (range(1, 10) as $attempt) {
         $this->get('/invite/'.Str::random(32));
     }

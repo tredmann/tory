@@ -66,3 +66,18 @@ test('in production the setup refuses a password shorter than 15 characters', fu
 
     $this->assertGuest();
 });
+
+test('an empty installation sends every panel page to the setup', function (string $path) {
+    $this->get($path)->assertRedirect(route('filament.admin.setup'));
+})->with(['/', '/login', '/items', '/invite/irgendwas']);
+
+test('a user created from the command line closes the setup', function () {
+    User::factory()->unverified()->create();
+
+    $this->get('/login')->assertOk();
+    $this->get('/setup')->assertNotFound();
+});
+
+test('the api is not redirected on an empty installation', function () {
+    $this->getJson('/api/v1/user')->assertUnauthorized();
+});

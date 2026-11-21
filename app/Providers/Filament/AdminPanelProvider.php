@@ -7,6 +7,7 @@ use App\Filament\Auth\SetUpFirstAdministrator;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SaveThemeMode;
 use App\Http\Middleware\LogOutLockedUser;
+use App\Http\Middleware\RedirectToFirstAdministratorSetup;
 use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -102,6 +103,7 @@ class AdminPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
+                RedirectToFirstAdministratorSetup::class,
                 AuthenticateSession::class,
                 LogOutLockedUser::class,
                 ShareErrorsFromSession::class,
