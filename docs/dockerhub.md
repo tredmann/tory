@@ -8,6 +8,8 @@ Household inventory that answers one question: where is that thing? Laravel, Fil
 
 A household inventory that answers one question: where is that thing?
 
+![The overview page of Tory: search field, locations and the most recently added items](https://raw.githubusercontent.com/tredmann/tory/master/docs/images/overview.png)
+
 You photograph an item, an AI model writes its title, description and search terms, and you put it on a spot such as a shelf in the cellar. Later you search by keyword or by meaning and Tory tells you where the item lies. The interface is German.
 
 Source, documentation and issues: https://github.com/tredmann/tory
