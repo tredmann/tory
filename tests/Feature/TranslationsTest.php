@@ -3,10 +3,39 @@
 use Symfony\Component\Finder\Finder;
 
 /**
- * Every `__('…')` or `__("…")` literal in app/ and resources/views/, unescaped
- * like PHP does. Keys with a dot and no space (`auth.failed`) belong to PHP
- * translation files and are skipped.
+ * Keys of PHP translation files such as `auth.failed`; they are not checked.
+ */
+function isPhpFileTranslationKey(string $key): bool
+{
+    return preg_match('/^[a-z_]+(\.[a-z_]+)+$/', $key) === 1;
+}
+
+/**
+ * Every `__('…')` or `__("…")` literal in the source, unescaped like PHP does.
  *
+ * @return list<string>
+ */
+function translationKeysIn(string $source): array
+{
+    $pattern = '/(?<![\w$])(?<!->)(?<!::)__\(\s*(?:\'((?:[^\'\\\\]|\\\\.)*)\'|"((?:[^"\\\\]|\\\\.)*)")/s';
+    $keys = [];
+
+    preg_match_all($pattern, $source, $matches, PREG_SET_ORDER);
+
+    foreach ($matches as $match) {
+        $key = ($match[2] ?? '') !== ''
+            ? strtr($match[2], ['\\"' => '"', '\\\\' => '\\', '\\$' => '$', '\\n' => "\n"])
+            : strtr($match[1], ["\\'" => "'", '\\\\' => '\\']);
+
+        if (! isPhpFileTranslationKey($key)) {
+            $keys[$key] = true;
+        }
+    }
+
+    return array_map('strval', array_keys($keys));
+}
+
+/**
  * @return list<string>
  */
 function translationKeysInCode(): array
@@ -16,21 +45,10 @@ function translationKeysInCode(): array
         ->in([base_path('app'), base_path('resources/views')])
         ->name(['*.php']);
 
-    $pattern = '/(?<![\w>:$])__\(\s*(?:\'((?:[^\'\\\\]|\\\\.)*)\'|"((?:[^"\\\\]|\\\\.)*)")/s';
     $keys = [];
 
     foreach ($files as $file) {
-        preg_match_all($pattern, $file->getContents(), $matches, PREG_SET_ORDER);
-
-        foreach ($matches as $match) {
-            $key = ($match[2] ?? '') !== ''
-                ? strtr($match[2], ['\\"' => '"', '\\\\' => '\\', '\\$' => '$', '\\n' => "\n"])
-                : strtr($match[1], ["\\'" => "'", '\\\\' => '\\']);
-
-            if (str_contains($key, '.') && ! str_contains($key, ' ')) {
-                continue;
-            }
-
+        foreach (translationKeysIn($file->getContents()) as $key) {
             $keys[$key] = true;
         }
     }
@@ -45,8 +63,47 @@ function germanTranslationKeys(): array
 {
     $translations = json_decode(file_get_contents(lang_path('de.json')), true, flags: JSON_THROW_ON_ERROR);
 
-    return array_map('strval', array_keys($translations));
+    return array_values(array_filter(
+        array_map('strval', array_keys($translations)),
+        fn (string $key): bool => ! isPhpFileTranslationKey($key),
+    ));
 }
+
+it('extracts translation literals from source', function () {
+    $source = <<<'SRC'
+    <?php
+    $a = __('Single quoted');
+    $b = __("Double quoted");
+    $c = __('Don\'t stop');
+    $d = __('Hello :name');
+    $e = __('Er sagte „Hallo“ und “Hi”');
+    $f = __(
+        'Multi line :max',
+        ['max' => 3],
+    );
+    $g = __("Say \"hi\"");
+    $h = __('Saved.');
+    $i = __('auth.failed');
+    $j = $obj->__('Method call');
+    $k = $__('Variable call');
+    $l = Foo::__('Static call');
+    SRC;
+
+    $blade = "<p>{{ __('Blade text') }}</p><b>__('Bare after tag')</b>";
+
+    expect(translationKeysIn($source.$blade))->toBe([
+        'Single quoted',
+        'Double quoted',
+        "Don't stop",
+        'Hello :name',
+        'Er sagte „Hallo“ und “Hi”',
+        'Multi line :max',
+        'Say "hi"',
+        'Saved.',
+        'Blade text',
+        'Bare after tag',
+    ]);
+});
 
 it('has a German translation for every translated string', function () {
     $missing = array_values(array_diff(translationKeysInCode(), germanTranslationKeys()));
