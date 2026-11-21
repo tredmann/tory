@@ -28,7 +28,7 @@ class ImportResource extends JsonResource
             'photos' => PhotoUrls::for('api.v1.imports.photos.show', $this->resource),
             'thumbnails' => PhotoUrls::for('api.v1.imports.photos.thumbnail', $this->resource),
             'failure_message' => $this->failureMessage()
-                ?? ($this->status === ImportStatus::Failed ? 'Die Analyse ist fehlgeschlagen. Bitte erneut versuchen.' : null),
+                ?? ($this->status === ImportStatus::Failed ? __('The analysis failed. Please try again.') : null),
             'error' => config('app.debug') ? $this->error : null,
             'regenerating' => $this->isRegenerating(),
             'created_at' => $this->created_at,

@@ -34,12 +34,12 @@ test('switching activates the provider, empties all embeddings and queues the jo
 test('switching clears a stored failure', function () {
     Queue::fake();
     $provider = AiProvider::factory()->embedding()->create();
-    $provider->forceFill(['search_failure' => 'kaputt'])->saveQuietly();
+    $provider->forceFill(['search_failure' => 'kaputt', 'search_failure_generic' => true])->saveQuietly();
 
     app(SearchProviderSwitch::class)->switchTo($provider, 'text-embedding-3-small');
 
-    expect($provider->fresh()->search_failure)->toBeNull()
-        ->and($provider->search_failure)->toBeNull();
+    expect($provider->fresh()->searchFailureMessage())->toBeNull()
+        ->and($provider->searchFailureMessage())->toBeNull();
 });
 
 test('the probe returns null for a good model', function () {
@@ -70,7 +70,7 @@ test('the probe falls back to a generic message for an unclassified failure', fu
     $provider = AiProvider::factory()->embedding()->create();
 
     expect(app(SearchProviderSwitch::class)->probe($provider, 'x'))
-        ->toBe(ProviderFailure::GENERIC_EMBEDDING_MESSAGE);
+        ->toBe(ProviderFailure::genericEmbeddingMessage());
 });
 
 test('switching gives a missing threshold the default and keeps an existing one', function () {

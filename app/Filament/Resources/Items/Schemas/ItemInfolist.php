@@ -25,7 +25,7 @@ class ItemInfolist
                     ->schema([
                         Section::make()->schema([
                             ImageEntry::make('photos')
-                                ->label('Fotos')
+                                ->label(__('Photos'))
                                 ->state(fn (Item $record): array => PhotoLinks::thumbnails($record->photos ?? []))
                                 ->imageHeight(160)
                                 ->wrap()
@@ -40,10 +40,10 @@ class ItemInfolist
                                     ->schema([
                                         RegenerationEntries::running(),
                                         self::multiline(TextEntry::make('description'))
-                                            ->label('Beschreibung')
+                                            ->label(__('Description'))
                                             ->visible(fn (Item $record): bool => filled($record->description)),
                                         self::multiline(TextEntry::make('notes'))
-                                            ->label('Bemerkung')
+                                            ->label(__('Note'))
                                             ->visible(fn (Item $record): bool => filled($record->notes)),
                                         ...RegenerationEntries::failures(),
                                     ]),
@@ -51,11 +51,11 @@ class ItemInfolist
                                     ->columnStart(['lg' => 3])
                                     ->schema([
                                         TextEntry::make('search_terms')
-                                            ->label('Suchbegriffe')
+                                            ->label(__('Search terms'))
                                             ->color('gray')
                                             ->visible(fn (Item $record): bool => filled($record->search_terms)),
                                         TextEntry::make('created_at')
-                                            ->label('Angelegt')
+                                            ->label(__('Created'))
                                             ->dateTime(),
                                     ]),
                             ]),

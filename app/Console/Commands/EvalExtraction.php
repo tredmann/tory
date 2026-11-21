@@ -7,6 +7,7 @@ use App\Ai\Eval\EvalReport;
 use App\Ai\Eval\EvalRun;
 use App\Ai\Eval\ExtractionEval;
 use App\Ai\ItemEmbedder;
+use App\Enums\Language;
 use App\Models\AiProvider;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 
-#[Signature('extraction:eval {--provider= : Name des gespeicherten KI-Providers} {--runs=1 : Anzahl der Durchläufe}')]
+#[Signature('extraction:eval {--provider= : Name des gespeicherten KI-Providers} {--runs=1 : Anzahl der Durchläufe} {--language=de : Inhaltssprache (de oder en)}')]
 #[Description('Misst die Textextraktion eines KI-Providers an den Testfällen in tests/Evals/extraction')]
 class EvalExtraction extends Command
 {
@@ -26,6 +27,14 @@ class EvalExtraction extends Command
 
         if ($runs === false || $runs < 1) {
             $this->error('--runs muss eine ganze Zahl ab 1 sein.');
+
+            return self::FAILURE;
+        }
+
+        $language = Language::tryFrom((string) $this->option('language'));
+
+        if ($language === null) {
+            $this->error('--language muss einer der Werte sein: '.collect(Language::cases())->map(fn (Language $case): string => $case->value)->implode(', ').'.');
 
             return self::FAILURE;
         }
@@ -55,7 +64,7 @@ class EvalExtraction extends Command
         }
 
         try {
-            $cases = EvalCase::loadAll(base_path('tests/Evals/extraction'));
+            $cases = EvalCase::loadAll(base_path('tests/Evals/extraction'), $language);
         } catch (RuntimeException $e) {
             $this->error('Die Testfälle sind fehlerhaft: '.$e->getMessage());
 
@@ -66,10 +75,10 @@ class EvalExtraction extends Command
 
         for ($i = 1; $i <= $runs; $i++) {
             $this->info("Durchlauf {$i} von {$runs} ...");
-            $results[] = $eval->run($provider, $cases);
+            $results[] = $eval->run($provider, $cases, $language);
         }
 
-        $text = $report->render($provider->name, $results);
+        $text = $report->render($provider->name, $language, $results);
         $path = 'evals/'.now()->format('Y-m-d_His').'-'.Str::slug($provider->name).'.txt';
         Storage::disk('local')->put($path, $text);
 

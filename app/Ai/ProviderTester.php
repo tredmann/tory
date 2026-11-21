@@ -4,6 +4,7 @@ namespace App\Ai;
 
 use App\Ai\Agents\InventoryExtractor;
 use App\Models\AiProvider;
+use App\Models\HouseholdSettings;
 use Laravel\Ai\Files\Image;
 use Throwable;
 
@@ -39,13 +40,19 @@ final class ProviderTester
             return null;
         }
 
-        return 'Bilderkennung: '.($extraction ?? 'ok.').' Embedding: '.($embedding ?? 'ok.');
+        return __('Image recognition: :extraction Embedding: :embedding', [
+            'extraction' => $extraction ?? __('OK.'),
+            'embedding' => $embedding ?? __('OK.'),
+        ]);
     }
 
     private function extractionReason(AiProvider $provider): ?string
     {
         try {
-            InventoryExtractor::make(aiProvider: $provider)->extract(
+            InventoryExtractor::make(
+                aiProvider: $provider,
+                language: HouseholdSettings::current()->content_language,
+            )->extract(
                 [Image::fromPath(resource_path('ai/test-image.png'), 'image/png')],
                 self::TIMEOUT_SECONDS,
             );
@@ -56,7 +63,7 @@ final class ProviderTester
             report($failure);
 
             return $failure->reason?->message($provider->name)
-                ?? 'Der Test ist fehlgeschlagen. Bitte Modell und Zugangsdaten prüfen.';
+                ?? __('The test failed. Please check the model and credentials.');
         }
     }
 }

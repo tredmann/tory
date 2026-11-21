@@ -12,20 +12,24 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ManageRecords;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\Support\Htmlable;
 
 class ManageUsers extends ManageRecords
 {
     use OmitsPageBreadcrumb, StartsBreadcrumbsAtHome;
 
-    protected static ?string $title = 'Nutzer';
-
     protected static string $resource = UserResource::class;
+
+    public function getTitle(): string|Htmlable
+    {
+        return __('Users');
+    }
 
     protected function getHeaderActions(): array
     {
         return [
             CreateAction::make()
-                ->label('Nutzer anlegen')
+                ->label(__('Add user'))
                 ->createAnother(false)
                 ->using(fn (array $data): User => User::invite($data['name'], $data['email'], $data['role']))
                 ->after(fn (User $record) => $this->showInviteLink($record->issueInviteLink())),
@@ -43,8 +47,8 @@ class ManageUsers extends ManageRecords
     public function showInviteLinkAction(): Action
     {
         return Action::make('showInviteLink')
-            ->modalHeading('Einladungslink')
-            ->modalDescription('Gilt 24 Stunden und nur einmal. Der Link wird nur jetzt angezeigt.')
+            ->modalHeading(__('Invite link'))
+            ->modalDescription(__('Valid for 24 hours and only once. The link is only shown now.'))
             ->schema(fn (array $arguments): array => [
                 TextEntry::make('url')
                     ->hiddenLabel()
@@ -52,9 +56,9 @@ class ManageUsers extends ManageRecords
                     ->copyable()
                     ->icon(Heroicon::OutlinedClipboard)
                     ->iconPosition(IconPosition::After)
-                    ->copyMessage('Kopiert'),
+                    ->copyMessage(__('Copied')),
             ])
             ->modalSubmitAction(false)
-            ->modalCancelActionLabel('Schließen');
+            ->modalCancelActionLabel(__('Close'));
     }
 }

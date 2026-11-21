@@ -17,6 +17,7 @@ abstract class TestCase extends BaseTestCase
 
         Embeddings::fake();
         $this->withoutVite();
+        $this->withHeader('Accept-Language', 'de');
     }
 
     /**

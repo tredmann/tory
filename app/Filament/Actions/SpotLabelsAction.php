@@ -17,7 +17,7 @@ class SpotLabelsAction
     public static function make(): Action
     {
         return self::configure(Action::make('labels'))
-            ->label('Etikett erzeugen')
+            ->label(__('Generate label'))
             ->action(fn (Spot $record, array $data, SpotLabelSheet $sheet): StreamedResponse => $sheet->download(
                 new Collection([$record]),
                 $data['size'],
@@ -27,7 +27,7 @@ class SpotLabelsAction
     public static function bulk(): BulkAction
     {
         return self::configure(BulkAction::make('labels'))
-            ->label('Etiketten erzeugen')
+            ->label(__('Generate labels'))
             ->deselectRecordsAfterCompletion()
             ->action(fn (Collection $records, array $data, SpotLabelSheet $sheet): StreamedResponse => $sheet->download(
                 $records,
@@ -46,11 +46,11 @@ class SpotLabelsAction
         return $action
             ->color('gray')
             ->groupedIcon(Heroicon::QrCode)
-            ->modalHeading('Etiketten erzeugen')
-            ->modalSubmitActionLabel('PDF herunterladen')
+            ->modalHeading(__('Generate labels'))
+            ->modalSubmitActionLabel(__('Download PDF'))
             ->schema([
                 Select::make('size')
-                    ->label('Größe')
+                    ->label(__('Size'))
                     ->options(LabelSize::class)
                     ->default(LabelSize::Medium->value)
                     ->selectablePlaceholder(false)

@@ -75,6 +75,25 @@ function issueMcpTokens(User $user, string $clientName = 'Claude', string $redir
     ];
 }
 
+/**
+ * Calls an MCP tool through a real request, so the middleware of /mcp (and with it the token
+ * owner's language) applies.
+ *
+ * @param  array<string, mixed>  $arguments
+ */
+function callMcpTool(User $user, string $tool, array $arguments)
+{
+    $tokens = issueMcpTokens($user);
+    auth()->forgetGuards();
+
+    return test()->withToken($tokens['access_token'])->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => ['name' => $tool, 'arguments' => $arguments],
+    ]);
+}
+
 /** A 1024-dimension unit vector pointing along the given axis. */
 function axis(int $index): array
 {

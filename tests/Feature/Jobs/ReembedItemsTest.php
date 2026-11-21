@@ -81,7 +81,7 @@ test('it stops after three failures in a row and stores the reason', function ()
     runReembed();
 
     expect($calls)->toBe(3)
-        ->and($provider->fresh()->search_failure)->toContain('OpenAI hat den API-Key abgelehnt.');
+        ->and($provider->fresh()->searchFailureMessage())->toContain('OpenAI hat den API-Key abgelehnt.');
 });
 
 test('it does not store a key in the failure', function () {
@@ -91,7 +91,7 @@ test('it does not store a key in the failure', function () {
 
     runReembed();
 
-    expect($provider->fresh()->search_failure)
+    expect($provider->fresh()->searchFailureMessage())
         ->toBe('Das Embedding ist fehlgeschlagen. Bitte Modell und Zugangsdaten prüfen.');
 });
 
@@ -191,7 +191,7 @@ test('failed() stores only the generic text for a raw exception', function () {
 
     (new ReembedItems)->failed(new RuntimeException('boom sk-secret-9999'));
 
-    expect($provider->fresh()->search_failure)->toBe(ProviderFailure::GENERIC_EMBEDDING_MESSAGE);
+    expect($provider->fresh()->searchFailureMessage())->toBe(ProviderFailure::genericEmbeddingMessage());
 });
 
 test('failed() stores the message of a provider failure with a reason', function () {
@@ -199,7 +199,7 @@ test('failed() stores the message of a provider failure with a reason', function
 
     (new ReembedItems)->failed(new ProviderFailure('x sk-secret-9999', ProviderFailureReason::KeyRejected, 'OpenAI'));
 
-    expect($provider->fresh()->search_failure)->toBe('OpenAI hat den API-Key abgelehnt.');
+    expect($provider->fresh()->searchFailureMessage())->toBe('OpenAI hat den API-Key abgelehnt.');
 });
 
 test('failed() writes nothing and does not throw without a provider active for search', function () {

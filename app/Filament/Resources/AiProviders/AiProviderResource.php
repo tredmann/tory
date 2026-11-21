@@ -11,7 +11,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use UnitEnum;
 
 class AiProviderResource extends Resource
 {
@@ -21,19 +20,34 @@ class AiProviderResource extends Resource
 
     protected static ?string $slug = 'ai-providers';
 
-    protected static ?string $modelLabel = 'Provider';
-
-    protected static ?string $pluralModelLabel = 'Provider';
-
-    protected static ?string $navigationLabel = 'Eigene KI';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Einstellungen';
-
-    protected static ?string $breadcrumb = 'Eigene KI';
-
     protected static ?int $navigationSort = 6;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getModelLabel(): string
+    {
+        return __('AI provider');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Providers');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('AI providers');
+    }
+
+    public static function getNavigationGroup(): string
+    {
+        return __('Settings');
+    }
+
+    public static function getBreadcrumb(): string
+    {
+        return __('AI providers');
+    }
 
     public static function form(Schema $schema): Schema
     {

@@ -14,9 +14,9 @@ use Laravel\Mcp\Server\Attributes\Version;
 #[Name('Tory')]
 #[Version('1.0.0')]
 #[Instructions(<<<'TEXT'
-    Tory ist das Inventar eines Haushalts und beantwortet die Frage, wo etwas ist. Gegenstände liegen auf Lagerplätzen, Lagerplätze gehören zu Lagerorten (zum Beispiel ein Regal im Keller).
-    Suche immer zuerst, bevor du etwas änderst. Passen mehrere Gegenstände oder Lagerplätze oder passt keiner, frage den Nutzer, statt selbst einen auszuwählen.
-    Frage nach, bevor du einen neuen Lagerplatz anlegst.
+    Tory is a household's inventory and answers the question of where something is. Items lie on spots, and spots belong to locations (for example a shelf in the cellar).
+    Always search first before you change anything. If several items or spots match, or none does, ask the user instead of choosing one yourself.
+    Ask before you create a new spot.
     TEXT)]
 class ToryServer extends Server
 {

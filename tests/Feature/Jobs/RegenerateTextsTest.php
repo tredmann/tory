@@ -3,10 +3,12 @@
 use App\Ai\Agents\InventoryExtractor;
 use App\Ai\ProviderFailure;
 use App\Enums\ImportStatus;
+use App\Enums\Language;
 use App\Enums\ProviderFailureReason;
 use App\Jobs\EmbedItem;
 use App\Jobs\RegenerateTexts;
 use App\Models\AiProvider;
+use App\Models\HouseholdSettings;
 use App\Models\Import;
 use App\Models\Item;
 use Illuminate\Support\Facades\Exceptions;
@@ -151,4 +153,14 @@ test('keeps the note of an item', function () {
     (new RegenerateTexts($item))->handle();
 
     expect($item->fresh())->title->toBe('Neu')->notes->toBe('Dongle fehlt');
+});
+
+test('regenerates the texts in the household content language', function () {
+    Queue::fake();
+    HouseholdSettings::current()->changeContentLanguage(Language::English);
+    InventoryExtractor::fake([['title' => 'Stapler', 'description' => 'A red stapler.']]);
+
+    (new RegenerateTexts(($this->makeRecord)('item')))->handle();
+
+    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->agent->language === Language::English);
 });

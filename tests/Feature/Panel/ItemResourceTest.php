@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Language;
 use App\Filament\Resources\Items\ItemResource;
 use App\Filament\Resources\Items\Pages\EditItem;
 use App\Filament\Resources\Items\Pages\ListItems;
@@ -598,3 +599,43 @@ test('the edit page changes and clears the note', function () {
         ->assertHasNoFormErrors();
     expect($item->fresh()->notes)->toBeNull();
 });
+
+test('an English user sees the item list in English', function () {
+    $user = User::factory()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+    app()->setLocale('en');
+    $this->actingAs($user);
+
+    Livewire::test(ListItems::class)
+        ->assertSee('Items')
+        ->assertSee('Search …')
+        ->assertDontSee('Gegenstände')
+        ->assertDontSee('Suchen …');
+});
+
+test('an English user sees the photo field of the edit page in English', function () {
+    $user = User::factory()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+    app()->setLocale('en');
+    $this->actingAs($user);
+    $item = Item::factory()->create();
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->assertSee('Photos')
+        ->assertDontSee('Fotos');
+});
+
+test('the item photo picker gets its messages in the language of the user', function (Language $language, string $tooMany, string $unreadable) {
+    $user = User::factory()->create();
+    $user->forceFill(['locale' => $language])->save();
+    app()->setLocale($language->value);
+    $this->actingAs($user);
+    $item = Item::factory()->create();
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->assertSee($tooMany, false)
+        ->assertSee($unreadable, false);
+})->with([
+    'German' => [Language::German, 'Höchstens :max Fotos.', 'Dieses Bild lässt sich nicht lesen.'],
+    'English' => [Language::English, 'At most :max photos.', 'This image cannot be read.'],
+]);

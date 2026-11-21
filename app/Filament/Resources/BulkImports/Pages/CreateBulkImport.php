@@ -18,11 +18,17 @@ class CreateBulkImport extends CreateRecord
 
     protected static string $resource = BulkImportResource::class;
 
-    protected static ?string $title = 'Viele erfassen';
-
-    protected static ?string $breadcrumb = 'Viele erfassen';
-
     protected static bool $canCreateAnother = false;
+
+    public function getTitle(): string
+    {
+        return __('Add many');
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return __('Add many');
+    }
 
     /**
      * @param  array<string, mixed>  $data
@@ -50,7 +56,7 @@ class CreateBulkImport extends CreateRecord
 
     protected function getCreatedNotificationTitle(): ?string
     {
-        return 'Bulkimport angelegt';
+        return __('Bulk import created');
     }
 
     /**
@@ -59,7 +65,7 @@ class CreateBulkImport extends CreateRecord
     protected function getCreateFormAction(): Action
     {
         return parent::getCreateFormAction()
-            ->label('Gruppieren')
+            ->label(__('Group'))
             ->extraAttributes([
                 'x-bind:disabled' => 'isProcessing || $store.toryPhotoUploads > 0',
                 'x-on:click.capture' => "\$dispatch('bulk-photos-sync')",

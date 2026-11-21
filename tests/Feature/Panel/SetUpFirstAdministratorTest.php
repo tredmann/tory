@@ -1,6 +1,8 @@
 <?php
 
+use App\Enums\Language;
 use App\Filament\Auth\SetUpFirstAdministrator;
+use App\Models\HouseholdSettings;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
@@ -16,6 +18,14 @@ test('the setup page asks for the first administrator', function () {
         ->assertSeeText('Willkommen bei Tory')
         ->assertSeeText('Lege den ersten Administrator an.')
         ->assertSeeText('Administrator anlegen');
+});
+
+test('the setup page follows the browser language on a fresh install', function () {
+    $this->withHeader('Accept-Language', 'en')
+        ->get('/setup')
+        ->assertOk()
+        ->assertSeeText('Welcome to Tory')
+        ->assertDontSeeText('Willkommen bei Tory');
 });
 
 test('setting up logs the new administrator in', function () {
@@ -80,4 +90,14 @@ test('a user created from the command line closes the setup', function () {
 
 test('the api is not redirected on an empty installation', function () {
     $this->getJson('/api/v1/user')->assertUnauthorized();
+});
+
+test('setting up in an English browser makes English the content language', function () {
+    app()->setLocale('en');
+
+    Livewire::test(SetUpFirstAdministrator::class)
+        ->fillForm(firstAdministratorForm())
+        ->call('create');
+
+    expect(HouseholdSettings::current()->content_language)->toBe(Language::English);
 });

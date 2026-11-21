@@ -3,6 +3,7 @@
 use App\Ai\Agents\InventoryExtractor;
 use App\Ai\Eval\EvalCase;
 use App\Ai\Eval\ExtractionEval;
+use App\Enums\Language;
 use App\Models\AiProvider;
 use App\Models\Import;
 use App\Models\Item;
@@ -31,7 +32,7 @@ function fakeVectors(array $byInput = []): void
 
 function runEval(array $cases, ?AiProvider $provider = null)
 {
-    return app(ExtractionEval::class)->run($provider ?? AiProvider::factory()->create(), $cases);
+    return app(ExtractionEval::class)->run($provider ?? AiProvider::factory()->create(), $cases, Language::German);
 }
 
 test('keyword hit is a case-insensitive substring in title, description or terms', function () {

@@ -23,39 +23,42 @@ class ManageAiProviders extends ManageRecords
 {
     use OmitsPageBreadcrumb, StartsBreadcrumbsAtHome;
 
-    protected static ?string $title = 'Eigene KI';
-
     protected static string $resource = AiProviderResource::class;
+
+    public function getTitle(): string|Htmlable
+    {
+        return __('AI providers');
+    }
 
     protected function getHeaderActions(): array
     {
         return [
             CreateAction::make()
-                ->label('Provider anlegen')
+                ->label(__('Create provider'))
                 ->createAnother(false),
             ActionGroup::make([
                 Action::make('export')
-                    ->label('Exportieren')
+                    ->label(__('Export'))
                     ->color('gray')
                     ->groupedIcon(Heroicon::ArrowDownTray)
                     ->authorize('create')
                     ->disabled(fn (): bool => ! AiProvider::query()->exists())
                     ->requiresConfirmation()
-                    ->modalHeading('Provider exportieren')
-                    ->modalDescription('Die Datei enthält die API-Keys im Klartext. Bewahre sie sicher auf und lösche sie nach dem Import.')
-                    ->modalSubmitActionLabel('Exportieren')
+                    ->modalHeading(__('Export providers'))
+                    ->modalDescription(__('The file contains the API keys in plain text. Keep it safe and delete it after the import.'))
+                    ->modalSubmitActionLabel(__('Export'))
                     ->action(fn (ProviderTransfer $transfer): StreamedResponse => $this->downloadExport($transfer)),
                 Action::make('import')
-                    ->label('Importieren')
+                    ->label(__('Import from file'))
                     ->color('gray')
                     ->groupedIcon(Heroicon::ArrowUpTray)
                     ->authorize('create')
-                    ->modalHeading('Provider importieren')
-                    ->modalDescription('Provider, deren UUID hier schon vorhanden ist, werden übersprungen. Neue Provider sind zunächst inaktiv.')
-                    ->modalSubmitActionLabel('Importieren')
+                    ->modalHeading(__('Import providers'))
+                    ->modalDescription(__('Providers whose UUID already exists here are skipped. New providers start out inactive.'))
+                    ->modalSubmitActionLabel(__('Import from file'))
                     ->schema([
                         FileUpload::make('file')
-                            ->label('Datei')
+                            ->label(__('File'))
                             ->storeFiles(false)
                             ->acceptedFileTypes(['application/json', 'text/plain'])
                             ->maxSize(1024)
@@ -75,8 +78,8 @@ class ManageAiProviders extends ManageRecords
         if ($omitted > 0) {
             Notification::make()
                 ->title($omitted === 1
-                    ? '1 Provider mit unlesbarem Key wurde nicht exportiert.'
-                    : "{$omitted} Provider mit unlesbarem Key wurden nicht exportiert.")
+                    ? __('1 provider with an unreadable key was not exported.')
+                    : __(':count providers with an unreadable key were not exported.', ['count' => $omitted]))
                 ->warning()
                 ->send();
         }
@@ -99,12 +102,12 @@ class ManageAiProviders extends ManageRecords
             $result = $transfer->import((string) $file->get());
 
             Notification::make()
-                ->title("{$result->created} angelegt, {$result->skipped} übersprungen, {$result->renamed} umbenannt")
+                ->title(__(':created created, :skipped skipped, :renamed renamed', ['created' => $result->created, 'skipped' => $result->skipped, 'renamed' => $result->renamed]))
                 ->success()
                 ->send();
         } catch (InvalidArgumentException $exception) {
             Notification::make()
-                ->title('Import fehlgeschlagen')
+                ->title(__('Import failed'))
                 ->body($exception->getMessage())
                 ->danger()
                 ->send();
@@ -116,9 +119,9 @@ class ManageAiProviders extends ManageRecords
     public function getSubheading(): string|Htmlable|null
     {
         return match ([AiProvider::active() === null, AiProvider::activeForSearch() === null]) {
-            [true, true] => 'Aktuell gilt die Serverkonfiguration (.env).',
-            [true, false] => 'Für die Bilderkennung gilt die Serverkonfiguration (.env).',
-            [false, true] => 'Für die Suche gilt die Serverkonfiguration (.env).',
+            [true, true] => (string) __('The server configuration (.env) currently applies.'),
+            [true, false] => (string) __('The server configuration (.env) applies to image recognition.'),
+            [false, true] => (string) __('The server configuration (.env) applies to search.'),
             default => null,
         };
     }

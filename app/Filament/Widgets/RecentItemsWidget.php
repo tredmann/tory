@@ -19,14 +19,14 @@ class RecentItemsWidget extends TableWidget
     {
         return ItemGrid::configure($table)
             ->query(fn (): Builder => Item::query()->latest()->limit(8))
-            ->heading('Zuletzt erfasst')
-            ->description(fn (): string => trans_choice(':count Gegenstand|:count Gegenstände', Item::query()->count()))
+            ->heading(__('Recently added'))
+            ->description(fn (): string => trans_choice(':count item|:count items', Item::query()->count()))
             ->paginated(false)
-            ->emptyStateHeading('Noch nichts erfasst')
+            ->emptyStateHeading(__('Nothing added yet'))
             ->emptyStateIcon(Heroicon::OutlinedCamera)
             ->emptyStateActions([
                 Action::make('capture')
-                    ->label('Erfassen')
+                    ->label(__('Add item'))
                     ->url(ImportResource::getUrl('create')),
             ]);
     }

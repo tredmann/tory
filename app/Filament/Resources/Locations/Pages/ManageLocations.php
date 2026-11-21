@@ -18,7 +18,7 @@ class ManageLocations extends ManageRecords
     {
         return [
             CreateAction::make()
-                ->label('Lagerort anlegen')
+                ->label(__('Create location'))
                 ->createAnother(false),
         ];
     }

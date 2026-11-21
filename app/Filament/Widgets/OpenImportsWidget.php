@@ -26,7 +26,7 @@ class OpenImportsWidget extends TableWidget
     {
         return $table
             ->query(fn (): Builder => Import::query()->latest()->limit(self::LIMIT))
-            ->heading('Offene Importe')
+            ->heading(__('Open imports'))
             ->columns([
                 Split::make([
                     TextColumn::make('title')
@@ -39,7 +39,7 @@ class OpenImportsWidget extends TableWidget
             ])
             ->headerActions([
                 Action::make('all')
-                    ->label('Alle Importe')
+                    ->label(__('All imports'))
                     ->link()
                     ->url(ImportResource::getUrl('index'))
                     ->visible(fn (): bool => Import::query()->count() > self::LIMIT),

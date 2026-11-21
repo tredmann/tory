@@ -14,7 +14,7 @@ use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\IconPosition;
 use Filament\Support\Icons\Heroicon;
-use UnitEnum;
+use Illuminate\Contracts\Support\Htmlable;
 
 class TorySetup extends Page
 {
@@ -22,13 +22,22 @@ class TorySetup extends Page
 
     protected static ?string $slug = 'tory-in-claude';
 
-    protected static ?string $title = 'Tory in Claude';
-
-    protected static ?string $navigationLabel = 'Tory in Claude';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Einstellungen';
-
     protected static ?int $navigationSort = 5;
+
+    public function getTitle(): string|Htmlable
+    {
+        return __('Tory in Claude');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Tory in Claude');
+    }
+
+    public static function getNavigationGroup(): string
+    {
+        return __('Settings');
+    }
 
     public function content(Schema $schema): Schema
     {
@@ -36,43 +45,43 @@ class TorySetup extends Page
 
         return $schema->components([
             Section::make()->schema([
-                Text::make('Du kannst Claude fragen, wo etwas liegt, und ihm sagen, wenn du etwas woanders hingelegt hast.'),
+                Text::make(__('You can ask Claude where something is and tell it when you have put something elsewhere.')),
                 TextEntry::make('address')
-                    ->label('Adresse von Tory')
+                    ->label(__('Address of Tory'))
                     ->state($address)
                     ->copyable()
                     ->icon(Heroicon::OutlinedClipboard)
                     ->iconPosition(IconPosition::After)
-                    ->copyMessage('Kopiert'),
+                    ->copyMessage(__('Copied')),
             ]),
-            Section::make('Im Browser (claude.ai)')->schema([
-                Text::make('Öffne in claude.ai die Einstellungen, dann Connectors, und füge einen eigenen Connector hinzu. Tippe als Name „Tory" ein und füge die Adresse von oben ein, melde dich bei Tory an und klicke auf „Erlauben".'),
+            Section::make(__('In the browser (claude.ai)'))->schema([
+                Text::make(__('In claude.ai, open Settings, then Connectors, and add a custom connector. Enter “Tory” as the name, paste the address from above, sign in to Tory and click “Allow”.')),
             ]),
-            Section::make('In der Handy-App')->schema([
-                Text::make('Hier ist nichts zu tun: Der Connector aus claude.ai ist dort auch da.'),
+            Section::make(__('In the mobile app'))->schema([
+                Text::make(__('Nothing to do here: the connector from claude.ai is there too.')),
             ]),
-            Section::make('In Claude Desktop')->schema([
-                Text::make('Genau wie im Browser.'),
+            Section::make(__('In Claude Desktop'))->schema([
+                Text::make(__('Exactly like in the browser.')),
             ]),
-            Section::make('In Claude Code')->schema([
-                Text::make('Kopiere diesen Befehl. Starte danach Claude Code, tippe /mcp, wähle „tory“ und melde dich bei Tory an.'),
+            Section::make(__('In Claude Code'))->schema([
+                Text::make(__('Copy this command. Then start Claude Code, type /mcp, choose “tory” and sign in to Tory.')),
                 TextEntry::make('command')
                     ->hiddenLabel()
                     ->state('claude mcp add --transport http --scope user tory '.$address)
                     ->copyable()
                     ->icon(Heroicon::OutlinedClipboard)
                     ->iconPosition(IconPosition::After)
-                    ->copyMessage('Kopiert'),
+                    ->copyMessage(__('Copied')),
             ]),
-            Section::make('Probier es aus')->schema([
-                Text::make('„Wo ist die Bohrmaschine?"'),
-                Text::make('„Ich habe den Akkuschrauber in die Kiste Werkzeug gelegt."'),
-                Text::make('„Leg im Keller einen neuen Lagerplatz ‚Regal 4\' an."'),
+            Section::make(__('Try it out'))->schema([
+                Text::make(__('“Where is the drill?”')),
+                Text::make(__('“I put the cordless screwdriver in the toolbox.”')),
+                Text::make(__('“Create a new spot ‘Shelf 4’ in the basement.”')),
             ]),
-            Section::make('Was Claude nicht kann')->schema([
-                Text::make('Fotos und neue Gegenstände gehen über „Erfassen".'),
+            Section::make(__('What Claude cannot do'))->schema([
+                Text::make(__('Photos and new items go through “Add item”.')),
             ]),
-            Section::make('Verbundene Claude-Zugänge')->schema([
+            Section::make(__('Claude connections'))->schema([
                 View::make('filament.pages.tory-setup-connections')
                     ->viewData(fn (ClaudeConnections $connections): array => [
                         'connections' => $connections->for($this->currentUser()),
@@ -84,12 +93,12 @@ class TorySetup extends Page
     public function disconnectAction(): Action
     {
         return Action::make('disconnect')
-            ->label('Trennen')
+            ->label(__('Disconnect'))
             ->color('danger')
             ->size('sm')
             ->requiresConfirmation()
-            ->modalHeading('Claude trennen?')
-            ->modalDescription('Claude kann danach nicht mehr auf Tory zugreifen, bis du es neu verbindest.')
+            ->modalHeading(__('Disconnect Claude?'))
+            ->modalDescription(__('Claude can no longer access Tory afterwards, until you connect it again.'))
             ->action(function (array $arguments, ClaudeConnections $connections): void {
                 $connections->disconnect($this->currentUser(), (string) $arguments['clientId']);
             });

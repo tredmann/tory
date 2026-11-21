@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Sucht Lagerplätze nach Name oder Code, auf Wunsch nur in einem Lagerort. Zeigt alle Treffer.')]
+#[Description('Searches spots by name or code, optionally only within one location. Shows all matches.')]
 #[IsReadOnly]
 class FindSpotsTool extends Tool
 {
@@ -24,8 +24,8 @@ class FindSpotsTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'name' => $schema->string()->description('Name oder Code des Lagerplatzes, zum Beispiel "Regal 3".')->required(),
-            'location' => $schema->string()->description('Name des Lagerorts, um die Suche einzugrenzen.'),
+            'name' => $schema->string()->description('Name or code of the spot, for example "Shelf 3".')->required(),
+            'location' => $schema->string()->description('Name of the location, to narrow the search.'),
         ];
     }
 
@@ -63,7 +63,7 @@ class FindSpotsTool extends Tool
 
         if ($spots === []) {
             $locations = Location::query()->orderBy('name')->pluck('name')->all();
-            $text = 'Kein Lagerplatz gefunden.'.($locations === [] ? '' : ' Vorhandene Lagerorte: '.implode(', ', $locations).'.');
+            $text = __('No spot found.').($locations === [] ? '' : ' '.__('Existing locations: :names.', ['names' => implode(', ', $locations)]));
 
             return Response::make(Response::text($text))
                 ->withStructuredContent(['spots' => [], 'locations' => $locations]);

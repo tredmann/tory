@@ -24,50 +24,50 @@ class ImportInfolist
                     ->extraAttributes(fn (Import $record): array => $record->status->isActive() || $record->isRegenerating() ? ['wire:poll.5s' => ''] : [])
                     ->schema([
                         ImageEntry::make('photos')
-                            ->label('Fotos')
+                            ->label(__('Photos'))
                             ->state(fn (Import $record): array => PhotoLinks::thumbnails($record->photos ?? []))
                             ->imageHeight(160)
                             ->wrap()
                             ->extraImgAttributes(fn (Import $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),
                         TextEntry::make('spot.full_label')
-                            ->label('Lagerplatz')
+                            ->label(__('Spot'))
                             ->placeholder('—'),
                         TextEntry::make('status')
-                            ->label('Status')
+                            ->label(__('Status'))
                             ->badge()
-                            ->state(fn (Import $record): ImportStatus|string => $record->isRegenerating() ? RegenerationEntries::RUNNING_LABEL : $record->status)
+                            ->state(fn (Import $record): ImportStatus|string => $record->isRegenerating() ? RegenerationEntries::runningLabel() : $record->status)
                             ->color(fn (Import $record): ?string => $record->isRegenerating() ? 'warning' : null),
                         TextEntry::make('title')
-                            ->label('Titel')
+                            ->label(__('Title'))
                             ->visible(fn (Import $record): bool => filled($record->title)),
                         TextEntry::make('description')
-                            ->label('Beschreibung')
+                            ->label(__('Description'))
                             ->extraAttributes(['style' => 'white-space: pre-line'])
                             ->visible(fn (Import $record): bool => filled($record->description)),
                         TextEntry::make('search_terms')
-                            ->label('Suchbegriffe')
+                            ->label(__('Search terms'))
                             ->badge()
                             ->visible(fn (Import $record): bool => filled($record->search_terms)),
                         TextEntry::make('failure_message')
-                            ->label('Fehler')
+                            ->label(__('Error'))
                             ->color('danger')
                             ->url(fn (): ?string => AiProviderResource::canAccess() ? AiProviderResource::getUrl('index') : null)
                             ->visible(fn (Import $record): bool => $record->status === ImportStatus::Failed && $record->failure_reason !== null)
-                            ->state(fn (Import $record): string => $record->failureMessage().(AiProviderResource::canAccess() ? ' Provider prüfen' : '')),
+                            ->state(fn (Import $record): string => $record->failureMessage().(AiProviderResource::canAccess() ? ' '.__('Check provider') : '')),
                         TextEntry::make('error')
-                            ->label('Fehler')
+                            ->label(__('Error'))
                             ->color('danger')
                             ->visible(fn (Import $record, Application $app): bool => $record->status === ImportStatus::Failed
                                 && ($app->hasDebugModeEnabled() || $record->failure_reason === null))
                             ->state(fn (Import $record, Application $app): ?string => $app->hasDebugModeEnabled()
                                 ? $record->error
-                                : 'Die Analyse ist fehlgeschlagen. Bitte erneut versuchen.'),
+                                : (string) __('The analysis failed. Please try again.')),
                         ...RegenerationEntries::failures(),
                         TextEntry::make('created_at')
-                            ->label('Angelegt')
+                            ->label(__('Created'))
                             ->dateTime(),
                         TextEntry::make('updated_at')
-                            ->label('Aktualisiert')
+                            ->label(__('Updated'))
                             ->dateTime(),
                     ]),
             ]);

@@ -66,12 +66,12 @@ class SetUpFirstAdministrator extends SimplePage
     {
         return $schema->components([
             TextInput::make('name')
-                ->label('Name')
+                ->label(__('Name'))
                 ->required()
                 ->maxLength(255)
                 ->autofocus(),
             TextInput::make('email')
-                ->label('E-Mail')
+                ->label(__('Email'))
                 ->email()
                 ->required()
                 ->maxLength(255),
@@ -83,20 +83,20 @@ class SetUpFirstAdministrator extends SimplePage
     protected function getPasswordFormComponent(): Component
     {
         return TextInput::make('password')
-            ->label('Passwort')
+            ->label(__('Password'))
             ->password()
             ->autocomplete('new-password')
             ->revealable(filament()->arePasswordsRevealable())
             ->required()
             ->rule(PasswordRule::default())
             ->same('passwordConfirmation')
-            ->validationAttribute('Passwort');
+            ->validationAttribute(__('Password'));
     }
 
     protected function getPasswordConfirmationFormComponent(): Component
     {
         return TextInput::make('passwordConfirmation')
-            ->label('Passwort bestätigen')
+            ->label(__('Confirm password'))
             ->password()
             ->autocomplete('new-password')
             ->revealable(filament()->arePasswordsRevealable())
@@ -107,19 +107,19 @@ class SetUpFirstAdministrator extends SimplePage
     #[Unexposed]
     public function getTitle(): string|Htmlable
     {
-        return 'Willkommen bei Tory';
+        return __('Welcome to Tory');
     }
 
     #[Unexposed]
     public function getHeading(): string|Htmlable|null
     {
-        return 'Willkommen bei Tory';
+        return __('Welcome to Tory');
     }
 
     #[Unexposed]
     public function getSubheading(): string|Htmlable|null
     {
-        return 'Lege den ersten Administrator an.';
+        return __('Create the first administrator.');
     }
 
     #[Unexposed]
@@ -132,7 +132,7 @@ class SetUpFirstAdministrator extends SimplePage
                 ->footer([
                     Actions::make([
                         Action::make('create')
-                            ->label('Administrator anlegen')
+                            ->label(__('Create administrator'))
                             ->submit('create'),
                     ])
                         ->alignment($this->getFormActionsAlignment())

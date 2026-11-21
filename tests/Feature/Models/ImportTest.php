@@ -164,3 +164,12 @@ test('converting queues no thumbnail', function () {
 
     Queue::assertNotPushed(GenerateThumbnail::class);
 });
+
+test('enum labels follow the locale', function () {
+    expect(ImportStatus::Failed->getLabel())->toBe('Fehlgeschlagen');
+
+    app()->setLocale('en');
+
+    expect(ImportStatus::Failed->getLabel())->toBe('Failed')
+        ->and(ProviderFailureReason::Unreachable->message('Claude'))->toBe('Claude is not reachable.');
+});

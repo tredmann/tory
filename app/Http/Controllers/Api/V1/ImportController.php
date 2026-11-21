@@ -55,7 +55,7 @@ class ImportController extends Controller
 
     public function retry(Import $import): ImportResource
     {
-        abort_unless($import->status === ImportStatus::Failed, 409, 'Nur fehlgeschlagene Importe lassen sich erneut starten.');
+        abort_unless($import->status === ImportStatus::Failed, 409, __('Only failed imports can be restarted.'));
 
         $import->restart();
 
@@ -64,7 +64,7 @@ class ImportController extends Controller
 
     public function convert(ConvertImportRequest $request, Import $import): JsonResponse
     {
-        abort_unless($import->isFinished() && ! $import->isRegenerating(), 409, 'Der Import lässt sich gerade nicht übernehmen.');
+        abort_unless($import->isFinished() && ! $import->isRegenerating(), 409, __('The import cannot be turned into an item right now.'));
 
         $spotId = $request->spotId();
 
@@ -84,7 +84,7 @@ class ImportController extends Controller
 
     public function destroy(Import $import): Response
     {
-        abort_unless($import->isFinished(), 409, 'Der Import läuft noch.');
+        abort_unless($import->isFinished(), 409, __('The import is still running.'));
 
         $import->delete();
 

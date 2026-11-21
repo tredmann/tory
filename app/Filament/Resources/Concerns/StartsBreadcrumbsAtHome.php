@@ -27,7 +27,7 @@ trait StartsBreadcrumbsAtHome
         $icon = generate_icon_html(Heroicon::Home, size: IconSize::Small)?->toHtml();
 
         return [
-            Dashboard::getUrl() => new HtmlString($icon.'<span class="tory-visually-hidden">Übersicht</span>'),
+            Dashboard::getUrl() => new HtmlString($icon.'<span class="tory-visually-hidden">'.e(__('Overview')).'</span>'),
             ...parent::getResourceBreadcrumbs(),
         ];
     }

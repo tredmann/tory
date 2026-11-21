@@ -34,7 +34,7 @@ trait ValidatesPhotoUploads
                 ->sum(fn (mixed $file): int => $file instanceof UploadedFile ? (int) $file->getSize() : 0);
 
             if ($bytes > self::MAX_TOTAL_KILOBYTES * 1024) {
-                $fail('Alle Fotos zusammen dürfen höchstens 70 MB groß sein.');
+                $fail(__('All photos together may be at most 70 MB.'));
             }
         };
     }

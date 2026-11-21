@@ -3,11 +3,11 @@
     $redirectHost = is_string($redirectUri) ? parse_url($redirectUri, PHP_URL_HOST) : null;
 @endphp
 <!DOCTYPE html>
-<html lang="de">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Zugriff erlauben? - {{ config('app.name') }}</title>
+    <title>{{ __('Allow access?') }} - {{ config('app.name') }}</title>
     <style>
         :root {
             --background: #f9fafb;
@@ -82,14 +82,18 @@
 </head>
 <body>
 <main>
-    <h1>Zugriff erlauben?</h1>
+    <h1>{{ __('Allow access?') }}</h1>
 
     <p>
-        „{{ $client->name }}"@if ($redirectHost) ({{ $redirectHost }})@endif möchte auf dein Tory zugreifen.
-        Es kann Gegenstände finden, umlagern und Lagerplätze anlegen.
+        @if ($redirectHost)
+            {{ __('“:client” (:host) wants to access your Tory.', ['client' => $client->name, 'host' => $redirectHost]) }}
+        @else
+            {{ __('“:client” wants to access your Tory.', ['client' => $client->name]) }}
+        @endif
+        {{ __('It can find items, move them and create spots.') }}
     </p>
 
-    <p class="muted">Angemeldet als {{ $user->email }}</p>
+    <p class="muted">{{ __('Signed in as :email', ['email' => $user->email]) }}</p>
 
     <div class="actions">
         <form method="POST" action="{{ route('passport.authorizations.deny') }}">
@@ -98,7 +102,7 @@
             <input type="hidden" name="state" value="">
             <input type="hidden" name="client_id" value="{{ $client->id }}">
             <input type="hidden" name="auth_token" value="{{ $authToken }}">
-            <button type="submit">Ablehnen</button>
+            <button type="submit">{{ __('Deny') }}</button>
         </form>
 
         <form method="POST" action="{{ route('passport.authorizations.approve') }}">
@@ -106,7 +110,7 @@
             <input type="hidden" name="state" value="">
             <input type="hidden" name="client_id" value="{{ $client->id }}">
             <input type="hidden" name="auth_token" value="{{ $authToken }}">
-            <button type="submit" class="primary">Erlauben</button>
+            <button type="submit" class="primary">{{ __('Allow') }}</button>
         </form>
     </div>
 </main>

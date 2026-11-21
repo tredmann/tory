@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Sucht Gegenstände nach Stichwort oder Bedeutung und nennt für jeden den Lagerplatz und Lagerort.')]
+#[Description('Searches items by keyword or meaning and names the spot and location of each.')]
 #[IsReadOnly]
 class FindItemsTool extends Tool
 {
@@ -26,7 +26,7 @@ class FindItemsTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'query' => $schema->string()->description('Wonach gesucht wird, zum Beispiel "Bohrmaschine".')->required(),
+            'query' => $schema->string()->description('What to search for, for example "drill".')->required(),
         ];
     }
 
@@ -48,12 +48,12 @@ class FindItemsTool extends Tool
             ->all();
 
         if ($items === []) {
-            return Response::make(Response::text('Nichts gefunden.'))->withStructuredContent(['items' => []]);
+            return Response::make(Response::text(__('Nothing found.')))->withStructuredContent(['items' => []]);
         }
 
         $lines = array_map(
             fn (array $item): string => "{$item['title']} ({$item['id']}): {$item['spot']['name']} ({$item['spot']['code']}), {$item['spot']['location']}"
-                .($item['notes'] === null ? '' : ' – Bemerkung: '.Str::squish($item['notes'])),
+                .($item['notes'] === null ? '' : ' – '.__('Note').': '.Str::squish($item['notes'])),
             $items,
         );
 

@@ -19,22 +19,22 @@ class ImportsTable
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('spot.location'))
             ->columns([
                 ImageColumn::make('photos')
-                    ->label('Foto')
+                    ->label(__('Photo'))
                     ->state(fn (Import $record): array => PhotoLinks::thumbnails($record->photos ?? []))
                     ->imageHeight(80)
                     ->limit(1)
                     ->extraImgAttributes(fn (Import $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),
                 TextColumn::make('title')
-                    ->label('Titel')
+                    ->label(__('Title'))
                     ->placeholder('—'),
                 TextColumn::make('spot.full_label')
-                    ->label('Lagerplatz')
+                    ->label(__('Spot'))
                     ->placeholder('—'),
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(__('Status'))
                     ->badge(),
                 TextColumn::make('created_at')
-                    ->label('Angelegt')
+                    ->label(__('Created'))
                     ->dateTime()
                     ->sortable(),
             ])

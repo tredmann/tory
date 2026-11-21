@@ -13,8 +13,8 @@ enum BulkImportStatus: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Grouping => 'Wird gruppiert',
-            self::Ready => 'Bereit zur Prüfung',
+            self::Grouping => __('Being grouped'),
+            self::Ready => __('Ready for review'),
         };
     }
 

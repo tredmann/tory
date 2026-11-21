@@ -43,15 +43,13 @@ class ReembedItems implements ShouldQueue
 
     /**
      * Records why the chain ended, e.g. when the worker killed the job. Only
-     * a provider's own user message or the generic text is stored, never a
+     * the reason of a provider failure or a generic marker is stored, never a
      * raw exception message.
      */
     public function failed(?Throwable $exception): void
     {
-        $message = $exception instanceof ProviderFailure
-            ? ($exception->userMessage() ?? ProviderFailure::GENERIC_EMBEDDING_MESSAGE)
-            : ProviderFailure::GENERIC_EMBEDDING_MESSAGE;
-
-        AiProvider::query()->where('is_active_for_search', true)->update(['search_failure' => $message]);
+        AiProvider::query()->where('is_active_for_search', true)->update(
+            AiProvider::searchFailureColumns(true, $exception instanceof ProviderFailure ? $exception : null),
+        );
     }
 }

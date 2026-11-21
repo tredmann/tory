@@ -107,11 +107,11 @@ class Item extends Model
             $count = count($remaining) + count($uploads);
 
             if ($count > Import::MAX_PHOTOS) {
-                throw ValidationException::withMessages(['data.photo_edits' => 'Höchstens '.Import::MAX_PHOTOS.' Fotos.']);
+                throw ValidationException::withMessages(['data.photo_edits' => __('At most :max photos.', ['max' => Import::MAX_PHOTOS])]);
             }
 
             if ($count === 0 && $current !== []) {
-                throw ValidationException::withMessages(['data.photo_edits' => 'Mindestens ein Foto.']);
+                throw ValidationException::withMessages(['data.photo_edits' => __('At least one photo.')]);
             }
 
             $stored = [];

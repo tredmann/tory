@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Enums\Language;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterval;
@@ -80,8 +81,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Date::use(CarbonImmutable::class);
 
-        Table::configureUsing(fn (Table $table): Table => $table->defaultDateTimeDisplayFormat('d.m.Y H:i'));
-        Schema::configureUsing(fn (Schema $schema): Schema => $schema->defaultDateTimeDisplayFormat('d.m.Y H:i'));
+        $dateTimeFormat = fn (): string => Language::from(app()->getLocale())->dateTimeFormat();
+
+        Table::configureUsing(fn (Table $table): Table => $table->defaultDateTimeDisplayFormat($dateTimeFormat));
+        Schema::configureUsing(fn (Schema $schema): Schema => $schema->defaultDateTimeDisplayFormat($dateTimeFormat));
 
         DB::prohibitDestructiveCommands(
             $this->app->isProduction(),

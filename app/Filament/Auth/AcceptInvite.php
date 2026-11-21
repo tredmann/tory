@@ -80,21 +80,21 @@ class AcceptInvite extends SimplePage
     protected function getPasswordFormComponent(): Component
     {
         return TextInput::make('password')
-            ->label('Passwort')
+            ->label(__('Password'))
             ->password()
             ->autocomplete('new-password')
             ->revealable(filament()->arePasswordsRevealable())
             ->required()
             ->rule(PasswordRule::default())
             ->same('passwordConfirmation')
-            ->validationAttribute('Passwort')
+            ->validationAttribute(__('Password'))
             ->autofocus();
     }
 
     protected function getPasswordConfirmationFormComponent(): Component
     {
         return TextInput::make('passwordConfirmation')
-            ->label('Passwort bestätigen')
+            ->label(__('Confirm password'))
             ->password()
             ->autocomplete('new-password')
             ->revealable(filament()->arePasswordsRevealable())
@@ -105,13 +105,13 @@ class AcceptInvite extends SimplePage
     #[Unexposed]
     public function getTitle(): string|Htmlable
     {
-        return 'Passwort festlegen';
+        return __('Set password');
     }
 
     #[Unexposed]
     public function getHeading(): string|Htmlable|null
     {
-        return 'Passwort festlegen';
+        return __('Set password');
     }
 
     #[Unexposed]
@@ -124,7 +124,7 @@ class AcceptInvite extends SimplePage
                 ->footer([
                     Actions::make([
                         Action::make('accept')
-                            ->label('Passwort speichern')
+                            ->label(__('Save password'))
                             ->submit('accept'),
                     ])
                         ->alignment($this->getFormActionsAlignment())

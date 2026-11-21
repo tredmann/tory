@@ -38,18 +38,20 @@ docker compose exec app php artisan users:make-admin admin@example.com
 # CLI-created users are unverified:
 docker compose exec app php artisan tinker --execute='App\Models\User::firstWhere("email", "admin@example.com")->markEmailAsVerified();'
 docker compose exec app php artisan queue:failed
-docker compose exec app php artisan extraction:eval --provider="Ollama lokal" --runs=3
+docker compose exec app php artisan extraction:eval --provider="Ollama lokal" --runs=3 --language=de
 docker compose exec vite npm <command>
 docker compose exec db psql -U tory -d tory
 ```
 
-`extraction:eval` runs the real extractor on `tests/Evals/extraction/` (not part of the suite), writes nothing to the database and saves its report under `storage/app/private/evals/`. It calls the named provider for real, so a paid provider costs money per run. Judge every change to the extraction prompt with it.
+`extraction:eval` runs the real extractor on `tests/Evals/extraction/` (not part of the suite), writes nothing to the database and saves its report under `storage/app/private/evals/`. It calls the named provider for real, so a paid provider costs money per run. `--language=de|en` picks the prompt and the cases' expected language. Judge every change to the extraction prompt with it, once per language.
 
 ## Architecture map
 
 - **Panel:** `app/Providers/Filament/AdminPanelProvider.php` (id `admin`, path `''`); everything under `app/Filament/` is auto-discovered. Filament's own auth; `User` implements `FilamentUser` and `MustVerifyEmail`. Two roles (`UserRole`); `UserPolicy` and `AiProviderPolicy` make the user list and "Eigene KI" admin-only; everything else has no policy and is open to every verified, unlocked user (one household). Global search is off.
 - **Resources:** one directory per resource (`ImportResource.php`, `Schemas/`, `Tables/`, `Pages/`); breadcrumb and title traits in `app/Filament/Resources/Concerns/`. Status enums in `app/Enums/` implement `HasLabel`/`HasColor` for badges.
-- **German UI:** locale `de`, Laravel's messages in `lang/de/` by hand, dates `d.m.Y H:i` (`AppServiceProvider`).
+- **Languages** (spec german-english): *interface language* per user (`users.locale`, null = follow the browser, switched in the user menu); *content language* per household (`HouseholdSettings`, single row, page „Haushalt“ = `HouseholdSettingsPage`, admin-only, under „Einstellungen“). The content language picks the `InventoryExtractor` prompt (a German and an English one, German frozen by a snapshot test).
+- **Locale resolution:** `SetLocale` takes the user's `locale`, else the browser for a user without a choice, else the household content language for guests, else the browser while no user exists. It runs in the panel, the `web` group (OAuth consent, Livewire updates), the API after `auth:sanctum` and `/mcp` after `auth:api`. MCP instructions and tool descriptions are fixed English; answers follow the token owner's locale.
+- **Translations:** keys are English text, German lives in `lang/de.json` (Laravel's own messages in `lang/de/` by hand). `TranslationsTest` finds every key used in code, including `trans_choice` (PHP-file keys like `auth.failed` are skipped); `EnglishInterfaceTest` checks the English panel for German leftovers. Dates: `Language::dateTimeFormat()` (`app/Enums/Language.php`, consumed by `AppServiceProvider`). `ai_providers.search_failure_*` hold codes turned into text at render time, not translated strings.
 - **Dashboard and item grid:** `App\Filament\Pages\Dashboard` with widgets in `app/Filament/Widgets/`; every list of items is `App\Filament\Schemas\ItemGrid` photo tiles and looks the same everywhere. A tile shows up to three photos (spec item-grid-gallery): hover strips, swiping and dots from `resources/js/item-gallery.js` and `resources/css/item-grid.css`.
 - **Imports** (specs inventory-extraction, async-import): "Erfassen" creates a pending `Import`, `ExtractImport` runs `App\Ai\Agents\InventoryExtractor`, "Übernehmen" turns it into an item through `Import::convertToItem()`.
 - **Bulk import** (spec bulk-import): `BulkImport`, grouped by `GroupBulkImport`; the review page edits through locked model methods that throw `StaleBulkImport`; confirming creates one import per group.
@@ -79,6 +81,8 @@ docker compose exec db psql -U tory -d tory
 ## Gotchas
 
 - `routes/web.php` must never define `/`.
+- Navigation group labels must be closures: `panel()` runs before `SetLocale`, so a plain `__()` there is fixed to the default locale.
+- `Livewire::test` skips middleware, so an English Livewire test sets the locale itself (`app()->setLocale('en')`). `TestCase` sends `Accept-Language: de` and `UserFactory` sets `locale` German, so every other test sees the German UI; an English test overrides both.
 - `User` keeps only Sanctum's `HasApiTokens` and does not implement Passport's `OAuthenticatable` (the traits clash); it defines `oauthApps()` and `oauthTokens()` itself. Never use `$user->tokens()` for Passport tokens. A Passport upgrade that adds a runtime `instanceof OAuthenticatable` check would break MCP auth.
 - `/mcp` is exempt from the guest redirect to the panel login (it must answer 401 with `WWW-Authenticate`); `/oauth/authorize` redirects guests to the panel login. MCP tests get tokens with `issueMcpTokens()` (real OAuth flow); a test with several requests must reset guards, as that helper does, because the app instance persists.
 - `php artisan make:enum` writes to `app/`; move the file to `app/Enums/`.
