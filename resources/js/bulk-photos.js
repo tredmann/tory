@@ -1,10 +1,7 @@
 import '../css/photo-picker.css';
 import '../css/bulk-import.css';
 import exifr from 'exifr';
-import { fitWithinLimit, isAcceptable } from './photo-shrink.js';
-
-const changeUploadCount = (change) =>
-    window.Alpine.store('toryPhotoUploads', window.Alpine.store('toryPhotoUploads') + change);
+import { addTiles, exceedsLimit, finishUpload, registerUploadCount, rejectTile, revokePreview, uploadTile } from './photo-upload.js';
 
 /**
  * The capture time from EXIF, read from the original file because shrinking drops it,
@@ -55,30 +52,14 @@ const bulkPhotos = ({ statePath, maxPhotos }) => {
             event.target.value = '';
             this.message = null;
 
-            if (this.photoCount + files.filter(isAcceptable).length > maxPhotos) {
+            if (exceedsLimit(this.photoCount, files, maxPhotos)) {
                 this.message = `Höchstens ${maxPhotos} Fotos pro Bulkimport.`;
 
                 return;
             }
 
-            files.forEach((file) => {
-                const acceptable = isAcceptable(file);
-
-                this.tiles.push({
-                    id: crypto.randomUUID(),
-                    url: acceptable ? URL.createObjectURL(file) : null,
-                    name: file.name,
-                    uploading: acceptable,
-                    message: acceptable ? null : 'Nur JPEG-, PNG-, WebP- oder GIF-Bilder bis 12 MB sind erlaubt.',
-                });
-
-                if (acceptable) {
-                    // The reactive tile, not the plain object: changes to it must reach the page.
-                    const tile = this.tiles[this.tiles.length - 1];
-
-                    changeUploadCount(1);
-                    queue = queue.then(() => this.upload(tile, file)).catch(() => this.reject(tile, 'Hochladen fehlgeschlagen.'));
-                }
+            addTiles(this.tiles, files).forEach(({ tile, file }) => {
+                queue = queue.then(() => this.upload(tile, file)).catch(() => rejectTile(tile, 'Hochladen fehlgeschlagen.'));
             });
         },
 
@@ -88,45 +69,16 @@ const bulkPhotos = ({ statePath, maxPhotos }) => {
             }
 
             const time = await takenAt(file);
-            let fitted;
 
-            try {
-                fitted = await fitWithinLimit(file);
-            } catch {
-                this.reject(tile, 'Dieses Bild lässt sich nicht lesen.');
-
-                return;
-            }
-
-            if (!tile.uploading) {
-                return;
-            }
-
-            await new Promise((resolve) => {
-                wire.$upload(
-                    `${statePath}.uploads.${tile.id}`,
-                    fitted,
-                    () => {
-                        if (this.finishUpload(tile)) {
-                            meta[tile.id] = { name: file.name, taken_at: time };
-                            this.syncMeta();
-                        }
-
-                        resolve();
-                    },
-                    () => {
-                        this.reject(tile, 'Hochladen fehlgeschlagen.');
-                        resolve();
-                    },
-                    () => {},
-                    resolve,
-                );
+            await uploadTile(wire, `${statePath}.uploads.${tile.id}`, tile, file, () => {
+                meta[tile.id] = { name: file.name, taken_at: time };
+                this.syncMeta();
             });
         },
 
         /** Takes a photo out, whether it is queued, uploading, uploaded or rejected. */
         remove(tile) {
-            if (this.finishUpload(tile)) {
+            if (finishUpload(tile)) {
                 wire.$cancelUpload(`${statePath}.uploads.${tile.id}`);
             }
 
@@ -135,37 +87,9 @@ const bulkPhotos = ({ statePath, maxPhotos }) => {
                 this.syncMeta();
             }
 
-            this.revoke(tile);
+            revokePreview(tile);
             this.tiles = this.tiles.filter((other) => other.id !== tile.id);
             this.message = null;
-        },
-
-        reject(tile, message) {
-            if (!this.finishUpload(tile)) {
-                return;
-            }
-
-            this.revoke(tile);
-            tile.message = message;
-        },
-
-        /** Returns false when the upload has already ended, so the counter drops exactly once. */
-        finishUpload(tile) {
-            if (!tile.uploading) {
-                return false;
-            }
-
-            tile.uploading = false;
-            changeUploadCount(-1);
-
-            return true;
-        },
-
-        revoke(tile) {
-            if (tile.url !== null) {
-                URL.revokeObjectURL(tile.url);
-                tile.url = null;
-            }
         },
 
         /** Deferred on purpose: the list travels with the next request, which is "Gruppieren" at the latest. */
@@ -175,20 +99,17 @@ const bulkPhotos = ({ statePath, maxPhotos }) => {
 
         destroy() {
             this.tiles.forEach((tile) => {
-                if (this.finishUpload(tile)) {
+                if (finishUpload(tile)) {
                     wire.$cancelUpload(`${statePath}.uploads.${tile.id}`);
                 }
 
-                this.revoke(tile);
+                revokePreview(tile);
             });
         },
     };
 };
 
 document.addEventListener('alpine:init', () => {
-    if (window.Alpine.store('toryPhotoUploads') === undefined) {
-        window.Alpine.store('toryPhotoUploads', 0);
-    }
-
+    registerUploadCount();
     window.Alpine.data('bulkPhotos', bulkPhotos);
 });
