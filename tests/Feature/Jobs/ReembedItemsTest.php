@@ -191,7 +191,7 @@ test('failed() stores only the generic text for a raw exception', function () {
 
     (new ReembedItems)->failed(new RuntimeException('boom sk-secret-9999'));
 
-    expect($provider->fresh()->search_failure)->toBe(ProviderFailure::GENERIC_EMBEDDING_MESSAGE);
+    expect($provider->fresh()->search_failure)->toBe(ProviderFailure::genericEmbeddingMessage());
 });
 
 test('failed() stores the message of a provider failure with a reason', function () {

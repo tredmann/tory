@@ -26,11 +26,11 @@ class AuthController extends Controller
         }
 
         if ($user->isLocked()) {
-            abort(403, 'Dieses Konto ist gesperrt.');
+            abort(403, __('This account is locked.'));
         }
 
         if (! $user->hasVerifiedEmail()) {
-            abort(403, 'Bitte bestätige zuerst deine E-Mail-Adresse.');
+            abort(403, __('Please confirm your email address first.'));
         }
 
         return response()->json([

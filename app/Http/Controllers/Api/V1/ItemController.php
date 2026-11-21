@@ -102,7 +102,7 @@ class ItemController extends Controller
 
     public function update(UpdateItemRequest $request, Item $item): ItemResource
     {
-        $conflict = 'Wird gerade neu generiert. Deine Änderungen wurden nicht gespeichert.';
+        $conflict = __('This item is being regenerated. Your changes were not saved.');
 
         abort_if(Item::query()->whereKey($item->getKey())->whereNotNull('regenerating_at')->exists(), 409, $conflict);
 

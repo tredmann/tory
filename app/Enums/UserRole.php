@@ -13,8 +13,8 @@ enum UserRole: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Admin => 'Administrator',
-            self::Member => 'Nutzer',
+            self::Admin => __('Administrator'),
+            self::Member => __('User'),
         };
     }
 

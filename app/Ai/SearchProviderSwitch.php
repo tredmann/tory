@@ -36,7 +36,7 @@ final class SearchProviderSwitch
         } catch (ProviderFailure $failure) {
             report($failure);
 
-            return $failure->userMessage() ?? ProviderFailure::GENERIC_EMBEDDING_MESSAGE;
+            return $failure->userMessage() ?? ProviderFailure::genericEmbeddingMessage();
         }
     }
 

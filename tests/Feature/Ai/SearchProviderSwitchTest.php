@@ -70,7 +70,7 @@ test('the probe falls back to a generic message for an unclassified failure', fu
     $provider = AiProvider::factory()->embedding()->create();
 
     expect(app(SearchProviderSwitch::class)->probe($provider, 'x'))
-        ->toBe(ProviderFailure::GENERIC_EMBEDDING_MESSAGE);
+        ->toBe(ProviderFailure::genericEmbeddingMessage());
 });
 
 test('switching gives a missing threshold the default and keeps an existing one', function () {

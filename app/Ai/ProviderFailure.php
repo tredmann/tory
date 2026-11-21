@@ -17,8 +17,6 @@ use Throwable;
  */
 final class ProviderFailure extends RuntimeException
 {
-    public const string GENERIC_EMBEDDING_MESSAGE = 'Das Embedding ist fehlgeschlagen. Bitte Modell und Zugangsdaten prüfen.';
-
     public function __construct(
         string $message,
         public readonly ?ProviderFailureReason $reason,
@@ -39,9 +37,14 @@ final class ProviderFailure extends RuntimeException
             ProviderFailureReason::fromThrowable($e),
             $provider->name,
             $e instanceof WrongEmbeddingDimensions
-                ? "Das Embedding-Modell von {$provider->name} liefert {$e->actual} statt ".ItemEmbedder::DIMENSIONS.' Dimensionen.'
+                ? (string) __('The embedding model of :provider returns :actual instead of :expected dimensions.', ['provider' => $provider->name, 'actual' => $e->actual, 'expected' => ItemEmbedder::DIMENSIONS])
                 : null,
         );
+    }
+
+    public static function genericEmbeddingMessage(): string
+    {
+        return __('The embedding failed. Please check the model and credentials.');
     }
 
     public function userMessage(): ?string

@@ -13,9 +13,9 @@ enum LabelSize: string implements HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Small => 'Klein (ca. 5 × 3 cm)',
-            self::Medium => 'Mittel (ca. 7 × 4 cm)',
-            self::Large => 'Groß (ca. 10 × 7 cm)',
+            self::Small => __('Small (approx. 5 × 3 cm)'),
+            self::Medium => __('Medium (approx. 7 × 4 cm)'),
+            self::Large => __('Large (approx. 10 × 7 cm)'),
         };
     }
 

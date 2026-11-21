@@ -69,7 +69,7 @@ class Import extends Model
      */
     public function failureMessage(): ?string
     {
-        return $this->failure_reason?->message($this->failure_provider ?? 'Der KI-Provider');
+        return $this->failure_reason?->message($this->failure_provider ?? __('The AI provider'));
     }
 
     public function isFinished(): bool

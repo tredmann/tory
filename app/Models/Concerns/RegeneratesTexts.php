@@ -68,6 +68,6 @@ trait RegeneratesTexts
      */
     public function regenerationFailureMessage(): ?string
     {
-        return $this->regeneration_failure_reason?->message($this->regeneration_failure_provider ?? 'Der KI-Provider');
+        return $this->regeneration_failure_reason?->message($this->regeneration_failure_provider ?? __('The AI provider'));
     }
 }

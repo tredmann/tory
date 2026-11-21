@@ -16,8 +16,8 @@ class EnsureUserIsActive
     {
         $user = $request->user();
 
-        abort_if($user instanceof User && $user->isLocked(), 403, 'Dieses Konto ist gesperrt.');
-        abort_unless($user instanceof User && $user->hasVerifiedEmail(), 403, 'Bitte bestätige zuerst deine E-Mail-Adresse.');
+        abort_if($user instanceof User && $user->isLocked(), 403, __('This account is locked.'));
+        abort_unless($user instanceof User && $user->hasVerifiedEmail(), 403, __('Please confirm your email address first.'));
 
         return $next($request);
     }

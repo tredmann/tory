@@ -15,10 +15,10 @@ enum ImportStatus: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Pending => 'Wartet',
-            self::Running => 'Läuft',
-            self::Completed => 'Fertig',
-            self::Failed => 'Fehlgeschlagen',
+            self::Pending => __('Waiting'),
+            self::Running => __('Running'),
+            self::Completed => __('Done'),
+            self::Failed => __('Failed'),
         };
     }
 

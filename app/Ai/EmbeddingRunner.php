@@ -90,7 +90,7 @@ final class EmbeddingRunner
             AiProvider::query()
                 ->whereKey($provider->getKey())
                 ->where('is_active_for_search', true)
-                ->update(['search_failure' => $failures > 0 ? ($lastMessage ?? ProviderFailure::GENERIC_EMBEDDING_MESSAGE) : null]);
+                ->update(['search_failure' => $failures > 0 ? ($lastMessage ?? ProviderFailure::genericEmbeddingMessage()) : null]);
         }
 
         return new EmbeddingRunResult($embedded, $failures, $stoppedEarly, $resumeAfterId);

@@ -109,8 +109,8 @@ class BulkImport extends Model
         if ($photos === [] || count($photos) > self::MAX_PHOTOS) {
             throw ValidationException::withMessages([
                 'data.photos' => $photos === []
-                    ? 'Mindestens ein Foto.'
-                    : 'Höchstens '.self::MAX_PHOTOS.' Fotos pro Bulkimport.',
+                    ? __('At least one photo.')
+                    : __('At most :max photos per bulk import.', ['max' => self::MAX_PHOTOS]),
             ]);
         }
 
@@ -412,7 +412,7 @@ class BulkImport extends Model
 
             if (! $row->canConfirm()) {
                 throw ValidationException::withMessages([
-                    'confirm' => 'Jede Gruppe braucht 1 bis '.Import::MAX_PHOTOS.' verbleibende Fotos.',
+                    'confirm' => __('Each group needs 1 to :max remaining photos.', ['max' => Import::MAX_PHOTOS]),
                 ]);
             }
 
@@ -520,7 +520,7 @@ class BulkImport extends Model
 
     public function failureMessage(): ?string
     {
-        return $this->failure_reason?->message($this->failure_provider ?? 'Der KI-Provider');
+        return $this->failure_reason?->message($this->failure_provider ?? __('The AI provider'));
     }
 
     /**

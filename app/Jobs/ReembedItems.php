@@ -49,8 +49,8 @@ class ReembedItems implements ShouldQueue
     public function failed(?Throwable $exception): void
     {
         $message = $exception instanceof ProviderFailure
-            ? ($exception->userMessage() ?? ProviderFailure::GENERIC_EMBEDDING_MESSAGE)
-            : ProviderFailure::GENERIC_EMBEDDING_MESSAGE;
+            ? ($exception->userMessage() ?? ProviderFailure::genericEmbeddingMessage())
+            : ProviderFailure::genericEmbeddingMessage();
 
         AiProvider::query()->where('is_active_for_search', true)->update(['search_failure' => $message]);
     }
