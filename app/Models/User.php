@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Language;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
@@ -36,6 +37,7 @@ use SensitiveParameter;
  * @property string|null $remember_token
  * @property int|null $last_spot_id
  * @property ThemeMode|null $theme_mode
+ * @property Language|null $locale
  * @property UserRole $role
  * @property Carbon|null $locked_at
  * @property Carbon|null $invite_expires_at
@@ -69,6 +71,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'theme_mode' => ThemeMode::class,
+            'locale' => Language::class,
             'role' => UserRole::class,
             'locked_at' => 'datetime',
             'invite_expires_at' => 'datetime',
