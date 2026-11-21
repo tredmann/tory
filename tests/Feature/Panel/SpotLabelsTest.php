@@ -215,6 +215,7 @@ test('a scanned label leads through the login back to the spot', function () {
 test('an English user downloads the label pdf under an English name', function () {
     Pdf::fake();
     $user = User::factory()->create(['locale' => Language::English]);
+    app()->setLocale('en'); // a Livewire component test does not run the SetLocale middleware
     $this->actingAs($user);
     $spots = [
         labelledSpot('AAAA', ['location_id' => Location::factory()->create()->getKey()]),
