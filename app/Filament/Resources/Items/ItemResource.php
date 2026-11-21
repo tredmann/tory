@@ -14,7 +14,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use UnitEnum;
 
 class ItemResource extends Resource
 {
@@ -24,17 +23,29 @@ class ItemResource extends Resource
 
     protected static ?string $slug = 'items';
 
-    protected static ?string $modelLabel = 'Gegenstand';
-
-    protected static ?string $pluralModelLabel = 'Gegenstände';
-
-    protected static ?string $navigationLabel = 'Gegenstände';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Inventar';
-
     protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'title';
+
+    public static function getModelLabel(): string
+    {
+        return __('Item');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Items');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Items');
+    }
+
+    public static function getNavigationGroup(): string
+    {
+        return __('Inventory');
+    }
 
     public static function canCreate(): bool
     {

@@ -20,9 +20,9 @@ class ListImports extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make()->label('Erfassen'),
+            CreateAction::make()->label(__('Add item')),
             Action::make('captureMany')
-                ->label('Viele erfassen')
+                ->label(__('Add many'))
                 ->color('gray')
                 ->url(BulkImportResource::getUrl('create')),
         ];

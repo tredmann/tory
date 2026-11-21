@@ -23,13 +23,13 @@ class SpotsTable
                     ->label('Name')
                     ->searchable(),
                 TextColumn::make('location.name')
-                    ->label('Lagerort'),
+                    ->label(__('Location')),
                 TextColumn::make('note')
-                    ->label('Notiz')
+                    ->label(__('Spot note'))
                     ->limit(60)
                     ->placeholder('—'),
                 TextColumn::make('items_count')
-                    ->label('Gegenstände')
+                    ->label(__('Items'))
                     ->counts('items'),
             ])
             ->defaultSort('id')

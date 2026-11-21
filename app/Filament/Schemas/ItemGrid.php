@@ -41,7 +41,7 @@ class ItemGrid
                         ->imageWidth('100%')
                         ->imageHeight('auto')
                         ->limit(self::GALLERY_SIZE)
-                        ->placeholder('Kein Foto')
+                        ->placeholder(__('No photo'))
                         ->extraAttributes(fn (Item $record): array => count(PhotoLinks::thumbnails($record->photos ?? [])) > 1 ? ['class' => 'tory-gallery'] : [])
                         ->extraImgAttributes(fn (Item $record, string $state): array => [
                             ...PhotoSlideshow::imgAttributes($record->photos, $state),

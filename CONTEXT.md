@@ -1,6 +1,6 @@
 # Tory
 
-Tory is a household inventory that answers one question: where is that thing? This file defines the words we use for it. The app's interface is German, so each term gives its German word and the English name used in code.
+Tory is a household inventory that answers one question: where is that thing? This file defines the words we use for it. The interface comes in German and English, so each term gives its German UI word and the English name used in code; where the English UI word differs from the code name, it is noted too.
 
 ## Language
 
@@ -22,6 +22,16 @@ _Avoid_: Number, Nr., ID
 The printed tag on a spot, carrying its code, name, a QR code and the address the QR code leads to. It leaves out the location, so it stays correct when the spot moves.
 _Avoid_: Sticker, tag
 
+### Languages
+
+**Interface language** (Sprache der Oberfläche):
+The language one user sees buttons, labels and messages in, German or English. Each user chooses it in the user menu; without a choice the browser's language decides.
+_Avoid_: Locale (in the UI), Sprache (alone)
+
+**Content language** (Inhaltssprache):
+The language of the household's items: the AI writes titles, descriptions and search terms in it. One per installation, set by an administrator on the page „Haushalt“. It also decides the interface language of pages without a signed-in user.
+_Avoid_: Household language, AI language
+
 ### People
 
 **Administrator**:
@@ -36,6 +46,10 @@ _Avoid_: Mitglied, Member (in the UI)
 A single-use address, valid for 24 hours, through which an invited person chooses a password and so joins. A new link replaces the old one.
 _Avoid_: Registrierungslink, Token
 
+**First administrator setup** (Ersteinrichtung, English UI "First-time setup"):
+The page a fresh installation shows while it has no user at all, on which the first visitor creates the first administrator. Once any user exists it is gone for good.
+_Avoid_: Registrierung, Installation
+
 **Locked** (gesperrt):
 A user who can no longer log in or use any connection, but whose data stays. An administrator can unlock them again.
 _Avoid_: Deleted, deactivated, banned
@@ -46,7 +60,7 @@ _Avoid_: Deleted, deactivated, banned
 A single inventoried thing with photos, a title and a description. An item always lies on exactly one spot; its location follows from that spot.
 _Avoid_: Object, article, Artikel
 
-**Import**:
+**Import** (action „Erfassen“, English UI "Add item"; „Übernehmen“ is "Create item", „Neu generieren“ is "Regenerate"):
 The 1–20 photos of one thing on their way to becoming an item, together with the texts the AI suggested for them.
 _Avoid_: Upload, capture, Erfassung
 
@@ -59,14 +73,14 @@ A word or phrase attached to an item or import so that it can be found by words 
 _Avoid_: Tag, keyword
 
 **Note** (Bemerkung):
-Free text the user writes on an item, such as "ohne Netzteil" or "Dongle fehlt". The AI never writes or changes it, and search does not use it.
+Free text the user writes on an item, such as "ohne Netzteil" or "Dongle fehlt", in any language. The AI never writes or changes it, and search does not use it.
 _Avoid_: Comment, Kommentar, remark
 
 **API token**:
 A long-lived secret that one device of the mobile app uses to act as a user on the REST API. It is named after the device and never expires.
 _Avoid_: Session, API key (that is a provider's credential)
 
-**Provider** ("Eigene KI"):
+**Provider** ("Eigene KI", English UI "AI providers"):
 An AI service configured in the app, with its vendor, model(s) and credentials. It can serve object recognition, search or both. At most one is active for each role, and they may differ.
 _Avoid_: Model, vendor (for the configured service)
 

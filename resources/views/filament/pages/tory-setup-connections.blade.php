@@ -1,5 +1,5 @@
 @if ($connections->isEmpty())
-    <p>Noch kein Claude verbunden.</p>
+    <p>{{ __('No Claude connected yet.') }}</p>
 @else
     <ul class="tory-connections">
         @foreach ($connections as $connection)
@@ -9,7 +9,7 @@
                     @if ($connection->host)
                         <span>{{ $connection->host }}</span>
                     @endif
-                    <span>Verbunden am {{ $connection->connectedAt->format('d.m.Y H:i') }}</span>
+                    <span>{{ __('Connected on :date', ['date' => $connection->connectedAt->format(\App\Enums\Language::from(app()->getLocale())->dateTimeFormat())]) }}</span>
                 </div>
                 {{ ($this->disconnectAction)(['clientId' => $connection->clientId]) }}
             </li>

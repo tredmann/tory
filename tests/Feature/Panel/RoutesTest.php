@@ -7,10 +7,14 @@ use App\Models\User;
 use Filament\Facades\Filament;
 
 test('guests are redirected from the panel root to the login page', function () {
+    User::factory()->create();
+
     $this->get('/')->assertRedirect('/login');
 });
 
 test('the login page is served at the root and registration does not exist', function () {
+    User::factory()->create();
+
     $this->get('/login')->assertOk();
     $this->get('/register')->assertNotFound();
 });

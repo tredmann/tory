@@ -12,6 +12,8 @@ test('the panel shows the tory logo in light and dark mode', function () {
 });
 
 test('the login page uses the tory mark as favicon', function () {
+    User::factory()->create();
+
     $this->get('/login')
         ->assertOk()
         ->assertSee('<link rel="icon" href="'.asset('images/tory-mark.svg').'"', escape: false);

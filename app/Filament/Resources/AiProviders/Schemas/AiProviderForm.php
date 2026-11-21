@@ -20,31 +20,31 @@ class AiProviderForm
     {
         return $schema->components([
             TextInput::make('name')
-                ->label('Name')
+                ->label(__('Name'))
                 ->required()
                 ->unique(ignoreRecord: true)
                 ->maxLength(255),
             Select::make('vendor')
-                ->label('Anbieter')
+                ->label(__('Vendor'))
                 ->options(AiVendor::class)
                 ->required()
                 ->live()
                 ->disabled(fn (string $operation): bool => $operation === 'edit')
                 ->dehydrated(fn (string $operation): bool => $operation !== 'edit'),
             TextInput::make('api_key')
-                ->label('API-Key')
+                ->label(__('API key'))
                 ->password()
                 ->revealable(false)
                 ->autocomplete(false)
                 ->visible(fn (Get $get, ?AiProvider $record): bool => self::vendor($get, $record)?->requiresKey() ?? false)
                 ->required(fn (string $operation): bool => $operation === 'create')
                 ->placeholder(fn (?AiProvider $record): ?string => $record?->key_hint !== null ? '••••'.$record->key_hint : null)
-                ->helperText(fn (string $operation): ?string => $operation === 'edit' ? 'Leer lassen, um den gespeicherten Key zu behalten.' : null)
+                ->helperText(fn (string $operation): ?string => $operation === 'edit' ? (string) __('Leave empty to keep the saved key.') : null)
                 ->dehydrateStateUsing(fn (?string $state): string => trim((string) $state))
                 ->dehydrated(fn (?string $state): bool => filled($state))
                 ->live(onBlur: true),
             TextInput::make('url')
-                ->label('Adresse')
+                ->label(__('Address'))
                 ->url()
                 ->default(self::DEFAULT_OLLAMA_URL)
                 ->visible(fn (Get $get, ?AiProvider $record): bool => self::vendor($get, $record) === AiVendor::Ollama)
@@ -52,7 +52,7 @@ class AiProviderForm
                 ->dehydrateStateUsing(fn (?string $state): string => rtrim(trim((string) $state), '/'))
                 ->live(onBlur: true),
             TextInput::make('model')
-                ->label('Modell für Bilderkennung')
+                ->label(__('Model for image recognition'))
                 ->required(fn (Get $get, ?AiProvider $record): bool => ! (self::vendor($get, $record)?->supportsEmbeddings() ?? true)
                     || self::cleaned($get('embedding_model')) === null
                     || $record?->is_active === true)
@@ -62,7 +62,7 @@ class AiProviderForm
                 ->dehydrateStateUsing(fn (?string $state): ?string => self::cleaned($state))
                 ->live(onBlur: true),
             TextInput::make('embedding_model')
-                ->label('Embedding-Modell')
+                ->label(__('Embedding model'))
                 ->visible(fn (Get $get, ?AiProvider $record): bool => self::vendor($get, $record)?->supportsEmbeddings() ?? false)
                 ->required(fn (Get $get, ?AiProvider $record): bool => self::cleaned($get('model')) === null
                     || $record?->is_active_for_search === true)
@@ -72,7 +72,7 @@ class AiProviderForm
                 ->dehydrateStateUsing(fn (?string $state): ?string => self::cleaned($state))
                 ->live(onBlur: true),
             TextInput::make('search_min_similarity')
-                ->label('Mindest-Ähnlichkeit')
+                ->label(__('Minimum similarity'))
                 ->numeric()
                 ->minValue(0)
                 ->maxValue(1)
@@ -81,7 +81,7 @@ class AiProviderForm
                 ->visible(fn (Get $get, ?AiProvider $record): bool => (self::vendor($get, $record)?->supportsEmbeddings() ?? false)
                     && self::cleaned($get('embedding_model')) !== null)
                 ->required()
-                ->helperText('Ähnlichkeitswerte unterscheiden sich zwischen Modellen. Passe den Wert an, wenn die Suche Unpassendes zeigt oder Passendes fehlt.'),
+                ->helperText(__('Similarity values differ between models. Adjust the value if search shows unsuitable results or misses matching ones.')),
             Checkbox::make('confirm_search_switch')
                 ->label(fn (Get $get, ?AiProvider $record): string => self::switchNotice(
                     (string) $record?->embedding_model,
@@ -106,15 +106,19 @@ class AiProviderForm
     public static function switchNotice(string $oldModel, string $newModel): string
     {
         $itemCount = Item::query()->count();
-        $items = $itemCount === 1 ? '1 Gegenstand wird' : "{$itemCount} Gegenstände werden";
+        $items = $itemCount === 1 ? __('1 item is') : __(':count items are', ['count' => $itemCount]);
 
-        return "Die Suche wechselt von {$oldModel} zu {$newModel}. {$items} neu berechnet, bis zum Ende bleibt die semantische Suche unvollständig. Bei einem kostenpflichtigen Anbieter entstehen dafür Kosten.";
+        return __('The search switches from :old to :new. :items recalculated; semantic search stays incomplete until it is done. With a paid provider this causes costs.', [
+            'old' => $oldModel,
+            'new' => $newModel,
+            'items' => $items,
+        ]);
     }
 
     private static function modelsHint(Get $get, ?AiProvider $record): ?string
     {
         return self::models($get, $record) === null
-            ? 'Modelle konnten nicht geladen werden. Du kannst den Namen auch eintippen.'
+            ? (string) __('Models could not be loaded. You can also type the name.')
             : null;
     }
 

@@ -24,7 +24,7 @@ class BulkPhotos extends Field
     {
         parent::setUp();
 
-        $this->label('Fotos');
+        $this->label(__('Photos'));
         $this->columnSpanFull();
         $this->default(['uploads' => [], 'meta' => []]);
 
@@ -32,13 +32,13 @@ class BulkPhotos extends Field
             $files = array_map(fn (StagedPhoto $photo): UploadedFile => $photo->file, self::stagedPhotos($value));
 
             if ($files === []) {
-                $fail('Mindestens ein Foto.');
+                $fail(__('At least one photo.'));
 
                 return;
             }
 
             if (count($files) > BulkImport::MAX_PHOTOS) {
-                $fail('Höchstens '.BulkImport::MAX_PHOTOS.' Fotos pro Bulkimport.');
+                $fail(__('At most :max photos per bulk import.', ['max' => BulkImport::MAX_PHOTOS]));
 
                 return;
             }
@@ -50,7 +50,7 @@ class BulkPhotos extends Field
                 )->passes();
 
                 if (! $valid) {
-                    $fail('Nur JPEG-, PNG-, WebP- oder GIF-Bilder bis 12 MB sind erlaubt.');
+                    $fail(__('Only JPEG, PNG, WebP or GIF images up to 12 MB are allowed.'));
 
                     return;
                 }

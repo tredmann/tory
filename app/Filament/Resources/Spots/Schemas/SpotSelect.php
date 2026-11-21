@@ -11,7 +11,7 @@ class SpotSelect
     public static function make(string $name = 'spot_id'): Select
     {
         return Select::make($name)
-            ->label('Lagerplatz')
+            ->label(__('Spot'))
             ->required()
             ->searchable()
             ->optionsLimit(1000)

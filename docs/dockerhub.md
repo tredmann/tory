@@ -8,6 +8,8 @@ Household inventory that answers one question: where is that thing? Laravel, Fil
 
 A household inventory that answers one question: where is that thing?
 
+![The overview page of Tory: search field, locations and the most recently added items](https://raw.githubusercontent.com/tredmann/tory/master/docs/images/overview.png)
+
 You photograph an item, an AI model writes its title, description and search terms, and you put it on a spot such as a shelf in the cellar. Later you search by keyword or by meaning and Tory tells you where the item lies. The interface is German.
 
 Source, documentation and issues: https://github.com/tredmann/tory
@@ -83,7 +85,9 @@ Point your reverse proxy at port 80 of the `tory` service. The storage directory
 
 ## First user
 
-There is no registration page. Create the first user and make them administrator:
+There is no registration page. On a fresh installation open Tory in the browser: every page leads to `/setup`, where you create the first administrator and are logged in. Whoever opens it first becomes administrator, so keep Tory unreachable from the internet until you have done this. Once any user exists the page is gone for good.
+
+If you cannot guarantee that, create the first user from the CLI before Tory goes online, which closes the setup page from the start:
 
 ```sh
 docker compose exec tory php artisan make:filament-user --name=Admin --email=you@example.com --password='a long password'

@@ -8,7 +8,12 @@
 >
     <div
         wire:ignore
-        x-data="bulkPhotos(@js(['statePath' => $statePath, 'maxPhotos' => \App\Models\BulkImport::MAX_PHOTOS]))"
+        x-data="bulkPhotos(@js(['statePath' => $statePath, 'messages' => [
+            'tooMany' => __('At most :max photos per bulk import.'),
+            'uploadFailed' => __('Upload failed.'),
+            'unreadable' => __('This image cannot be read.'),
+            'notAllowed' => __('Only JPEG, PNG, WebP or GIF images up to 12 MB are allowed.'),
+        ], 'maxPhotos' => \App\Models\BulkImport::MAX_PHOTOS]))"
         x-on:bulk-photos-sync.window="syncMeta()"
         {{ $getExtraAttributeBag()->class(['tory-photo-picker', 'tory-bulk-photos']) }}
     >
@@ -17,9 +22,9 @@
                 type="button"
                 class="tory-bulk-photos-add"
                 x-on:click="$refs.input.click()"
-            >+ Fotos hinzufügen</button>
+            >{{ __('+ Add photos') }}</button>
 
-            <span class="tory-bulk-photos-count" x-text="`${photoCount} / {{ \App\Models\BulkImport::MAX_PHOTOS }} Fotos`"></span>
+            <span class="tory-bulk-photos-count" x-text="`${photoCount} / {{ \App\Models\BulkImport::MAX_PHOTOS }} {{ __('Photos') }}`"></span>
         </div>
 
         <input
@@ -49,7 +54,7 @@
                         x-show="tile.uploading"
                         class="tory-photo-spinner"
                         role="status"
-                        aria-label="Wird hochgeladen"
+                        aria-label="{{ __('Uploading') }}"
                     ></span>
 
                     <template x-if="tile.message !== null">
@@ -62,7 +67,7 @@
                     <button
                         type="button"
                         class="tory-photo-remove"
-                        x-bind:aria-label="tile.message === null ? `${tile.name} entfernen` : 'Meldung schließen'"
+                        x-bind:aria-label="tile.message === null ? `{{ __('Remove :name', ['name' => '${tile.name}']) }}` : '{{ __('Dismiss message') }}'"
                         x-on:click="remove(tile)"
                     >✕</button>
                 </div>

@@ -3,6 +3,7 @@
 use App\Ai\Agents\InventoryExtractor;
 use App\Ai\ExtractedTexts;
 use App\Enums\AiVendor;
+use App\Enums\Language;
 use App\Models\AiProvider;
 use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Laravel\Ai\Files\Image;
@@ -122,3 +123,56 @@ test('extract tolerates missing or unusable search terms', function (array $extr
     'string' => [['search_terms' => 'Hefter, Tacker']],
     'null' => [['search_terms' => null]],
 ]);
+
+test('it keeps the German prompt', function () {
+    $expected = <<<'TXT'
+    Du hilfst bei der Inventarisierung. Die Fotos zeigen einen Gegenstand, den jemand später in seinem Inventar wiederfinden will. Beschreibe den Gegenstand selbst, nicht das Foto.
+
+    Erkenne, was der Gegenstand ist, und benenne das, auch wenn es nirgends aufgedruckt ist: Eine Heißklebepistole heißt Heißklebepistole, auch wenn nur eine Modellnummer zu lesen ist. Nimm dafür das Wort, das man im deutschen Alltag sagt, keine Übersetzung aus dem Englischen und kein ausgedachtes Wort. Bestimme die Art des Gegenstands aus seiner Form und seinen Funktionsteilen auf dem Foto, nicht aus dem, was du über die Marke weißt. Bist du unsicher, nimm die allgemeinere Bezeichnung, die sicher stimmt. Marke, Modell, Seriennummer und Kapazität nennst du nur, wenn sie lesbar sind, und übernimmst sie wörtlich. Was du nicht Zeichen für Zeichen lesen kannst, lässt du weg. Erfinde diese Angaben niemals, auch nicht in den Suchbegriffen.
+
+    Ist ein Produkt in seiner Verpackung zu sehen, nimm die Verpackung als Hinweis und beschreibe das Produkt darin. Der ganze Text handelt dann vom Produkt, die Verpackung kommt darin nicht vor. Nur wenn die Verpackung selbst der Gegenstand ist, etwa ein leerer Karton, nennst du sie so.
+
+    Schreibe alles auf Deutsch.
+    - `title`: Marke, Modell und Art des Gegenstands in wenigen Worten, soweit bekannt.
+    - `description`: ein bis zwei sachliche Sätze dazu, was es ist und wofür man es benutzt, soweit du das sicher weißt. Farbe oder Material nur, wenn sie den Gegenstand unterscheiden. Keine Feature-Listen von der Verpackung, keine Werbesprache, keine Bauteilnummern. Den Zustand erwähnst du nur, wenn der Gegenstand offensichtlich defekt ist.
+    - `search_terms`: Liste mit etwa acht Begriffen, die jemand eintippen würde, um den Gegenstand zu finden: das einfachste Wort für die Sache, Synonyme, die allgemeine Kategorie und wofür man ihn benutzt, meist als einzelne normale deutsche Wörter. Immer dabei: Marke und Modell, wie sie gelesen wurden, und zusätzlich ihre Schreibweisen ohne Sonderzeichen und ohne Leerzeichen, zum Beispiel `Citroen` für Citroën und `Hero12` für GoPro Hero 12. Das sind nur andere Schreibweisen des Gelesenen, keine neuen Namen, Generationen oder Nummern.
+
+    Antworte nur mit dem reinen JSON-Objekt. Beginne direkt mit `{` und ende mit `}`, ohne vorangestelltes Wort wie "json", ohne Codeblock und ohne doppelte Klammern.
+    TXT;
+
+    expect((new InventoryExtractor(language: Language::German))->instructions())
+        ->toBe($expected)
+        ->toContain('Schreibe alles auf Deutsch.')
+        ->and((string) (new InventoryExtractor)->instructions())->toBe($expected);
+});
+
+test('the German schema and prompt stay German', function () {
+    InventoryExtractor::fake([['title' => 'Hefter', 'description' => 'Roter Hefter.']]);
+    $schema = (new InventoryExtractor)->schema(new JsonSchemaTypeFactory);
+
+    InventoryExtractor::make()->extract([]);
+
+    expect($schema['title']->toArray()['description'])->toBe('Kurzer deutscher Titel des Objekts, wenige Worte.')
+        ->and($schema['description']->toArray()['description'])->toBe('Deutsche, sachliche Beschreibung für die spätere Suche.')
+        ->and($schema['search_terms']->toArray()['description'])->toBe('Deutsche Suchbegriffe, die ein Mensch eintippen würde.');
+    InventoryExtractor::assertPrompted('Analysiere die Fotos und liefere Titel, Beschreibung und Suchbegriffe.');
+});
+
+test('it writes English for English', function () {
+    InventoryExtractor::fake([['title' => 'Stapler', 'description' => 'A red stapler.']]);
+    $agent = new InventoryExtractor(language: Language::English);
+    $schema = $agent->schema(new JsonSchemaTypeFactory);
+
+    InventoryExtractor::make(language: Language::English)->extract([]);
+
+    expect($agent->instructions())
+        ->toContain('Write everything in English.')
+        ->toContain('search_terms')
+        ->toContain('`Citroen`')
+        ->toContain('`Hero12`')
+        ->not->toContain('Deutsch')
+        ->and($schema['title']->toArray()['description'])->toBe('Short English title of the object, a few words.')
+        ->and($schema['description']->toArray()['description'])->toBe('Factual English description for finding it later.')
+        ->and($schema['search_terms']->toArray()['description'])->toBe('English search terms a person would type.');
+    InventoryExtractor::assertPrompted('Analyze the photos and provide a title, a description and search terms.');
+});

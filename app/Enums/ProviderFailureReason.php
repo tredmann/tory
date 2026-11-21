@@ -66,11 +66,11 @@ enum ProviderFailureReason: string
     public function message(string $providerName): string
     {
         return match ($this) {
-            self::KeyRejected => "{$providerName} hat den API-Key abgelehnt.",
-            self::KeyUnreadable => "Der gespeicherte API-Key von {$providerName} ist nicht mehr lesbar.",
-            self::UnknownModel => "{$providerName} kennt das eingestellte Modell nicht.",
-            self::ImagesUnsupported => "Das bei {$providerName} eingestellte Modell kann keine Fotos verarbeiten.",
-            self::Unreachable => "{$providerName} ist nicht erreichbar.",
+            self::KeyRejected => __(':provider rejected the API key.', ['provider' => $providerName]),
+            self::KeyUnreadable => __('The saved API key of :provider is no longer readable.', ['provider' => $providerName]),
+            self::UnknownModel => __(':provider does not know the configured model.', ['provider' => $providerName]),
+            self::ImagesUnsupported => __('The model configured for :provider cannot process photos.', ['provider' => $providerName]),
+            self::Unreachable => __(':provider is not reachable.', ['provider' => $providerName]),
         };
     }
 }

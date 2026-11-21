@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Language;
 use App\Filament\Resources\Spots\Pages\CreateSpot;
 use App\Filament\Resources\Spots\Pages\EditSpot;
 use App\Filament\Resources\Spots\Pages\ListSpots;
@@ -309,4 +310,17 @@ test('the items of a spot show where they lie, like every item tile', function (
         ->assertSeeText('Bohrmaschine')
         ->assertSeeText($spot->code)
         ->assertSeeText('Keller · Regal 3');
+});
+
+test('an English user sees the spot list in English', function () {
+    $user = User::factory()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+    app()->setLocale('en');
+    $this->actingAs($user);
+
+    Livewire::test(ListSpots::class)
+        ->assertSee('Spots')
+        ->assertSee('Location')
+        ->assertDontSee('Lagerplätze')
+        ->assertDontSee('Lagerort');
 });

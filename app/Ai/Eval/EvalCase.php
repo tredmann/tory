@@ -2,6 +2,7 @@
 
 namespace App\Ai\Eval;
 
+use App\Enums\Language;
 use RuntimeException;
 
 /**
@@ -25,13 +26,14 @@ final readonly class EvalCase
     ) {}
 
     /**
-     * Loads `cases.json` of the directory; photo paths are relative to it.
+     * Loads `cases.json` of the directory; photo paths are relative to it and
+     * the word lists are those of the content language.
      *
      * @return list<EvalCase>
      *
      * @throws RuntimeException when the file is unreadable or a photo is missing
      */
-    public static function loadAll(string $directory): array
+    public static function loadAll(string $directory, Language $language): array
     {
         $file = rtrim($directory, '/').'/cases.json';
         $json = is_file($file) ? file_get_contents($file) : false;
@@ -65,12 +67,18 @@ final readonly class EvalCase
                 throw new RuntimeException("Der Testfall \"{$name}\" hat keine Fotos.");
             }
 
+            $words = $definition[$language->value] ?? null;
+
+            if (! is_array($words)) {
+                throw new RuntimeException("Der Testfall \"{$name}\" hat keine Wörter für die Sprache {$language->value}.");
+            }
+
             $cases[] = new self(
                 $name,
                 $photos,
-                self::stringList($definition, 'search_words', $name),
-                self::stringList($definition, 'title_words', $name),
-                self::stringList($definition, 'forbidden_words', $name),
+                self::stringList($words, 'search_words', $name),
+                self::stringList($words, 'title_words', $name),
+                self::stringList($words, 'forbidden_words', $name),
             );
         }
 
@@ -78,7 +86,7 @@ final readonly class EvalCase
     }
 
     /**
-     * @param  array<mixed>  $definition
+     * @param  array<mixed>  $definition  the word lists of one language
      * @return list<string>
      *
      * @throws RuntimeException when the field is missing or not a list of strings

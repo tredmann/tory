@@ -3,6 +3,8 @@
 use App\Ai\Agents\InventoryExtractor;
 use App\Ai\ProviderTransfer;
 use App\Enums\AiVendor;
+use App\Enums\Language;
+use App\Enums\ProviderFailureReason;
 use App\Filament\Resources\AiProviders\AiProviderResource;
 use App\Filament\Resources\AiProviders\Pages\ManageAiProviders;
 use App\Filament\Resources\Imports\ImportResource;
@@ -689,7 +691,7 @@ test('a confirmed model change probes and switches', function () {
         ->name->toBe('Neuer Name')
         ->api_key->toBe('sk-neu-5678')
         ->embedding_model->toBe('neues-modell')
-        ->search_failure->toBeNull()
+        ->searchFailureMessage()->toBeNull()
         ->is_active_for_search->toBeTrue();
 });
 
@@ -846,4 +848,29 @@ test('the subheading names the env fallback per role', function () {
     Livewire::test(ManageAiProviders::class)
         ->assertSee('Für die Bilderkennung gilt die Serverkonfiguration (.env).')
         ->assertDontSee('Für die Suche gilt');
+});
+
+test('an English user sees the provider page in English', function () {
+    $user = User::factory()->admin()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+    app()->setLocale('en');
+    $this->actingAs($user);
+
+    Livewire::test(ManageAiProviders::class)
+        ->assertSee('AI providers')
+        ->assertSee('The server configuration (.env) currently applies.')
+        ->assertDontSee('Eigene KI')
+        ->assertDontSee('Aktuell gilt die Serverkonfiguration');
+});
+
+test('an English user sees the stored search failure in English', function () {
+    $user = User::factory()->admin()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+    app()->setLocale('en');
+    $this->actingAs($user);
+    AiProvider::factory()->activeForSearch()->create(['name' => 'OpenAI', 'search_failure_reason' => ProviderFailureReason::KeyRejected]);
+
+    Livewire::test(ManageAiProviders::class)
+        ->assertSee('OpenAI rejected the API key. It will be retried every hour.')
+        ->assertDontSee('abgelehnt');
 });

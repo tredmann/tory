@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ImportStatus;
+use App\Enums\Language;
 use App\Enums\ProviderFailureReason;
 use App\Jobs\ExtractImport;
 use App\Jobs\GenerateThumbnail;
@@ -108,6 +109,18 @@ it('shows an import with the classified failure message and hides the raw error 
         ->assertJsonPath('data.status_label', 'Fehlgeschlagen')
         ->assertJsonMissingPath('data.spot_id')
         ->assertJsonMissingPath('data.user_id');
+});
+
+it('answers an English token owner in English', function () {
+    $english = User::factory()->create(['locale' => Language::English]);
+    Sanctum::actingAs($english);
+    $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::KeyRejected, 'Claude')->create();
+
+    $this->withHeader('Accept-Language', 'de')
+        ->getJson("/api/v1/imports/{$import->id}")
+        ->assertOk()
+        ->assertJsonPath('data.status_label', 'Failed')
+        ->assertJsonPath('data.failure_message', 'Claude rejected the API key.');
 });
 
 it('uses the general failure message for an unclassified failure', function () {

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\SetLocale;
 use App\Mcp\Servers\ToryServer;
 use Illuminate\Support\Facades\Route;
 use Laravel\Mcp\Facades\Mcp;
@@ -13,4 +14,4 @@ Route::post('oauth/register', OAuthRegisterController::class)
     ->middleware('throttle:10,1')
     ->name('mcp.oauth.register');
 
-Mcp::web('/mcp', ToryServer::class)->middleware(['auth:api', EnsureUserIsActive::class]);
+Mcp::web('/mcp', ToryServer::class)->middleware(['auth:api', SetLocale::class, EnsureUserIsActive::class]);

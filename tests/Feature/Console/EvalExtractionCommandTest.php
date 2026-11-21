@@ -2,6 +2,7 @@
 
 use App\Ai\Agents\InventoryExtractor;
 use App\Ai\Eval\EvalCase;
+use App\Enums\Language;
 use App\Models\AiProvider;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Ai\Embeddings;
@@ -39,18 +40,20 @@ test('runs must be at least 1', function (string $runs) {
     InventoryExtractor::assertNeverPrompted();
 })->with(['0', 'abc']);
 
-test('the committed cases load', function () {
-    $cases = EvalCase::loadAll(base_path('tests/Evals/extraction'));
+test('the committed cases load', function (Language $language) {
+    $cases = EvalCase::loadAll(base_path('tests/Evals/extraction'), $language);
 
     expect($cases)->not->toBeEmpty();
 
     foreach ($cases as $case) {
-        expect($case->photos)->not->toBeEmpty();
+        expect($case->photos)->not->toBeEmpty()
+            ->and($case->searchWords)->not->toBeEmpty()
+            ->and($case->titleWords)->not->toBeEmpty();
         foreach ($case->photos as $photo) {
             expect(is_file($photo))->toBeTrue();
         }
     }
-});
+})->with([Language::German, Language::English]);
 
 test('a report is saved and printed', function () {
     AiProvider::factory()->create(['name' => 'Ollama lokal']);
@@ -144,6 +147,40 @@ test('a broken case file is reported as an error', function () {
     } finally {
         file_put_contents(base_path('tests/Evals/extraction/cases.json'), $original);
     }
+
+    InventoryExtractor::assertNeverPrompted();
+});
+
+test('the language option picks the content language of the extraction', function () {
+    AiProvider::factory()->create(['name' => 'Ollama lokal']);
+    InventoryExtractor::fake(fn () => ['title' => 'Microphone', 'description' => 'A microphone.', 'search_terms' => ['rode']]);
+
+    $this->artisan('extraction:eval', ['--provider' => 'Ollama lokal', '--language' => 'en'])
+        ->expectsOutputToContain('Sprache: English')
+        ->assertSuccessful();
+
+    InventoryExtractor::assertPrompted('Analyze the photos and provide a title, a description and search terms.');
+    InventoryExtractor::assertNotPrompted('Analysiere die Fotos und liefere Titel, Beschreibung und Suchbegriffe.');
+});
+
+test('the extraction is German by default', function () {
+    AiProvider::factory()->create(['name' => 'Ollama lokal']);
+    InventoryExtractor::fake(fn () => ['title' => 'Gerät', 'description' => 'x']);
+
+    $this->artisan('extraction:eval', ['--provider' => 'Ollama lokal'])
+        ->expectsOutputToContain('Sprache: Deutsch')
+        ->assertSuccessful();
+
+    InventoryExtractor::assertPrompted('Analysiere die Fotos und liefere Titel, Beschreibung und Suchbegriffe.');
+});
+
+test('an unknown language lists the available ones', function () {
+    AiProvider::factory()->create(['name' => 'Ollama lokal']);
+    InventoryExtractor::fake();
+
+    $this->artisan('extraction:eval', ['--provider' => 'Ollama lokal', '--language' => 'fr'])
+        ->expectsOutputToContain('de, en')
+        ->assertFailed();
 
     InventoryExtractor::assertNeverPrompted();
 });

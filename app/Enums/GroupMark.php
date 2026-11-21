@@ -12,8 +12,8 @@ enum GroupMark: string implements HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Merged => 'KI: zusammengelegt',
-            self::Split => 'KI: aufgeteilt',
+            self::Merged => __('AI: merged'),
+            self::Split => __('AI: split'),
         };
     }
 }

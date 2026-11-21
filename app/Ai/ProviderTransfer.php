@@ -105,7 +105,7 @@ class ProviderTransfer
         try {
             $document = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException) {
-            throw new InvalidArgumentException('Die Datei enthält kein gültiges JSON.');
+            throw new InvalidArgumentException(__('The file does not contain valid JSON.'));
         }
 
         $validator = Validator::make(is_array($document) ? $document : [], [
@@ -143,14 +143,14 @@ class ProviderTransfer
     private function errorMessage(string $field): string
     {
         if (preg_match('/^providers\.(\d+)(?:\.(\w+))?/', $field, $matches) !== 1) {
-            return 'Die Datei ist keine Tory-Provider-Datei.';
+            return __('The file is not a Tory provider file.');
         }
 
         $position = (int) $matches[1] + 1;
 
         return isset($matches[2])
-            ? "Eintrag {$position}: Das Feld „{$matches[2]}“ fehlt oder ist ungültig."
-            : "Eintrag {$position} ist ungültig.";
+            ? __('Entry :position: the field “:field” is missing or invalid.', ['position' => $position, 'field' => $matches[2]])
+            : __('Entry :position is invalid.', ['position' => $position]);
     }
 
     private function freeName(string $name): string

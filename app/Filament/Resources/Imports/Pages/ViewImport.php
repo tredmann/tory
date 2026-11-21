@@ -32,19 +32,19 @@ class ViewImport extends ViewRecord
     {
         return [
             Action::make('retry')
-                ->label('Erneut versuchen')
+                ->label(__('Try again'))
                 ->color('warning')
                 ->visible(fn (): bool => $this->import()->status === ImportStatus::Failed)
                 ->action(function (): void {
                     $this->import()->restart();
 
                     Notification::make()
-                        ->title('Erneut gestartet')
+                        ->title(__('Restarted'))
                         ->success()
                         ->send();
                 }),
             Action::make('convert')
-                ->label('Übernehmen')
+                ->label(__('Create item'))
                 ->visible(fn (): bool => $this->import()->isFinished() && ! $this->import()->isRegenerating())
                 ->fillForm(fn (): array => [
                     'title' => $this->import()->title,
@@ -55,13 +55,13 @@ class ViewImport extends ViewRecord
                 ])
                 ->schema([
                     TextInput::make('title')
-                        ->label('Titel')
+                        ->label(__('Title'))
                         ->required()
                         ->maxLength(255),
                     Textarea::make('description')
-                        ->label('Beschreibung'),
+                        ->label(__('Description')),
                     TagsInput::make('search_terms')
-                        ->label('Suchbegriffe')
+                        ->label(__('Search terms'))
                         ->splitKeys(['Tab', ',']),
                     SpotSelect::make(),
                 ])
@@ -73,7 +73,7 @@ class ViewImport extends ViewRecord
                     auth()->user()?->forceFill(['last_spot_id' => $spotId])->save();
 
                     Notification::make()
-                        ->title('Gegenstand angelegt')
+                        ->title(__('Item created'))
                         ->success()
                         ->send();
 
@@ -82,7 +82,7 @@ class ViewImport extends ViewRecord
             ActionGroup::make([
                 RegenerateTextsAction::make(),
                 DeleteAction::make()
-                    ->label('Löschen')
+                    ->label(__('Delete'))
                     ->visible(fn (): bool => $this->import()->isFinished())
                     ->successRedirectUrl(ImportResource::getUrl('index')),
             ])->color('gray'),

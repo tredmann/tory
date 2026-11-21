@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Language;
 use App\Mcp\Servers\ToryServer;
 use App\Mcp\Tools\MoveItemTool;
 use App\Models\Item;
@@ -87,4 +88,24 @@ it('leaves the last used spot alone', function () {
         ->assertOk();
 
     expect($user->fresh()->last_spot_id)->toBe($lastSpot->id);
+});
+
+it('answers in English to an English token owner', function () {
+    $spot = Spot::factory()->for(Location::factory(['name' => 'Keller']))->create(['name' => 'Regal 3']);
+    $item = Item::factory()->create(['title' => 'Bohrmaschine']);
+    $user = User::factory()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+
+    callMcpTool($user, 'move-item-tool', ['item' => $item->id, 'spot' => $spot->code])
+        ->assertOk()
+        ->assertJsonPath('result.content.0.text', "Bohrmaschine is now on Regal 3 ({$spot->code}), Keller.");
+});
+
+it('answers in German to a German token owner', function () {
+    $spot = Spot::factory()->for(Location::factory(['name' => 'Keller']))->create(['name' => 'Regal 3']);
+    $item = Item::factory()->create(['title' => 'Bohrmaschine']);
+
+    callMcpTool(User::factory()->create(), 'move-item-tool', ['item' => $item->id, 'spot' => $spot->code])
+        ->assertOk()
+        ->assertJsonPath('result.content.0.text', "Bohrmaschine liegt jetzt auf Regal 3 ({$spot->code}), Keller.");
 });

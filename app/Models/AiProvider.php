@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Ai\ProviderFailure;
 use App\Enums\AiVendor;
+use App\Enums\ProviderFailureReason;
 use Database\Factories\AiProviderFactory;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -18,6 +20,7 @@ use Laravel\Ai\Providers\Provider;
  * @property AiVendor $vendor
  * @property string|null $model
  * @property string|null $embedding_model
+ * @property ProviderFailureReason|null $search_failure_reason
  */
 class AiProvider extends Model
 {
@@ -55,7 +58,46 @@ class AiProvider extends Model
             'is_active' => 'boolean',
             'is_active_for_search' => 'boolean',
             'search_min_similarity' => 'float',
+            'search_failure_reason' => ProviderFailureReason::class,
+            'search_failure_generic' => 'boolean',
         ];
+    }
+
+    /**
+     * The columns that record why search embedding failed, or clear it. The
+     * text is built when shown (searchFailureMessage()), in the viewer's language.
+     *
+     * @return array{search_failure: null, search_failure_reason: ?string, search_failure_dimensions: ?int, search_failure_generic: bool}
+     */
+    public static function searchFailureColumns(bool $failed, ?ProviderFailure $failure = null): array
+    {
+        return [
+            'search_failure' => null,
+            'search_failure_reason' => $failed ? $failure?->reason?->value : null,
+            'search_failure_dimensions' => $failed ? $failure?->dimensions : null,
+            'search_failure_generic' => $failed && ($failure?->userMessage() === null),
+        ];
+    }
+
+    /**
+     * The failure text for the viewer: built from the stored parts, else the
+     * free text of a row written before they existed.
+     */
+    public function searchFailureMessage(): ?string
+    {
+        if ($this->search_failure_dimensions !== null) {
+            return ProviderFailure::dimensionsMessage($this->name, $this->search_failure_dimensions);
+        }
+
+        if ($this->search_failure_reason !== null) {
+            return $this->search_failure_reason->message($this->name);
+        }
+
+        if ($this->search_failure_generic) {
+            return ProviderFailure::genericEmbeddingMessage();
+        }
+
+        return filled($this->search_failure) ? $this->search_failure : null;
     }
 
     protected static function booted(): void

@@ -2,11 +2,16 @@
 
 namespace App\Providers\Filament;
 
+use App\Enums\Language;
 use App\Filament\Auth\AcceptInvite;
+use App\Filament\Auth\SetUpFirstAdministrator;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\SaveThemeMode;
 use App\Http\Middleware\LogOutLockedUser;
+use App\Http\Middleware\RedirectToFirstAdministratorSetup;
+use App\Http\Middleware\SetLocale;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -27,6 +32,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Livewire\Component;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -41,12 +47,23 @@ class AdminPanelProvider extends PanelProvider
             ->profile()
             ->globalSearch(false)
             ->userMenuItems([
+                Action::make('language')
+                    ->label(fn (): string => Language::from(app()->getLocale())->other()->getLabel())
+                    ->icon(Heroicon::OutlinedLanguage)
+                    ->action(function (Component $livewire): void {
+                        Filament::auth()->user()?->forceFill(['locale' => Language::from(app()->getLocale())->other()])->save();
+
+                        $livewire->js('window.location.reload()');
+                    }),
                 Action::make('version')
-                    ->label(fn (): string => 'Version '.config('app.version'))
+                    ->label(fn (): string => __('Version :version', ['version' => config('app.version')]))
                     ->icon(Heroicon::OutlinedInformationCircle)
                     ->disabled(),
             ])
-            ->routes(fn () => Route::get('/invite/{token}', AcceptInvite::class)->middleware('throttle:10,1')->name('invite'))
+            ->routes(function (): void {
+                Route::get('/invite/{token}', AcceptInvite::class)->middleware('throttle:10,1')->name('invite');
+                Route::get('/setup', SetUpFirstAdministrator::class)->middleware('throttle:10,1')->name('setup');
+            })
             ->authenticatedRoutes(function (Panel $panel): void {
                 Route::post('/theme', SaveThemeMode::class)
                     ->middleware($panel->getEmailVerifiedMiddleware())
@@ -88,8 +105,8 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogoHeight('2rem')
             ->favicon(fn (): string => asset('images/tory-mark.svg'))
             ->navigationGroups([
-                NavigationGroup::make('Inventar')->collapsible(false),
-                NavigationGroup::make('Einstellungen')->collapsible(false),
+                NavigationGroup::make(fn (): string => __('Inventory'))->collapsible(false),
+                NavigationGroup::make(fn (): string => __('Settings'))->collapsible(false),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
@@ -98,8 +115,10 @@ class AdminPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
+                RedirectToFirstAdministratorSetup::class,
                 AuthenticateSession::class,
                 LogOutLockedUser::class,
+                SetLocale::class,
                 ShareErrorsFromSession::class,
                 PreventRequestForgery::class,
                 SubstituteBindings::class,

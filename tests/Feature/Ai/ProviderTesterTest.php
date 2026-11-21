@@ -3,7 +3,9 @@
 use App\Ai\Agents\InventoryExtractor;
 use App\Ai\ProviderFailure;
 use App\Ai\ProviderTester;
+use App\Enums\Language;
 use App\Models\AiProvider;
+use App\Models\HouseholdSettings;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
@@ -85,4 +87,13 @@ test('both configured and the extraction fails names both', function () {
     expect(app(ProviderTester::class)->run($provider))
         ->toStartWith('Bilderkennung: ')
         ->toEndWith('Embedding: ok.');
+});
+
+test('tests extraction in the household content language', function () {
+    HouseholdSettings::current()->changeContentLanguage(Language::English);
+    InventoryExtractor::fake([['title' => 'Red square', 'description' => 'Red.']]);
+
+    app(ProviderTester::class)->run(AiProvider::factory()->create(['model' => 'gpt-x']));
+
+    InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->agent->language === Language::English);
 });

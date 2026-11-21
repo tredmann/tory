@@ -1,5 +1,5 @@
 import '../css/photo-picker.css';
-import { fitWithinLimit, isAcceptable } from './photo-shrink.js';
+import { addTiles, exceedsLimit, finishUpload, registerUploadCount, rejectTile, revokePreview, uploadTile } from './photo-upload.js';
 
 const storedTiles = (photos) =>
     photos.map((photo) => ({
@@ -11,19 +11,10 @@ const storedTiles = (photos) =>
         message: null,
     }));
 
-const revokePreview = (tile) => {
-    if (tile.url?.startsWith('blob:')) {
-        URL.revokeObjectURL(tile.url);
-    }
-};
-
-const changeUploadCount = (change) =>
-    window.Alpine.store('toryPhotoUploads', window.Alpine.store('toryPhotoUploads') + change);
-
 // A finish request already under way can still store a cancelled upload on the server, so its key stays marked.
 const abandonedUploads = new Set();
 
-const itemPhotos = ({ statePath, photos, maxPhotos }) => {
+const itemPhotos = ({ statePath, photos, maxPhotos, messages }) => {
     // Uploads run one after the other: the server keeps new photos in the order they finish.
     let queue = Promise.resolve();
     let wire;
@@ -114,76 +105,23 @@ const itemPhotos = ({ statePath, photos, maxPhotos }) => {
             event.target.value = '';
             this.message = null;
 
-            if (this.photoCount + files.filter(isAcceptable).length > maxPhotos) {
-                this.message = `Höchstens ${maxPhotos} Fotos.`;
+            if (exceedsLimit(this.photoCount, files, maxPhotos)) {
+                this.message = messages.tooMany.replace(':max', maxPhotos);
 
                 return;
             }
 
-            files.forEach((file) => {
-                const tile = this.addTile(file);
+            addTiles(this.tiles, files, messages, { marked: false }).forEach(({ tile, file }) => {
+                queue = queue.then(() => this.upload(tile, file)).catch(() => rejectTile(tile, messages.uploadFailed));
+            });
+        },
 
-                if (tile.uploading) {
-                    changeUploadCount(1);
-                    queue = queue.then(() => this.upload(tile, file));
+        upload(tile, file) {
+            return uploadTile(wire, `${statePath}.uploads.${tile.id}`, tile, file, messages, () => {
+                if (this.overview === null) {
+                    this.overview = tile.id;
+                    this.syncMarks();
                 }
-            });
-        },
-
-        addTile(file) {
-            const acceptable = isAcceptable(file);
-
-            this.tiles.push({
-                id: crypto.randomUUID(),
-                url: acceptable ? URL.createObjectURL(file) : null,
-                name: file.name,
-                marked: false,
-                uploading: acceptable,
-                message: acceptable ? null : 'Nur JPEG-, PNG-, WebP- oder GIF-Bilder bis 12 MB sind erlaubt.',
-            });
-
-            // The reactive tile, not the plain object: changes to it must reach the page.
-            return this.tiles[this.tiles.length - 1];
-        },
-
-        async upload(tile, file) {
-            if (!tile.uploading) {
-                return;
-            }
-
-            let fitted;
-
-            try {
-                fitted = await fitWithinLimit(file);
-            } catch {
-                this.rejectTile(tile, 'Dieses Bild lässt sich nicht lesen.');
-
-                return;
-            }
-
-            if (!tile.uploading) {
-                return;
-            }
-
-            await new Promise((resolve) => {
-                wire.$upload(
-                    `${statePath}.uploads.${tile.id}`,
-                    fitted,
-                    () => {
-                        if (this.finishUpload(tile) && this.overview === null) {
-                            this.overview = tile.id;
-                            this.syncMarks();
-                        }
-
-                        resolve();
-                    },
-                    () => {
-                        this.rejectTile(tile, 'Hochladen fehlgeschlagen.');
-                        resolve();
-                    },
-                    () => {},
-                    resolve,
-                );
             });
         },
 
@@ -192,7 +130,7 @@ const itemPhotos = ({ statePath, photos, maxPhotos }) => {
          * whose request died. A tile that is queued or being shrunk has no Livewire upload yet.
          */
         cancel(tile) {
-            if (!this.finishUpload(tile)) {
+            if (!finishUpload(tile)) {
                 return;
             }
 
@@ -204,28 +142,6 @@ const itemPhotos = ({ statePath, photos, maxPhotos }) => {
             if (!destroyed) {
                 this.syncMarks();
             }
-        },
-
-        rejectTile(tile, message) {
-            if (!this.finishUpload(tile)) {
-                return;
-            }
-
-            revokePreview(tile);
-            tile.url = null;
-            tile.message = message;
-        },
-
-        /** Returns false when the upload has already ended, so the counter drops exactly once. */
-        finishUpload(tile) {
-            if (!tile.uploading) {
-                return false;
-            }
-
-            tile.uploading = false;
-            changeUploadCount(-1);
-
-            return true;
         },
 
         /** Deferred on purpose: the marks travel with the next request, which is the save at the latest. */
@@ -258,6 +174,6 @@ const itemPhotos = ({ statePath, photos, maxPhotos }) => {
 };
 
 document.addEventListener('alpine:init', () => {
-    window.Alpine.store('toryPhotoUploads', 0);
+    registerUploadCount();
     window.Alpine.data('itemPhotos', itemPhotos);
 });

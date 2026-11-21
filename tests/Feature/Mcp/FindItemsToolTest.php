@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Language;
 use App\Mcp\Servers\ToryServer;
 use App\Mcp\Tools\FindItemsTool;
 use App\Models\Item;
@@ -70,4 +71,19 @@ it('shows the note on one line and shortened', function () {
         ->tool(FindItemsTool::class, ['query' => 'Monitor'])
         ->assertDontSee('Bemerkung')
         ->assertStructuredContent(fn (AssertableJson $json) => $json->where('items.0.notes', null)->etc());
+});
+
+it('answers in English to an English token owner', function () {
+    $user = User::factory()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+
+    callMcpTool($user, 'find-items-tool', ['query' => 'Gibtsnicht'])
+        ->assertOk()
+        ->assertJsonPath('result.content.0.text', 'Nothing found.');
+});
+
+it('answers in German to a German token owner', function () {
+    callMcpTool(User::factory()->create(), 'find-items-tool', ['query' => 'Gibtsnicht'])
+        ->assertOk()
+        ->assertJsonPath('result.content.0.text', 'Nichts gefunden.');
 });

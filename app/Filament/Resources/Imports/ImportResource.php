@@ -15,7 +15,6 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
-use UnitEnum;
 
 class ImportResource extends Resource
 {
@@ -25,17 +24,29 @@ class ImportResource extends Resource
 
     protected static ?string $slug = 'imports';
 
-    protected static ?string $modelLabel = 'Import';
-
-    protected static ?string $pluralModelLabel = 'Importe';
-
     protected static ?string $recordTitleAttribute = 'title';
 
-    protected static ?string $navigationLabel = 'Importe';
-
-    protected static string|UnitEnum|null $navigationGroup = 'Inventar';
-
     protected static ?int $navigationSort = 4;
+
+    public static function getModelLabel(): string
+    {
+        return __('Import');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Imports');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Imports');
+    }
+
+    public static function getNavigationGroup(): string
+    {
+        return __('Inventory');
+    }
 
     public static function canEdit(Model $record): bool
     {

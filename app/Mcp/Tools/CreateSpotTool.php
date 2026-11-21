@@ -13,7 +13,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Legt einen neuen Lagerplatz in einem bestehenden Lagerort an. Vorher den Nutzer fragen.')]
+#[Description('Creates a new spot in an existing location. Ask the user first.')]
 class CreateSpotTool extends Tool
 {
     /**
@@ -22,9 +22,9 @@ class CreateSpotTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'name' => $schema->string()->description('Name des neuen Lagerplatzes, zum Beispiel "Regal 5".')->required(),
-            'location' => $schema->string()->description('Name eines bestehenden Lagerorts, zum Beispiel "Keller".')->required(),
-            'note' => $schema->string()->description('Optionale Notiz zum Lagerplatz.'),
+            'name' => $schema->string()->description('Name of the new spot, for example "Shelf 5".')->required(),
+            'location' => $schema->string()->description('Name of an existing location, for example "Cellar".')->required(),
+            'note' => $schema->string()->description('Optional note on the spot.'),
         ];
     }
 
@@ -45,7 +45,7 @@ class CreateSpotTool extends Tool
         $matches = Location::query()->named($validated['location'])->orderBy('name')->get();
 
         if ($matches->count() > 1) {
-            return Response::error('Mehrere Lagerorte passen zu diesem Namen: '.$matches->pluck('name')->implode(', ').'. Bitte den Nutzer fragen, welcher gemeint ist.');
+            return Response::error(__('Several locations match this name: :names. Please ask the user which one is meant.', ['names' => $matches->pluck('name')->implode(', ')]));
         }
 
         $location = $matches->first();
@@ -53,7 +53,7 @@ class CreateSpotTool extends Tool
         if ($location === null) {
             $names = Location::query()->orderBy('name')->pluck('name')->all();
 
-            return Response::error('Diesen Lagerort gibt es nicht.'.($names === [] ? '' : ' Vorhandene Lagerorte: '.implode(', ', $names).'.'));
+            return Response::error(__('This location does not exist.').($names === [] ? '' : ' '.__('Existing locations: :names.', ['names' => implode(', ', $names)])));
         }
 
         $spot = Spot::query()->create([
@@ -65,7 +65,7 @@ class CreateSpotTool extends Tool
 
         $summary = SpotSummary::of($spot);
 
-        return Response::make(Response::text("Lagerplatz {$summary['name']} ({$summary['code']}) in {$summary['location']} angelegt."))
+        return Response::make(Response::text(__('Spot :name (:code) created in :location.', ['name' => $summary['name'], 'code' => $summary['code'], 'location' => $summary['location']])))
             ->withStructuredContent($summary);
     }
 }

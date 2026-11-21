@@ -2,10 +2,13 @@
 
 A household inventory that answers one question: where is that thing?
 
-You photograph an item, an AI model writes its title, description and search terms, and you put it on a spot such as "Regal 3, Fach 2" in the cellar. Later you search by keyword or by meaning and Tory tells you where the item lies. The interface is German; code and documentation are English. The vocabulary is defined in `CONTEXT.md`.
+![The overview page of Tory: search field, locations and the most recently added items](docs/images/overview.png)
+
+You photograph an item, an AI model writes its title, description and search terms, and you put it on a spot such as "Regal 3, Fach 2" in the cellar. Later you search by keyword or by meaning and Tory tells you where the item lies. The interface comes in German and English; code and documentation are English. The vocabulary is defined in `CONTEXT.md`.
 
 ## What it does
 
+- **Two languages.** Each user picks German or English for the interface in the user menu (without a choice the browser decides). Administrators set the household's content language on the page „Haushalt“; the AI writes titles, descriptions and search terms in it.
 - **Photo imports.** "Erfassen" uploads 1 to 20 photos of one item; the extraction runs in the background and "Übernehmen" turns the result into an item on a spot. A bulk import takes many photos at once, groups them into items and lets you review the groups first.
 - **Spots and locations.** A spot ("Lagerplatz") is the concrete place, a location ("Lagerort") groups spots. Every spot has a permanent four-character code and a page at `/spots/{code}`.
 - **Labels.** Spot labels with a QR code are printed as a PDF sheet.
@@ -52,7 +55,9 @@ Mail uses the `log` driver: verification links appear in `storage/logs/laravel.l
 
 ## Create a user
 
-There is no registration page. Create the first user from the CLI:
+There is no registration page. As long as Tory has no user at all, every page leads to `/setup`, where the first visitor creates the first administrator and is logged in. Whoever opens it first becomes administrator, so keep Tory unreachable from the internet until then. Once any user exists the page is gone for good.
+
+If you cannot guarantee that, create the first user from the CLI instead, which closes the setup page from the start:
 
 ```sh
 docker compose exec app php artisan make:filament-user --name=Admin --email=admin@example.com --password=secret
@@ -74,7 +79,7 @@ docker compose exec app php artisan users:make-admin admin@example.com
 
 `laravel/ai` is installed with Anthropic as the default provider (`config/ai.php`). Set `ANTHROPIC_API_KEY` in `.env`. The `App\Ai\Agents\Assistant` agent exists but has no UI yet.
 
-Photos are imported at `/imports/create` ("Erfassen"): the upload is queued and `App\Ai\Agents\InventoryExtractor` turns the photos into a German title and description, which appear on the import's page once the job has finished, so the queue worker must be running. Which AI does the work is set on the panel page **Eigene KI** (`/ai-providers`): "Provider anlegen" with name, vendor (Ollama, Claude, OpenAI, Mistral), API key or Ollama address, and model; "Testen" sends a small test photo; "Aktivieren" makes it the one used from the next extraction on. API keys are stored encrypted with `APP_KEY` and never shown again (only the last four characters), so changing `APP_KEY` makes stored keys unreadable and they must be entered again. The active provider cannot be deleted. Only administrators can see this page and export the keys.
+Photos are imported at `/imports/create` ("Erfassen"): the upload is queued and `App\Ai\Agents\InventoryExtractor` turns the photos into a title and description in the household's content language, which appear on the import's page once the job has finished, so the queue worker must be running. Which AI does the work is set on the panel page **Eigene KI** (`/ai-providers`): "Provider anlegen" with name, vendor (Ollama, Claude, OpenAI, Mistral), API key or Ollama address, and model; "Testen" sends a small test photo; "Aktivieren" makes it the one used from the next extraction on. API keys are stored encrypted with `APP_KEY` and never shown again (only the last four characters), so changing `APP_KEY` makes stored keys unreadable and they must be entered again. The active provider cannot be deleted. Only administrators can see this page and export the keys.
 
 Only while no provider is active does extraction fall back to `.env`; locally it then runs on Ollama with `gemma4:e4b-mlx`, reached from the container via `host.docker.internal`:
 

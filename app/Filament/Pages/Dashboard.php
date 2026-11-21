@@ -13,10 +13,19 @@ use Filament\Actions\Action;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Grid;
+use Illuminate\Contracts\Support\Htmlable;
 
 class Dashboard extends BaseDashboard
 {
-    protected static ?string $title = 'Übersicht';
+    public function getTitle(): string|Htmlable
+    {
+        return __('Overview');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Overview');
+    }
 
     /**
      * @return array<Action>
@@ -25,10 +34,10 @@ class Dashboard extends BaseDashboard
     {
         return [
             Action::make('capture')
-                ->label('Erfassen')
+                ->label(__('Add item'))
                 ->url(ImportResource::getUrl('create')),
             Action::make('captureMany')
-                ->label('Viele erfassen')
+                ->label(__('Add many'))
                 ->color('gray')
                 ->url(BulkImportResource::getUrl('create')),
         ];
