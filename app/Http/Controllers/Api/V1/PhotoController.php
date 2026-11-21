@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PhotoController extends Controller
 {
-    public function __construct(private PhotoResponder $photos) {}
+    public function __construct(private readonly PhotoResponder $photos) {}
 
     public function import(Import $import, string $photo): StreamedResponse
     {

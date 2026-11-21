@@ -6,6 +6,7 @@ use App\Jobs\EmbedItem;
 use App\Models\Concerns\RegeneratesTexts;
 use App\Photos\PhotoStore;
 use Database\Factories\ItemFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\AsVector;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -25,6 +26,14 @@ use Throwable;
  * @property list<string>|null $search_terms null on a model created in this request without the database default
  */
 #[Hidden(['embedding'])]
+#[Fillable([
+    'spot_id',
+    'title',
+    'description',
+    'notes',
+    'photos',
+    'search_terms',
+])]
 class Item extends Model
 {
     /** @use HasFactory<ItemFactory> */
@@ -32,16 +41,6 @@ class Item extends Model
 
     use HasUuids;
     use RegeneratesTexts;
-
-    /** @var list<string> */
-    protected $fillable = [
-        'spot_id',
-        'title',
-        'description',
-        'notes',
-        'photos',
-        'search_terms',
-    ];
 
     protected static function booted(): void
     {

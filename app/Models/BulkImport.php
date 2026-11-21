@@ -17,6 +17,7 @@ use App\Jobs\GroupBulkImport;
 use App\Photos\PhotoStore;
 use Closure;
 use Database\Factories\BulkImportFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +38,19 @@ use Throwable;
  * @property list<array{id: string, photos: list<string>, mark: string|null}>|null $groups
  * @property list<string> $discarded
  */
+#[Fillable([
+    'user_id',
+    'spot_id',
+    'status',
+    'photos',
+    'time_cuts',
+    'cuts',
+    'groups',
+    'discarded',
+    'grouping_incomplete',
+    'failure_reason',
+    'failure_provider',
+])]
 class BulkImport extends Model
 {
     public const int MAX_PHOTOS = 100;
@@ -45,21 +59,6 @@ class BulkImport extends Model
     use HasFactory;
 
     use HasUuids;
-
-    /** @var list<string> */
-    protected $fillable = [
-        'user_id',
-        'spot_id',
-        'status',
-        'photos',
-        'time_cuts',
-        'cuts',
-        'groups',
-        'discarded',
-        'grouping_incomplete',
-        'failure_reason',
-        'failure_provider',
-    ];
 
     private bool $rowWasDeleted = false;
 
@@ -383,13 +382,10 @@ class BulkImport extends Model
             return false;
         }
 
-        foreach ($this->groupList() as $group) {
-            if (count($this->remainingPhotos($group)) > Import::MAX_PHOTOS) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all(
+            $this->groupList(),
+            fn (PhotoGroup $group): bool => count($this->remainingPhotos($group)) <= Import::MAX_PHOTOS,
+        );
     }
 
     /**

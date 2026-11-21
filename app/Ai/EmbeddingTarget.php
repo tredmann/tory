@@ -57,8 +57,6 @@ final readonly class EmbeddingTarget
      */
     public function sdkProvider(): string
     {
-        return $this->aiProvider === null
-            ? $this->envProvider
-            : $this->aiProvider->toLaravelProvider()->name();
+        return $this->aiProvider?->toLaravelProvider()->name() ?? $this->envProvider;
     }
 }

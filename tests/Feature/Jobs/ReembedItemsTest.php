@@ -23,7 +23,7 @@ beforeEach(function () {
 
 function runReembed(?string $afterId = null): void
 {
-    (new ReembedItems($afterId))->handle(app(EmbeddingRunner::class));
+    new ReembedItems($afterId)->handle(app(EmbeddingRunner::class));
 }
 
 function storeVector(Item $item): void

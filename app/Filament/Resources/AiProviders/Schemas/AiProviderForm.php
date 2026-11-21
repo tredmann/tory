@@ -149,7 +149,7 @@ class AiProviderForm
 
     private static function vendor(Get $get, ?AiProvider $record): ?AiVendor
     {
-        $vendor = $record !== null ? $record->vendor : $get('vendor');
+        $vendor = $record->vendor ?? $get('vendor');
 
         return $vendor instanceof AiVendor ? $vendor : AiVendor::tryFrom((string) $vendor);
     }

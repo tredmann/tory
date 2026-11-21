@@ -32,7 +32,7 @@ function translationKeysIn(string $source): array
         }
     }
 
-    return array_map('strval', array_keys($keys));
+    return array_map(strval(...), array_keys($keys));
 }
 
 /**
@@ -53,7 +53,7 @@ function translationKeysInCode(): array
         }
     }
 
-    return array_map('strval', array_keys($keys));
+    return array_map(strval(...), array_keys($keys));
 }
 
 /**
@@ -64,7 +64,7 @@ function germanTranslationKeys(): array
     $translations = json_decode(file_get_contents(lang_path('de.json')), true, flags: JSON_THROW_ON_ERROR);
 
     return array_values(array_filter(
-        array_map('strval', array_keys($translations)),
+        array_map(strval(...), array_keys($translations)),
         fn (string $key): bool => ! isPhpFileTranslationKey($key),
     ));
 }

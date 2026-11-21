@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Database\Factories\SpotFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\RouteKey;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +12,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Random\Randomizer;
 
+#[Fillable([
+    'name',
+    'note',
+    'location_id',
+])]
+#[RouteKey('code')]
 class Spot extends Model
 {
     /** @use HasFactory<SpotFactory> */
@@ -21,13 +29,6 @@ class Spot extends Model
     public const string CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
     public const int CODE_LENGTH = 4;
-
-    /** @var list<string> */
-    protected $fillable = [
-        'name',
-        'note',
-        'location_id',
-    ];
 
     protected static function booted(): void
     {
@@ -76,11 +77,6 @@ class Spot extends Model
         }
 
         return parent::resolveRouteBinding($code, $field);
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'code';
     }
 
     /**

@@ -36,7 +36,7 @@ test('replaces title, description and terms and clears the running state', funct
     $record = ($this->makeRecord)($kind);
     $record->forceFill(['regeneration_error' => 'alt'])->saveQuietly();
 
-    (new RegenerateTexts($record))->handle();
+    new RegenerateTexts($record)->handle();
 
     expect($record->fresh())
         ->title->toBe('Neu')
@@ -56,7 +56,7 @@ test('a changed item text dispatches EmbedItem', function () {
     $item = ($this->makeRecord)('item');
     Queue::fake();
 
-    (new RegenerateTexts($item))->handle();
+    new RegenerateTexts($item)->handle();
 
     Queue::assertPushed(EmbedItem::class);
 });
@@ -116,7 +116,7 @@ test('stores the failure reason and provider for an active provider', function (
 test('failed without an exception clears the running state', function () {
     $item = ($this->makeRecord)('item');
 
-    (new RegenerateTexts($item))->failed(null);
+    new RegenerateTexts($item)->failed(null);
 
     expect($item->fresh())->regenerating_at->toBeNull()->regeneration_error->toBe('Der Auftrag wurde abgebrochen.');
 });
@@ -130,7 +130,7 @@ test('a record deleted during the run ends quietly', function () {
         return ['title' => 'Neu', 'description' => 'D', 'search_terms' => []];
     });
 
-    (new RegenerateTexts($item))->handle();
+    new RegenerateTexts($item)->handle();
 
     expect(Item::count())->toBe(0);
 });
@@ -139,7 +139,7 @@ test('failed on a deleted record does nothing', function () {
     $item = ($this->makeRecord)('item');
     Item::query()->whereKey($item->getKey())->delete();
 
-    (new RegenerateTexts($item))->failed(new RuntimeException('x'));
+    new RegenerateTexts($item)->failed(new RuntimeException('x'));
 
     expect(Item::count())->toBe(0);
 });
@@ -150,7 +150,7 @@ test('keeps the note of an item', function () {
     $item = ($this->makeRecord)('item');
     $item->forceFill(['notes' => 'Dongle fehlt'])->saveQuietly();
 
-    (new RegenerateTexts($item))->handle();
+    new RegenerateTexts($item)->handle();
 
     expect($item->fresh())->title->toBe('Neu')->notes->toBe('Dongle fehlt');
 });
@@ -160,7 +160,7 @@ test('regenerates the texts in the household content language', function () {
     HouseholdSettings::current()->changeContentLanguage(Language::English);
     InventoryExtractor::fake([['title' => 'Stapler', 'description' => 'A red stapler.']]);
 
-    (new RegenerateTexts(($this->makeRecord)('item')))->handle();
+    new RegenerateTexts(($this->makeRecord)('item'))->handle();
 
     InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->agent->language === Language::English);
 });

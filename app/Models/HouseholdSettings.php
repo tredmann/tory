@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Language;
+use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -13,11 +14,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
+#[Table(name: 'household_settings')]
 class HouseholdSettings extends Model
 {
     use HasUuids;
-
-    protected $table = 'household_settings';
 
     protected function casts(): array
     {

@@ -114,7 +114,7 @@ function breakLocalDisk(int $writesBeforeFailure = 0, bool $truncatesWrites = fa
 
     $adapter = new class($root, $writesBeforeFailure, $truncatesWrites, $failsDeletes) extends FlysystemLocalAdapter
     {
-        public function __construct(string $root, private int $writesLeft, private bool $truncatesWrites, private bool $failsDeletes)
+        public function __construct(string $root, private int $writesLeft, private readonly bool $truncatesWrites, private readonly bool $failsDeletes)
         {
             parent::__construct($root);
         }

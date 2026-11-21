@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\LocationFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -14,17 +15,15 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 /**
  * @property string $id
  */
+#[Fillable([
+    'name',
+])]
 class Location extends Model
 {
     /** @use HasFactory<LocationFactory> */
     use HasFactory;
 
     use HasUuids;
-
-    /** @var list<string> */
-    protected $fillable = [
-        'name',
-    ];
 
     /**
      * Locations whose name equals the given one, ignoring case and surrounding spaces.

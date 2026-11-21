@@ -12,12 +12,12 @@ use Throwable;
  * Embeds a batch of items for the current embedding target. Shared by the
  * `items:embed` command and the ReembedItems job.
  */
-final class EmbeddingRunner
+final readonly class EmbeddingRunner
 {
     /** The run stops after this many failures in a row, e.g. while the provider is down. */
     public const int MAX_CONSECUTIVE_FAILURES = 3;
 
-    public function __construct(private readonly ItemEmbedder $embedder) {}
+    public function __construct(private ItemEmbedder $embedder) {}
 
     /**
      * Paging is by id, so filling the embedding column does not shift later

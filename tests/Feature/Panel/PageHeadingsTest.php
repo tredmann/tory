@@ -39,7 +39,7 @@ function assertHeading(string $page, array $parameters, string $title, array $br
 
     expect($instance->getTitle())->toBe($title)
         ->and(array_key_first($actual))->toBe(Dashboard::getUrl())
-        ->and((string) $actual[array_key_first($actual)])->toContain('Übersicht')
+        ->and((string) array_first($actual))->toContain('Übersicht')
         ->and(array_values(array_slice($actual, 1)))->toBe($breadcrumbs);
 }
 

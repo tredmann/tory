@@ -12,7 +12,7 @@ test('the job stores a 1024-dimension embedding', function () {
     Queue::fake();
     $item = Item::factory()->create();
 
-    (new EmbedItem($item))->handle(app(ItemEmbedder::class));
+    new EmbedItem($item)->handle(app(ItemEmbedder::class));
 
     expect($item->fresh()->embedding)->toHaveCount(1024);
 });
@@ -21,7 +21,7 @@ test('storing the embedding queues nothing', function () {
     Queue::fake();
     $item = Item::factory()->create();
 
-    (new EmbedItem($item))->handle(app(ItemEmbedder::class));
+    new EmbedItem($item)->handle(app(ItemEmbedder::class));
 
     Queue::assertPushed(EmbedItem::class, 1);
 });
@@ -89,7 +89,7 @@ test('a failing embedding leaves the item in place without an embedding', functi
     $item = Item::factory()->create();
     Embeddings::fake(fn () => throw new RuntimeException('down'));
 
-    expect(fn () => (new EmbedItem($item))->handle(app(ItemEmbedder::class)))->toThrow(RuntimeException::class);
+    expect(fn () => new EmbedItem($item)->handle(app(ItemEmbedder::class)))->toThrow(RuntimeException::class);
     expect($item->fresh()->embedding)->toBeNull();
 });
 
@@ -103,7 +103,7 @@ test('the job asks the provider with a client timeout shorter than its own', fun
         return [Embeddings::fakeEmbedding(1024)];
     });
 
-    (new EmbedItem($item))->handle(app(ItemEmbedder::class));
+    new EmbedItem($item)->handle(app(ItemEmbedder::class));
 
     expect($timeouts)->toBe([45]);
 });
@@ -117,7 +117,7 @@ test('an embedding of text that was edited meanwhile is not stored', function ()
         return [Embeddings::fakeEmbedding(1024)];
     });
 
-    (new EmbedItem($item))->handle(app(ItemEmbedder::class));
+    new EmbedItem($item)->handle(app(ItemEmbedder::class));
 
     expect($item->fresh())->title->toBe('Neu')->embedding->toBeNull();
 });
@@ -128,7 +128,7 @@ test('storing an embedding leaves updated_at alone', function () {
     $item->forceFill(['updated_at' => now()->subDay()])->saveQuietly();
     $before = $item->fresh()->updated_at;
 
-    (new EmbedItem($item))->handle(app(ItemEmbedder::class));
+    new EmbedItem($item)->handle(app(ItemEmbedder::class));
 
     expect($item->fresh()->embedding)->toHaveCount(1024)
         ->and($item->fresh()->updated_at->equalTo($before))->toBeTrue();

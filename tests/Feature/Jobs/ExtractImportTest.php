@@ -30,7 +30,7 @@ test('writes title and description and completes the import', function () {
     InventoryExtractor::fake([['title' => 'Hammer & Meißel "Profi"', 'description' => 'Aufdruck "Raspberry Pi 4 Model B".']]);
     $import = Import::factory()->create();
 
-    (new ExtractImport($import))->handle();
+    new ExtractImport($import)->handle();
 
     expect($import->fresh())
         ->status->toBe(ImportStatus::Completed)
@@ -48,7 +48,7 @@ test('marks the import running before prompting', function () {
         return ['title' => 'T', 'description' => 'D'];
     });
 
-    (new ExtractImport($import))->handle();
+    new ExtractImport($import)->handle();
 });
 
 test('reports and rethrows when the agent throws, and failed() records the error', function () {
@@ -72,7 +72,7 @@ test('reports and rethrows when the agent throws, and failed() records the error
 test('failed() without an exception stores a fallback message', function () {
     $import = Import::factory()->running()->create();
 
-    (new ExtractImport($import))->failed(null);
+    new ExtractImport($import)->failed(null);
 
     expect($import->fresh())->status->toBe(ImportStatus::Failed)->error->not->toBeEmpty();
 });
@@ -80,7 +80,7 @@ test('failed() without an exception stores a fallback message', function () {
 test('an incomplete answer throws the incomplete-answer message', function () {
     InventoryExtractor::fake([['title' => 'Nur ein Titel']]);
 
-    expect(fn () => (new ExtractImport(Import::factory()->create()))->handle())
+    expect(fn () => new ExtractImport(Import::factory()->create())->handle())
         ->toThrow(RuntimeException::class, 'Das Modell hat keine vollständige Antwort geliefert.');
 });
 
@@ -88,7 +88,7 @@ test('a non-string description is treated as incomplete', function () {
     InventoryExtractor::fake([['title' => 'X', 'description' => ['a', 'b']]]);
     $import = Import::factory()->create();
 
-    expect(fn () => (new ExtractImport($import))->handle())->toThrow(RuntimeException::class);
+    expect(fn () => new ExtractImport($import)->handle())->toThrow(RuntimeException::class);
     expect($import->fresh())->title->toBeNull()->description->toBeNull();
 });
 
@@ -96,7 +96,7 @@ test('a missing photo file fails instead of prompting', function () {
     InventoryExtractor::fake();
     $import = Import::factory()->create(['photos' => ['imports/missing.jpg']]);
 
-    expect(fn () => (new ExtractImport($import))->handle())->toThrow(RuntimeException::class, 'Foto imports/missing.jpg wurde nicht gefunden.');
+    expect(fn () => new ExtractImport($import)->handle())->toThrow(RuntimeException::class, 'Foto imports/missing.jpg wurde nicht gefunden.');
     InventoryExtractor::assertNeverPrompted();
 });
 
@@ -110,7 +110,7 @@ test('runs on the active provider', function () {
     InventoryExtractor::fake([['title' => 'A', 'description' => 'B']]);
     AiProvider::factory()->active()->create(['vendor' => AiVendor::OpenAi, 'model' => 'gpt-x']);
 
-    (new ExtractImport(Import::factory()->create()))->handle();
+    new ExtractImport(Import::factory()->create())->handle();
 
     InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->provider->driver() === 'openai' && $prompt->model === 'gpt-x');
 });
@@ -120,9 +120,9 @@ test('reads the active provider fresh for every job', function () {
     $first = AiProvider::factory()->active()->create(['vendor' => AiVendor::OpenAi, 'model' => 'gpt-x']);
     $second = AiProvider::factory()->create(['vendor' => AiVendor::Mistral, 'model' => 'mis-x']);
 
-    (new ExtractImport(Import::factory()->create()))->handle();
+    new ExtractImport(Import::factory()->create())->handle();
     $second->activate();
-    (new ExtractImport(Import::factory()->create()))->handle();
+    new ExtractImport(Import::factory()->create())->handle();
 
     InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->model === 'gpt-x');
     InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->model === 'mis-x' && $prompt->provider->driver() === 'mistral');
@@ -133,7 +133,7 @@ test('falls back to the inventory config without an active provider', function (
     InventoryExtractor::fake([['title' => 'A', 'description' => 'B']]);
     AiProvider::factory()->create(['vendor' => AiVendor::OpenAi]);
 
-    (new ExtractImport(Import::factory()->create()))->handle();
+    new ExtractImport(Import::factory()->create())->handle();
 
     InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->provider->driver() === 'ollama');
 });
@@ -149,7 +149,7 @@ test('stores reason and provider name for a fixable failure', function () {
         $job->handle();
     } catch (Throwable $e) {
         expect($e)->toBeInstanceOf(ProviderFailure::class);
-        (new ExtractImport($import))->failed($e);
+        new ExtractImport($import)->failed($e);
     }
 
     expect($import->fresh())
@@ -181,7 +181,7 @@ test('a failure does not change the active provider', function () {
     $other = AiProvider::factory()->create();
 
     try {
-        (new ExtractImport(Import::factory()->create()))->handle();
+        new ExtractImport(Import::factory()->create())->handle();
     } catch (Throwable) {
     }
 
@@ -208,7 +208,7 @@ test('a success clears earlier failure details', function () {
     InventoryExtractor::fake([['title' => 'A', 'description' => 'B']]);
     $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::KeyRejected, 'Claude')->create();
 
-    (new ExtractImport($import))->handle();
+    new ExtractImport($import)->handle();
 
     expect($import->fresh())->failure_reason->toBeNull()->failure_provider->toBeNull();
 });
@@ -234,7 +234,7 @@ test('stores the search terms', function () {
     InventoryExtractor::fake([['title' => 'A', 'description' => 'B', 'search_terms' => ['Hefter']]]);
     $import = Import::factory()->create();
 
-    (new ExtractImport($import))->handle();
+    new ExtractImport($import)->handle();
 
     expect($import->fresh()->search_terms)->toBe(['Hefter']);
 });
@@ -242,7 +242,7 @@ test('stores the search terms', function () {
 test('failed clears the search terms', function () {
     $import = Import::factory()->completed()->create(['search_terms' => ['Hefter']]);
 
-    (new ExtractImport($import))->failed(new RuntimeException('x'));
+    new ExtractImport($import)->failed(new RuntimeException('x'));
 
     expect($import->fresh()->search_terms)->toBe([]);
 });
@@ -251,7 +251,7 @@ test('writes the texts in the household content language', function () {
     HouseholdSettings::current()->changeContentLanguage(Language::English);
     InventoryExtractor::fake([['title' => 'Stapler', 'description' => 'A red stapler.']]);
 
-    (new ExtractImport(Import::factory()->create()))->handle();
+    new ExtractImport(Import::factory()->create())->handle();
 
     InventoryExtractor::assertPrompted(fn ($prompt) => $prompt->agent->language === Language::English
         && $prompt->prompt === 'Analyze the photos and provide a title, a description and search terms.');

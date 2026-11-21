@@ -21,7 +21,7 @@ class ProviderTransfer
 
     public const VERSION = 1;
 
-    private const MAX_NAME_LENGTH = 255;
+    private const int MAX_NAME_LENGTH = 255;
 
     /**
      * Leaves out providers whose key can no longer be decrypted, because their
