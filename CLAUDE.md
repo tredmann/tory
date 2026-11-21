@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Tory
 
-A household inventory that answers one question: where is that thing? Vocabulary (German UI word and English code name) lives in `CONTEXT.md`.
+A household inventory that answers one question: where is that thing? Vocabulary (German UI word and English code name) lives in `CONTEXT.md`; every feature change checks it against the new behaviour and updates it in the same branch.
 
 Laravel 13 + Filament 5 on FrankenPHP (PHP 8.5) with Postgres 18 and pgvector, developed entirely in Docker. The Filament panel is the whole app and is served at `/`; the REST API under `/api/v1` is a second door to the same rules. Each feature has a dated design doc in `docs/superpowers/specs/` and plan in `docs/superpowers/plans/`: read the feature's spec before changing it.
 
