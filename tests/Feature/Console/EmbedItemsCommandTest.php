@@ -90,6 +90,6 @@ test('items:embed with an active provider stores a failure too', function () {
 
     $this->artisan('items:embed')->assertSuccessful();
 
-    expect($provider->fresh()->search_failure)
+    expect($provider->fresh()->searchFailureMessage())
         ->toBe('Das Embedding ist fehlgeschlagen. Bitte Modell und Zugangsdaten prüfen.');
 });

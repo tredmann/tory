@@ -44,12 +44,12 @@ final class EmbeddingRunner
         $stoppedEarly = false;
         $resumeAfterId = null;
         $lastId = $afterId;
-        $lastMessage = null;
+        $lastFailure = null;
 
         $items
             ->when($afterId !== null, fn (Builder $query) => $query->where('id', '>', $afterId))
             ->eachById(function (Item $item) use (
-                &$embedded, &$failures, &$consecutive, &$stoppedEarly, &$resumeAfterId, &$lastId, &$lastMessage,
+                &$embedded, &$failures, &$consecutive, &$stoppedEarly, &$resumeAfterId, &$lastId, &$lastFailure,
                 $startedAt, $budgetSeconds, $clientTimeout, $onFailure,
             ): ?bool {
                 if ($budgetSeconds !== null && now()->getTimestamp() - $startedAt >= $budgetSeconds) {
@@ -70,7 +70,7 @@ final class EmbeddingRunner
                     report($e);
                     $failures++;
                     $consecutive++;
-                    $lastMessage = $e instanceof ProviderFailure ? $e->userMessage() : null;
+                    $lastFailure = $e instanceof ProviderFailure ? $e : null;
 
                     if ($onFailure !== null) {
                         $onFailure($item, $e);
@@ -90,7 +90,7 @@ final class EmbeddingRunner
             AiProvider::query()
                 ->whereKey($provider->getKey())
                 ->where('is_active_for_search', true)
-                ->update(['search_failure' => $failures > 0 ? ($lastMessage ?? ProviderFailure::genericEmbeddingMessage()) : null]);
+                ->update(AiProvider::searchFailureColumns($failures > 0, $lastFailure));
         }
 
         return new EmbeddingRunResult($embedded, $failures, $stoppedEarly, $resumeAfterId);

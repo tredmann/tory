@@ -56,7 +56,7 @@ final class SearchProviderSwitch
             $updated = AiProvider::query()->whereKey($provider->getKey())->update([
                 'is_active_for_search' => true,
                 'embedding_model' => $model,
-                'search_failure' => null,
+                ...AiProvider::searchFailureColumns(false),
                 'search_min_similarity' => DB::raw('coalesce(search_min_similarity, '.AiProvider::DEFAULT_SEARCH_MIN_SIMILARITY.')'),
             ]);
 
@@ -71,8 +71,8 @@ final class SearchProviderSwitch
 
         $provider->is_active_for_search = true;
         $provider->embedding_model = $model;
-        $provider->search_failure = null;
+        $provider->forceFill(AiProvider::searchFailureColumns(false));
         $provider->search_min_similarity ??= AiProvider::DEFAULT_SEARCH_MIN_SIMILARITY;
-        $provider->syncOriginalAttributes(['is_active_for_search', 'embedding_model', 'search_failure', 'search_min_similarity']);
+        $provider->syncOriginalAttributes(['is_active_for_search', 'embedding_model', 'search_failure', 'search_failure_reason', 'search_failure_dimensions', 'search_failure_generic', 'search_min_similarity']);
     }
 }

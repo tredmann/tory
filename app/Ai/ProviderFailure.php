@@ -21,7 +21,7 @@ final class ProviderFailure extends RuntimeException
         string $message,
         public readonly ?ProviderFailureReason $reason,
         public readonly string $providerName,
-        public readonly ?string $detail = null,
+        public readonly ?int $dimensions = null,
     ) {
         parent::__construct($message);
     }
@@ -36,19 +36,24 @@ final class ProviderFailure extends RuntimeException
             $message,
             ProviderFailureReason::fromThrowable($e),
             $provider->name,
-            $e instanceof WrongEmbeddingDimensions
-                ? (string) __('The embedding model of :provider returns :actual instead of :expected dimensions.', ['provider' => $provider->name, 'actual' => $e->actual, 'expected' => ItemEmbedder::DIMENSIONS])
-                : null,
+            $e instanceof WrongEmbeddingDimensions ? $e->actual : null,
         );
     }
 
     public static function genericEmbeddingMessage(): string
     {
-        return __('The embedding failed. Please check the model and credentials.');
+        return (string) __('The embedding failed. Please check the model and credentials.');
+    }
+
+    public static function dimensionsMessage(string $providerName, int $actual): string
+    {
+        return (string) __('The embedding model of :provider returns :actual instead of :expected dimensions.', ['provider' => $providerName, 'actual' => $actual, 'expected' => ItemEmbedder::DIMENSIONS]);
     }
 
     public function userMessage(): ?string
     {
-        return $this->detail ?? $this->reason?->message($this->providerName);
+        return $this->dimensions !== null
+            ? self::dimensionsMessage($this->providerName, $this->dimensions)
+            : $this->reason?->message($this->providerName);
     }
 }

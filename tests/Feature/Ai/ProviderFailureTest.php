@@ -93,7 +93,7 @@ test('ProviderFailure scrubs the key and drops the previous exception', function
         ->and($failure->reason)->toBeNull();
 });
 
-test('user message is the detail, else the reason message', function () {
+test('user message is the dimensions text, else the reason message', function () {
     $provider = AiProvider::factory()->create(['name' => 'Claude']);
 
     $dimensions = ProviderFailure::from(new WrongEmbeddingDimensions(768), $provider);

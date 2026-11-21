@@ -52,8 +52,8 @@ class AiProvidersTable
                     TextColumn::make('search_status')
                         ->state(fn (AiProvider $record): ?string => $record->is_active_for_search ? self::searchProgress() : null),
                     TextColumn::make('search_failure')
-                        ->state(fn (AiProvider $record): ?string => $record->is_active_for_search && filled($record->search_failure)
-                            ? (string) __(':failure It will be retried every hour.', ['failure' => $record->search_failure])
+                        ->state(fn (AiProvider $record): ?string => $record->is_active_for_search && $record->searchFailureMessage() !== null
+                            ? (string) __(':failure It will be retried every hour.', ['failure' => $record->searchFailureMessage()])
                             : null)
                         ->color('danger'),
                 ]),
