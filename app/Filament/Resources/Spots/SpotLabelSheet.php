@@ -38,8 +38,8 @@ class SpotLabelSheet
 
         $subject = match (true) {
             $spots->containsOneItem() => $this->slug($first->name) ?: Str::lower($first->code),
-            $spots->pluck('location_id')->unique()->containsOneItem() => $this->slug($first->location->name) ?: 'etiketten',
-            default => 'etiketten',
+            $spots->pluck('location_id')->unique()->containsOneItem() => $this->slug($first->location->name) ?: __('labels'),
+            default => __('labels'),
         };
 
         return "{$subject}-{$size->fileNamePart()}.pdf";

@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\LabelSize;
+use App\Enums\Language;
 use App\Filament\Resources\Spots\Pages\ListSpots;
 use App\Filament\Resources\Spots\Pages\ViewSpot;
 use App\Filament\Resources\Spots\SpotLabelSheet;
@@ -209,4 +210,19 @@ test('a scanned label leads through the login back to the spot', function () {
         ->fillForm(['email' => $user->email, 'password' => 'password'])
         ->call('authenticate')
         ->assertRedirect('/spots/'.$spot->code);
+});
+
+test('an English user downloads the label pdf under an English name', function () {
+    Pdf::fake();
+    $user = User::factory()->create(['locale' => Language::English]);
+    $this->actingAs($user);
+    $spots = [
+        labelledSpot('AAAA', ['location_id' => Location::factory()->create()->getKey()]),
+        labelledSpot('BBBB', ['location_id' => Location::factory()->create()->getKey()]),
+    ];
+
+    Livewire::test(ListSpots::class)
+        ->selectTableRecords(array_map(fn (Spot $spot) => $spot->getKey(), $spots))
+        ->callAction(TestAction::make('labels')->table()->bulk(), ['size' => LabelSize::Medium->value])
+        ->assertFileDownloaded('labels-medium.pdf');
 });

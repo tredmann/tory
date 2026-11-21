@@ -22,9 +22,9 @@ enum LabelSize: string implements HasLabel
     public function fileNamePart(): string
     {
         return match ($this) {
-            self::Small => 'klein',
-            self::Medium => 'mittel',
-            self::Large => 'gross',
+            self::Small => __('small'),
+            self::Medium => __('medium'),
+            self::Large => __('large'),
         };
     }
 
