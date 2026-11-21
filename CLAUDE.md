@@ -109,6 +109,7 @@ docker compose exec db psql -U tory -d tory
 ## Testing conventions
 
 - Pest on the Postgres database `tory_testing` (created by `docker/postgres/init/` on a fresh volume, otherwise `docker compose exec db createdb -U tory tory_testing`). `TestCase::guardTestingDatabase()` refuses any other database. Sequences are not reset between tests: never assert a literal id. `RefreshDatabase` applies to every Feature test.
+- A panel test that requests a guest page (`/login`, `/invite/…`, `/theme` as guest) needs a user in the database first; on an empty database every panel request redirects to `/setup`.
 - Use `Storage::fake('local')` for uploads and `Queue::fake()` unless the job itself is under test. `TestCase::setUp()` calls `Embeddings::fake()`; override it to test `ItemEmbedder`, `EmbedItem` and search.
 - With `AiProvider::factory()->active()` in a job test, failures arrive wrapped in `ProviderFailure` (scrubbed, no `previous`): assert on `failure_reason`/`failure_provider`. Vendor calls are tested with `Http::fake()`, the extractor with `InventoryExtractor::fake(...)`. No automated test talks to Ollama.
 - Write a failing test before production code. Run Pint and PHPStan before committing.
