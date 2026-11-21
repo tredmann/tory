@@ -16,4 +16,12 @@ enum Language: string implements HasLabel
             self::English => 'English',
         };
     }
+
+    public function other(): self
+    {
+        return match ($this) {
+            self::German => self::English,
+            self::English => self::German,
+        };
+    }
 }

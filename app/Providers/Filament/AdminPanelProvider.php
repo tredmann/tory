@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Enums\Language;
 use App\Filament\Auth\AcceptInvite;
 use App\Filament\Auth\SetUpFirstAdministrator;
 use App\Http\Controllers\PhotoController;
@@ -10,6 +11,7 @@ use App\Http\Middleware\LogOutLockedUser;
 use App\Http\Middleware\RedirectToFirstAdministratorSetup;
 use App\Http\Middleware\SetLocale;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -30,6 +32,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Livewire\Component;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -44,6 +47,15 @@ class AdminPanelProvider extends PanelProvider
             ->profile()
             ->globalSearch(false)
             ->userMenuItems([
+                Action::make('language')
+                    ->label(fn (): string => Language::from(app()->getLocale())->other()->getLabel())
+                    ->icon(Heroicon::OutlinedLanguage)
+                    ->action(function (Component $livewire): void {
+                        $user = Filament::auth()->user();
+                        $user->forceFill(['locale' => Language::from(app()->getLocale())->other()])->save();
+
+                        $livewire->js('window.location.reload()');
+                    }),
                 Action::make('version')
                     ->label(fn (): string => 'Version '.config('app.version'))
                     ->icon(Heroicon::OutlinedInformationCircle)
