@@ -24,7 +24,7 @@ class BulkPhotos extends Field
     {
         parent::setUp();
 
-        $this->label('Fotos');
+        $this->label(__('Photos'));
         $this->columnSpanFull();
         $this->default(['uploads' => [], 'meta' => []]);
 
@@ -50,7 +50,7 @@ class BulkPhotos extends Field
                 )->passes();
 
                 if (! $valid) {
-                    $fail('Nur JPEG-, PNG-, WebP- oder GIF-Bilder bis 12 MB sind erlaubt.');
+                    $fail(__('Only JPEG, PNG, WebP or GIF images up to 12 MB are allowed.'));
 
                     return;
                 }

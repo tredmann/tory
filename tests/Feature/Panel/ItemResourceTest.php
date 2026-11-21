@@ -612,3 +612,15 @@ test('an English user sees the item list in English', function () {
         ->assertDontSee('Gegenstände')
         ->assertDontSee('Suchen …');
 });
+
+test('an English user sees the photo field of the edit page in English', function () {
+    $user = User::factory()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+    app()->setLocale('en');
+    $this->actingAs($user);
+    $item = Item::factory()->create();
+
+    Livewire::test(EditItem::class, ['record' => $item->getRouteKey()])
+        ->assertSee('Photos')
+        ->assertDontSee('Fotos');
+});

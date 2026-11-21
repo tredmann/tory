@@ -40,6 +40,7 @@
     "No photo": "Kein Foto",
     "Note": "Bemerkung",
     "Only JPEG, PNG, WebP or GIF images are allowed.": "Nur JPEG-, PNG-, WebP- oder GIF-Bilder sind erlaubt.",
+    "Only JPEG, PNG, WebP or GIF images up to 12 MB are allowed.": "Nur JPEG-, PNG-, WebP- oder GIF-Bilder bis 12 MB sind erlaubt.",
     "Photo": "Foto",
     "Photo :number": "Foto :number",
     "Photos": "Fotos",
