@@ -54,7 +54,9 @@ Mail uses the `log` driver: verification links appear in `storage/logs/laravel.l
 
 ## Create a user
 
-There is no registration page. Create the first user from the CLI:
+There is no registration page. As long as Tory has no user at all, every page leads to `/setup`, where the first visitor creates the first administrator and is logged in. Whoever opens it first becomes administrator, so keep Tory unreachable from the internet until then. Once any user exists the page is gone for good.
+
+If you cannot guarantee that, create the first user from the CLI instead, which closes the setup page from the start:
 
 ```sh
 docker compose exec app php artisan make:filament-user --name=Admin --email=admin@example.com --password=secret

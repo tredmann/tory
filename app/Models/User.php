@@ -19,11 +19,13 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Passport\Client;
 use Laravel\Passport\Passport;
 use Laravel\Passport\Token;
 use Laravel\Sanctum\HasApiTokens;
+use SensitiveParameter;
 
 /**
  * @property string $id
@@ -46,6 +48,8 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasUuids, Notifiable;
+
+    private const int FIRST_ADMINISTRATOR_LOCK = 730_039;
 
     /**
      * @var array<string, mixed>
@@ -100,6 +104,26 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         $user->save();
 
         return $user;
+    }
+
+    /**
+     * Creates the verified administrator of an installation without any user, or returns null once one exists.
+     * The advisory lock keeps two simultaneous setups from both finding the table empty.
+     */
+    public static function createFirstAdministrator(string $name, string $email, #[SensitiveParameter] string $password): ?self
+    {
+        return DB::transaction(function () use ($name, $email, $password): ?self {
+            DB::select('select pg_advisory_xact_lock(?)', [self::FIRST_ADMINISTRATOR_LOCK]);
+
+            if (self::query()->exists()) {
+                return null;
+            }
+
+            $user = new self(['name' => $name, 'email' => $email, 'password' => $password]);
+            $user->forceFill(['role' => UserRole::Admin, 'email_verified_at' => now()])->save();
+
+            return $user;
+        });
     }
 
     public function assignRole(UserRole $role): void

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use App\Providers\AppServiceProvider;
 use App\Providers\Filament\AdminPanelProvider;
 use Filament\Panel;
@@ -24,6 +25,7 @@ test('the panel has neither registration nor password reset', function () {
 test('a trusted proxy makes generated urls https', function () {
     config(['app.trusted_proxies' => '10.0.0.0/8, 127.0.0.1']);
     (new AppServiceProvider(app()))->boot();
+    User::factory()->create();
 
     $response = $this->withHeaders(['X-Forwarded-Proto' => 'https'])->get('/login')->assertOk();
 
@@ -33,6 +35,7 @@ test('a trusted proxy makes generated urls https', function () {
 
 test('the forwarded scheme is ignored without a trusted proxy', function () {
     (new AppServiceProvider(app()))->boot();
+    User::factory()->create();
 
     $response = $this->withHeaders(['X-Forwarded-Proto' => 'https'])->get('/login')->assertOk();
 

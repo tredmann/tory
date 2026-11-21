@@ -68,3 +68,18 @@ test('locking clears an open link and unlocking restores the status', function (
     $user->unlock();
     expect($user->status())->toBe(UserStatus::Active);
 });
+
+test('the first administrator is created verified and as administrator', function () {
+    $user = User::createFirstAdministrator('Anna', 'anna@example.com', 'ein-langes-passwort');
+
+    expect($user->isAdmin())->toBeTrue()
+        ->and($user->hasVerifiedEmail())->toBeTrue()
+        ->and(Hash::check('ein-langes-passwort', $user->password))->toBeTrue();
+});
+
+test('no first administrator is created once any user exists', function () {
+    User::factory()->unverified()->create();
+
+    expect(User::createFirstAdministrator('Anna', 'anna@example.com', 'ein-langes-passwort'))->toBeNull()
+        ->and(User::query()->count())->toBe(1);
+});

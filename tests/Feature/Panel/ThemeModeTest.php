@@ -43,6 +43,8 @@ test('a value that is no theme is rejected with 422 and changes nothing', functi
 ]);
 
 test('a guest cannot save a theme and gets 401', function () {
+    User::factory()->create();
+
     $this->postJson('/theme', ['theme' => 'dark'])->assertUnauthorized();
 });
 
@@ -77,6 +79,7 @@ test('an account without a theme leaves the browser value alone but can save one
 
 test('the login page leaves the browser value alone and saves nothing', function () {
     $this->withoutVite();
+    User::factory()->create();
 
     $this->get('/login')
         ->assertOk()
