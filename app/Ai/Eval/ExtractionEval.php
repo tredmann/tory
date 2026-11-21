@@ -17,9 +17,9 @@ use Throwable;
  * Runs the real extractor over the eval cases and scores the texts against
  * the cases' search words. Writes nothing to the database.
  */
-final class ExtractionEval
+final readonly class ExtractionEval
 {
-    public function __construct(private readonly ItemEmbedder $embedder) {}
+    public function __construct(private ItemEmbedder $embedder) {}
 
     /**
      * @param  list<EvalCase>  $cases
@@ -97,7 +97,7 @@ final class ExtractionEval
                 }
 
                 foreach ($other->searchWords as $word) {
-                    if (in_array(mb_strtolower($word), array_map('mb_strtolower', $case->searchWords), true)) {
+                    if (in_array(mb_strtolower($word), array_map(mb_strtolower(...), $case->searchWords), true)) {
                         continue;
                     }
 

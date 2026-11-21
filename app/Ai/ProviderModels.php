@@ -14,9 +14,9 @@ use Illuminate\Support\Facades\Http;
  */
 class ProviderModels
 {
-    private const CACHE_SECONDS = 60;
+    private const int CACHE_SECONDS = 60;
 
-    private const TIMEOUT_SECONDS = 5;
+    private const int TIMEOUT_SECONDS = 5;
 
     /**
      * @return list<string>|null sorted model names, an empty list when the

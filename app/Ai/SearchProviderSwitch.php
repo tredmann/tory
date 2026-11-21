@@ -10,14 +10,14 @@ use Illuminate\Support\Facades\DB;
 /**
  * Tries an embedding model of a provider and switches search over to it.
  */
-final class SearchProviderSwitch
+final readonly class SearchProviderSwitch
 {
     /**
      * Generous, because a local model may need a long time to load.
      */
     public const int PROBE_TIMEOUT_SECONDS = 120;
 
-    public function __construct(private readonly ItemEmbedder $embedder) {}
+    public function __construct(private ItemEmbedder $embedder) {}
 
     /**
      * Embeds a short text with the model. Returns null on success, otherwise

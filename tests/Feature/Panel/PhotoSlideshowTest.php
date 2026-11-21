@@ -70,7 +70,7 @@ function slideshowImages(string $html): array
 
     $images = [];
 
-    foreach ((new DOMXPath($document))->query('//img[@data-slideshow]') as $image) {
+    foreach (new DOMXPath($document)->query('//img[@data-slideshow]') as $image) {
         $images[] = [
             'urls' => json_decode($image->getAttribute('data-slideshow'), true),
             'index' => (int) $image->getAttribute('data-slideshow-index'),
@@ -198,7 +198,7 @@ test('an item tile loads its further photos lazily', function () {
 
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.photoSurface('items list', $photos)->html());
-    $images = (new DOMXPath($document))->query('//*[contains(@class, "tory-gallery")]//img');
+    $images = new DOMXPath($document)->query('//*[contains(@class, "tory-gallery")]//img');
 
     expect($images)->toHaveCount(3);
     expect($images->item(0)->getAttribute('loading'))->toBe('');

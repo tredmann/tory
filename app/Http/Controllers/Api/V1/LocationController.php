@@ -22,7 +22,7 @@ class LocationController extends Controller
     {
         $location = Location::create($request->validated());
 
-        return (new LocationResource($location))
+        return new LocationResource($location)
             ->response()
             ->setStatusCode(201);
     }

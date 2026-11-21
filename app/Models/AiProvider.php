@@ -7,6 +7,8 @@ use App\Enums\AiVendor;
 use App\Enums\ProviderFailureReason;
 use Database\Factories\AiProviderFactory;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +24,18 @@ use Laravel\Ai\Providers\Provider;
  * @property string|null $embedding_model
  * @property ProviderFailureReason|null $search_failure_reason
  */
+#[Fillable([
+    'name',
+    'vendor',
+    'api_key',
+    'url',
+    'model',
+    'embedding_model',
+    'search_min_similarity',
+])]
+#[Hidden([
+    'api_key',
+])]
 class AiProvider extends Model
 {
     /** @use HasFactory<AiProviderFactory> */
@@ -30,22 +44,6 @@ class AiProvider extends Model
     use HasUuids;
 
     public const float DEFAULT_SEARCH_MIN_SIMILARITY = 0.5;
-
-    /** @var list<string> */
-    protected $fillable = [
-        'name',
-        'vendor',
-        'api_key',
-        'url',
-        'model',
-        'embedding_model',
-        'search_min_similarity',
-    ];
-
-    /** @var list<string> */
-    protected $hidden = [
-        'api_key',
-    ];
 
     /**
      * @return array<string, string>

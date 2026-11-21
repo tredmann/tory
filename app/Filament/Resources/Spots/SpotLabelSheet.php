@@ -91,11 +91,11 @@ class SpotLabelSheet
      */
     private function qrCode(string $address): string
     {
-        return (new QRCode(new QROptions([
+        return new QRCode(new QROptions([
             'outputType' => QROutputInterface::GDIMAGE_PNG,
             'eccLevel' => EccLevel::M,
             'scale' => 20,
-        ])))->render($address);
+        ]))->render($address);
     }
 
     /**

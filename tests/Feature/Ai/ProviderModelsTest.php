@@ -77,5 +77,5 @@ test('caches the outcome, failures included, without the plain key in the cache 
     Http::assertSentCount(1);
 
     $store = Cache::getStore();
-    expect(json_encode((new ReflectionProperty($store, 'storage'))->getValue($store)))->not->toContain('sk-plain-key');
+    expect(json_encode(new ReflectionProperty($store, 'storage')->getValue($store)))->not->toContain('sk-plain-key');
 });

@@ -48,7 +48,7 @@ class ImportController extends Controller
 
         ExtractImport::dispatch($import);
 
-        return (new ImportResource($import->load('spot.location')))
+        return new ImportResource($import->load('spot.location'))
             ->response()
             ->setStatusCode(201);
     }
@@ -77,7 +77,7 @@ class ImportController extends Controller
 
         $request->user()->forceFill(['last_spot_id' => $spotId])->save();
 
-        return (new ItemResource($item->load('spot.location')))
+        return new ItemResource($item->load('spot.location'))
             ->response()
             ->setStatusCode(201);
     }

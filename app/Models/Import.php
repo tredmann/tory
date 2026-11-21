@@ -8,6 +8,7 @@ use App\Jobs\ExtractImport;
 use App\Models\Concerns\RegeneratesTexts;
 use App\Photos\PhotoStore;
 use Database\Factories\ImportFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,18 @@ use Illuminate\Support\Facades\DB;
  * @property string $id
  * @property list<string>|null $search_terms null on a model created in this request without the database default
  */
+#[Fillable([
+    'user_id',
+    'spot_id',
+    'status',
+    'photos',
+    'title',
+    'description',
+    'search_terms',
+    'error',
+    'failure_reason',
+    'failure_provider',
+])]
 class Import extends Model
 {
     public const int MAX_PHOTOS = 20;
@@ -28,20 +41,6 @@ class Import extends Model
 
     use HasUuids;
     use RegeneratesTexts;
-
-    /** @var list<string> */
-    protected $fillable = [
-        'user_id',
-        'spot_id',
-        'status',
-        'photos',
-        'title',
-        'description',
-        'search_terms',
-        'error',
-        'failure_reason',
-        'failure_provider',
-    ];
 
     protected static function booted(): void
     {

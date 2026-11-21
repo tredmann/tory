@@ -87,7 +87,7 @@ test('an Ollama provider uses its stored address and needs no key', function () 
     $aiProvider = AiProvider::factory()->create([
         'vendor' => AiVendor::Ollama, 'api_key' => null, 'url' => 'http://ollama.test:11434', 'model' => 'gemma',
     ]);
-    $provider = (new InventoryExtractor($aiProvider))->provider();
+    $provider = new InventoryExtractor($aiProvider)->provider();
 
     expect($provider->driver())->toBe('ollama')
         ->and($provider->providerCredentials()['key'])->toBe('')
@@ -140,7 +140,7 @@ test('it keeps the German prompt', function () {
     Antworte nur mit dem reinen JSON-Objekt. Beginne direkt mit `{` und ende mit `}`, ohne vorangestelltes Wort wie "json", ohne Codeblock und ohne doppelte Klammern.
     TXT;
 
-    expect((new InventoryExtractor(language: Language::German))->instructions())
+    expect(new InventoryExtractor(language: Language::German)->instructions())
         ->toBe($expected)
         ->toContain('Schreibe alles auf Deutsch.')
         ->and((string) (new InventoryExtractor)->instructions())->toBe($expected);

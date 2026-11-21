@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-final class PhotoResponder
+final readonly class PhotoResponder
 {
-    private const IMMUTABLE = 'private, max-age=31536000, immutable';
+    private const string IMMUTABLE = 'private, max-age=31536000, immutable';
 
     public function __construct(private Thumbnails $thumbnails) {}
 

@@ -112,8 +112,8 @@ test('the consent page escapes the client name', function () {
     actingAs(User::factory()->create())
         ->get(authorizeQuery($clientId, 'https://evil.example/cb'))
         ->assertOk()
-        ->assertDontSee('<script>alert(1)</script>', escape: false)
-        ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', escape: false);
+        ->assertDontSeeHtml('<script>alert(1)</script>')
+        ->assertSeeHtml('&lt;script&gt;alert(1)&lt;/script&gt;');
 });
 
 test('a connected client can list the tools', function () {

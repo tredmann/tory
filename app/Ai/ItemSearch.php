@@ -10,7 +10,7 @@ use Throwable;
  * Finds items by keyword (every word in title, description or search terms) and, when the
  * query can be embedded, by meaning. Keyword matches rank first.
  */
-final class ItemSearch
+final readonly class ItemSearch
 {
     public const int QUERY_CACHE_SECONDS = 600;
 

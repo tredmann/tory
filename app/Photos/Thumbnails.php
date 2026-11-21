@@ -12,11 +12,11 @@ use Throwable;
 
 final class Thumbnails
 {
-    public const MAX_PIXELS = 60_000_000;
+    public const int MAX_PIXELS = 60_000_000;
 
-    private const SIZE = 400;
+    private const int SIZE = 400;
 
-    private const FAILED = 'thumbnail-failed:';
+    private const string FAILED = 'thumbnail-failed:';
 
     /**
      * The storage path of the thumbnail when it exists; otherwise queues it and returns null.

@@ -68,7 +68,7 @@ function noBoundaries(): Closure
 
 function runGrouping(BulkImport $bulkImport, int $nextPair = 0): void
 {
-    (new GroupBulkImport($bulkImport, $nextPair))->handle();
+    new GroupBulkImport($bulkImport, $nextPair)->handle();
 }
 
 test('declares one attempt, a 200 second timeout and deletes when the model is missing', function () {
@@ -217,7 +217,7 @@ test('a resumed job starts at its cursor', function () {
 test('failed() leaves a ready bulk import with the time groups', function () {
     $bulkImport = bulkImportWith(3, [false, true]);
 
-    (new GroupBulkImport($bulkImport))->failed(new RuntimeException('killed'));
+    new GroupBulkImport($bulkImport)->failed(new RuntimeException('killed'));
 
     $fresh = $bulkImport->fresh();
     expect($fresh->status)->toBe(BulkImportStatus::Ready)

@@ -22,6 +22,7 @@
         "spatie/laravel-pdf": "^2.14"
     },
     "require-dev": {
+        "driftingly/rector-laravel": "^2.7",
         "fakerphp/faker": "^1.24",
         "larastan/larastan": "^3.9",
         "laravel/boost": "^2.10",
@@ -32,7 +33,8 @@
         "nunomaduro/collision": "^8.9.3",
         "pestphp/pest": "^5.3",
         "pestphp/pest-plugin-laravel": "^5.0",
-        "phpunit/phpunit": "^13.4"
+        "phpunit/phpunit": "^13.4",
+        "rector/rector": "^2.8"
     },
     "autoload": {
         "psr-4": {
@@ -73,9 +75,16 @@
         "types:check": [
             "phpstan analyse"
         ],
+        "refactor": [
+            "rector process"
+        ],
+        "refactor:check": [
+            "rector process --dry-run"
+        ],
         "test": [
             "@php artisan config:clear --ansi",
             "@lint:check",
+            "@refactor:check",
             "@types:check",
             "@php artisan test"
         ],

@@ -299,7 +299,7 @@ test('the uploaded file is deleted after the import, also after a failed one', f
     Livewire::test(ManageAiProviders::class)
         ->callAction('import', data: ['file' => $file]);
 
-    $remaining = array_map(fn (string $path): ?string => $uploads->get($path), $uploads->allFiles());
+    $remaining = array_map($uploads->get(...), $uploads->allFiles());
 
     expect($remaining)->not->toContain($content);
 })->with([

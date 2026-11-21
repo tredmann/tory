@@ -39,7 +39,7 @@ class SpotController extends Controller
             'location_id' => $request->validated('location'),
         ]);
 
-        return (new SpotResource($spot->load('location')->loadCount('items')))
+        return new SpotResource($spot->load('location')->loadCount('items'))
             ->response()
             ->setStatusCode(201);
     }

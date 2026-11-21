@@ -95,7 +95,7 @@ class ItemController extends Controller
 
         $request->user()->forceFill(['last_spot_id' => $spotId])->save();
 
-        return (new ItemResource($item->load('spot.location')))
+        return new ItemResource($item->load('spot.location'))
             ->response()
             ->setStatusCode(201);
     }

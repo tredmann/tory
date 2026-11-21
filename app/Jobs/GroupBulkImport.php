@@ -64,7 +64,7 @@ class GroupBulkImport implements ShouldQueue
                     array_slice($paths, $window->firstPhoto, $window->lastPhoto - $window->firstPhoto + 1),
                 );
 
-                $answer = (new PhotoBoundaryChecker($aiProvider))->check($attachments, self::CLIENT_TIMEOUT);
+                $answer = new PhotoBoundaryChecker($aiProvider)->check($attachments, self::CLIENT_TIMEOUT);
 
                 $this->bulkImport->storeCuts($window->firstPair, array_slice(
                     $answer,

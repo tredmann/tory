@@ -21,7 +21,7 @@ it('marks the path as failed when the job fails', function () {
     Queue::fake();
     Storage::disk('local')->put('imports/a.jpg', jpeg(800, 600));
 
-    (new GenerateThumbnail('imports/a.jpg'))->failed(new RuntimeException('killed'));
+    new GenerateThumbnail('imports/a.jpg')->failed(new RuntimeException('killed'));
 
     expect((new Thumbnails)->for('imports/a.jpg'))->toBeNull();
     Queue::assertNothingPushed();
