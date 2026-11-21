@@ -68,7 +68,7 @@
                 "UPS"
             ],
             "forbidden_words": [
-                "power supply",
+                "power adapter",
                 "housing"
             ]
         }
