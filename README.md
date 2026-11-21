@@ -2,6 +2,8 @@
 
 A household inventory that answers one question: where is that thing?
 
+![The overview page of Tory: search field, locations and the most recently added items](docs/images/overview.png)
+
 You photograph an item, an AI model writes its title, description and search terms, and you put it on a spot such as "Regal 3, Fach 2" in the cellar. Later you search by keyword or by meaning and Tory tells you where the item lies. The interface is German; code and documentation are English. The vocabulary is defined in `CONTEXT.md`.
 
 ## What it does
