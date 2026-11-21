@@ -42,7 +42,7 @@ The page is open: whoever reaches a fresh installation first becomes administrat
 
 - Open exactly while the `users` table is empty. Any user, including an unpromoted or unverified one created from the CLI, closes it for good. Since users cannot be deleted (TOR-18 non-goal), it never reopens.
 - While no user exists, panel middleware redirects every panel request except `/setup` itself to `/setup`; that includes `/`, `/login` and `/invite/{token}`. Once a user exists the middleware does nothing.
-- `/setup` answers 404 once a user exists, also on submit.
+- `/setup` answers 404 once a user exists. A submit from a form that was opened before then redirects to the login instead (see below).
 - The REST API, `/mcp` and the OAuth routes are untouched. `/oauth/authorize` already sends guests to the panel login, which then redirects to `/setup`.
 
 ### The page
@@ -76,4 +76,4 @@ The page is open: whoever reaches a fresh installation first becomes administrat
 
 - Test layout, following `tests/Feature/Panel/AcceptInviteTest.php`. Existing panel tests that request `/login` or other guest pages with an empty database must create a user first, since those requests now redirect to `/setup`.
 - The advisory lock key.
-- Exact German wording beyond the texts above, and the 404 handling inside the Livewire submit.
+- Exact German wording beyond the texts above.
