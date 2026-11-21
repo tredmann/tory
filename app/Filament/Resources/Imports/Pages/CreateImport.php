@@ -18,9 +18,15 @@ class CreateImport extends CreateRecord
 
     protected static string $resource = ImportResource::class;
 
-    protected static ?string $title = 'Erfassen';
+    public function getTitle(): string
+    {
+        return __('Add item');
+    }
 
-    protected static ?string $breadcrumb = 'Erfassen';
+    public function getBreadcrumb(): string
+    {
+        return __('Add item');
+    }
 
     /**
      * @param  array<string, mixed>  $data
@@ -30,7 +36,7 @@ class CreateImport extends CreateRecord
     {
         foreach ($data['photos'] ?? [] as $path) {
             if (! is_string($path) || ! PhotoStore::isUploadPath($path)) {
-                throw ValidationException::withMessages(['data.photos' => 'Ungültiger Foto-Pfad.']);
+                throw ValidationException::withMessages(['data.photos' => __('Invalid photo path.')]);
             }
         }
 
@@ -56,6 +62,6 @@ class CreateImport extends CreateRecord
 
     protected function getCreatedNotificationTitle(): ?string
     {
-        return 'Import angelegt';
+        return __('Import created');
     }
 }

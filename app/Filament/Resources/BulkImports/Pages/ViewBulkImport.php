@@ -29,14 +29,17 @@ class ViewBulkImport extends ViewRecord
 
     protected static string $resource = BulkImportResource::class;
 
-    protected static ?string $title = 'Bulkimport';
-
     protected string $view = 'filament.resources.bulk-imports.view';
 
     /**
      * The page shows its own view and no form, so the record stays out of the Livewire state.
      */
     protected function fillForm(): void {}
+
+    public function getTitle(): string
+    {
+        return __('Bulk import');
+    }
 
     public function getSubheading(): ?string
     {
@@ -50,7 +53,7 @@ class ViewBulkImport extends ViewRecord
     {
         return [
             Action::make('confirm')
-                ->label(fn (): string => self::imports($this->bulkImport()->importCount()).' anlegen')
+                ->label(fn (): string => __('Create :imports', ['imports' => self::imports($this->bulkImport()->importCount())]))
                 ->visible(fn (): bool => $this->bulkImport()->status === BulkImportStatus::Ready)
                 ->disabled(fn (): bool => ! $this->bulkImport()->canConfirm())
                 ->action(function (): void {
@@ -72,7 +75,7 @@ class ViewBulkImport extends ViewRecord
                     auth()->user()?->forceFill(['last_spot_id' => $bulkImport->spot_id])->save();
 
                     Notification::make()
-                        ->title(self::imports(count($imports)).' angelegt')
+                        ->title(__(':imports created', ['imports' => self::imports(count($imports))]))
                         ->success()
                         ->send();
 
@@ -80,7 +83,7 @@ class ViewBulkImport extends ViewRecord
                 }),
             ActionGroup::make([
                 DeleteAction::make()
-                    ->label('Löschen')
+                    ->label(__('Delete'))
                     ->successRedirectUrl(ImportResource::getUrl('index')),
             ])->color('gray'),
         ];
@@ -172,7 +175,7 @@ class ViewBulkImport extends ViewRecord
             $edit($this->bulkImport());
         } catch (StaleBulkImport) {
             Notification::make()
-                ->title('Die Gruppen wurden inzwischen geändert. Die Seite zeigt jetzt den aktuellen Stand.')
+                ->title(__('The groups have changed in the meantime. The page now shows the current state.'))
                 ->warning()
                 ->send();
 
@@ -190,6 +193,6 @@ class ViewBulkImport extends ViewRecord
 
     private static function imports(int $count): string
     {
-        return $count === 1 ? '1 Import' : "{$count} Importe";
+        return $count === 1 ? __('1 Import') : __(':count Imports', ['count' => $count]);
     }
 }

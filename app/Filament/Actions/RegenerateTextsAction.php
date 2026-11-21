@@ -17,12 +17,12 @@ class RegenerateTextsAction
     public static function make(): Action
     {
         return Action::make('regenerate')
-            ->label('Neu generieren')
+            ->label(__('Regenerate'))
             ->color('gray')
             ->groupedIcon(Heroicon::ArrowPath)
             ->requiresConfirmation()
-            ->modalHeading('Texte neu generieren?')
-            ->modalDescription('Titel, Beschreibung und Suchbegriffe werden durch neue Vorschläge ersetzt, auch manuelle Änderungen. Das lässt sich nicht rückgängig machen. Mit einem kostenpflichtigen Provider kostet jeder Lauf Geld.')
+            ->modalHeading(__('Regenerate texts?'))
+            ->modalDescription(__('Title, description and search terms are replaced with new suggestions, including manual changes. This cannot be undone. With a paid provider, every run costs money.'))
             ->visible(function (Model $record): bool {
                 if (! $record instanceof Import && ! $record instanceof Item) {
                     return false;
@@ -46,7 +46,7 @@ class RegenerateTextsAction
                 });
 
                 Notification::make()
-                    ->title('Neu generieren gestartet')
+                    ->title(__('Regeneration started'))
                     ->success()
                     ->send();
             });

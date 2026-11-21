@@ -29,7 +29,7 @@
                         type="button"
                         class="tory-photo"
                         x-bind:aria-pressed="String(overview === tile.id)"
-                        x-bind:aria-label="`Foto ${index + 1} als Übersichtsfoto wählen`"
+                        x-bind:aria-label="`{{ __('Choose photo :number as overview photo', ['number' => '${index + 1}']) }}`"
                         x-bind:disabled="! isAvailable(tile)"
                         x-on:click="choose(tile)"
                     >
@@ -41,14 +41,14 @@
                     x-show="tile.uploading"
                     class="tory-photo-spinner"
                     role="status"
-                    aria-label="Wird hochgeladen"
+                    aria-label="{{ __('Uploading') }}"
                 ></span>
 
                 <button
                     x-show="isAvailable(tile)"
                     type="button"
                     class="tory-photo-remove"
-                    aria-label="Foto entfernen"
+                    aria-label="{{ __('Remove photo') }}"
                     x-on:click="remove(tile); $nextTick(() => $el.parentElement.querySelector('.tory-photo-undo').focus())"
                 >✕</button>
 
@@ -56,7 +56,7 @@
                     x-show="tile.uploading"
                     type="button"
                     class="tory-photo-remove"
-                    aria-label="Hochladen abbrechen"
+                    aria-label="{{ __('Cancel upload') }}"
                     x-on:click="cancel(tile)"
                 >✕</button>
 
@@ -65,7 +65,7 @@
                     type="button"
                     class="tory-photo-undo"
                     x-on:click="undo(tile); $nextTick(() => $el.parentElement.querySelector('.tory-photo-remove').focus())"
-                >rückgängig</button>
+                >{{ __('Undo') }}</button>
 
                 <template x-if="tile.message !== null">
                     <div class="tory-photo-rejection" role="alert">
@@ -74,7 +74,7 @@
                         <button
                             type="button"
                             class="tory-photo-remove"
-                            aria-label="Meldung schließen"
+                            aria-label="{{ __('Dismiss message') }}"
                             x-on:click="dismiss(tile)"
                         >✕</button>
                     </div>
@@ -87,7 +87,7 @@
             type="button"
             class="tory-photo-add"
             x-on:click="$refs.input.click()"
-        >+ Foto hinzufügen</button>
+        >{{ __('+ Add photo') }}</button>
 
         <input
             x-ref="input"

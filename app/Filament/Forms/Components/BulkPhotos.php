@@ -32,13 +32,13 @@ class BulkPhotos extends Field
             $files = array_map(fn (StagedPhoto $photo): UploadedFile => $photo->file, self::stagedPhotos($value));
 
             if ($files === []) {
-                $fail('Mindestens ein Foto.');
+                $fail(__('At least one photo.'));
 
                 return;
             }
 
             if (count($files) > BulkImport::MAX_PHOTOS) {
-                $fail('Höchstens '.BulkImport::MAX_PHOTOS.' Fotos pro Bulkimport.');
+                $fail(__('At most :max photos per bulk import.', ['max' => BulkImport::MAX_PHOTOS]));
 
                 return;
             }

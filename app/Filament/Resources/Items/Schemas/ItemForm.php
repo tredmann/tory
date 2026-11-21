@@ -17,17 +17,17 @@ class ItemForm
             ->components([
                 ItemPhotos::make('photo_edits'),
                 TextInput::make('title')
-                    ->label('Titel')
+                    ->label(__('Title'))
                     ->required()
                     ->maxLength(255),
                 Textarea::make('description')
-                    ->label('Beschreibung')
+                    ->label(__('Description'))
                     ->rows(5),
                 Textarea::make('notes')
-                    ->label('Bemerkung')
+                    ->label(__('Note'))
                     ->rows(3),
                 TagsInput::make('search_terms')
-                    ->label('Suchbegriffe')
+                    ->label(__('Search terms'))
                     ->splitKeys(['Tab', ',']),
                 SpotSelect::make(),
             ]);

@@ -17,9 +17,9 @@
                 type="button"
                 class="tory-bulk-photos-add"
                 x-on:click="$refs.input.click()"
-            >+ Fotos hinzufügen</button>
+            >{{ __('+ Add photos') }}</button>
 
-            <span class="tory-bulk-photos-count" x-text="`${photoCount} / {{ \App\Models\BulkImport::MAX_PHOTOS }} Fotos`"></span>
+            <span class="tory-bulk-photos-count" x-text="`${photoCount} / {{ \App\Models\BulkImport::MAX_PHOTOS }} {{ __('Photos') }}`"></span>
         </div>
 
         <input
@@ -49,7 +49,7 @@
                         x-show="tile.uploading"
                         class="tory-photo-spinner"
                         role="status"
-                        aria-label="Wird hochgeladen"
+                        aria-label="{{ __('Uploading') }}"
                     ></span>
 
                     <template x-if="tile.message !== null">
@@ -62,7 +62,7 @@
                     <button
                         type="button"
                         class="tory-photo-remove"
-                        x-bind:aria-label="tile.message === null ? `${tile.name} entfernen` : 'Meldung schließen'"
+                        x-bind:aria-label="tile.message === null ? `{{ __('Remove :name', ['name' => '${tile.name}']) }}` : '{{ __('Dismiss message') }}'"
                         x-on:click="remove(tile)"
                     >✕</button>
                 </div>

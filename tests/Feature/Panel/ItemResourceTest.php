@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Language;
 use App\Filament\Resources\Items\ItemResource;
 use App\Filament\Resources\Items\Pages\EditItem;
 use App\Filament\Resources\Items\Pages\ListItems;
@@ -597,4 +598,17 @@ test('the edit page changes and clears the note', function () {
         ->call('save')
         ->assertHasNoFormErrors();
     expect($item->fresh()->notes)->toBeNull();
+});
+
+test('an English user sees the item list in English', function () {
+    $user = User::factory()->create();
+    $user->forceFill(['locale' => Language::English])->save();
+    app()->setLocale('en');
+    $this->actingAs($user);
+
+    Livewire::test(ListItems::class)
+        ->assertSee('Items')
+        ->assertSee('Search …')
+        ->assertDontSee('Gegenstände')
+        ->assertDontSee('Suchen …');
 });

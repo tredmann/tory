@@ -16,13 +16,22 @@ class BulkImportResource extends Resource
 
     protected static ?string $slug = 'bulk-imports';
 
-    protected static ?string $modelLabel = 'Bulkimport';
-
-    protected static ?string $pluralModelLabel = 'Bulkimporte';
-
-    protected static ?string $breadcrumb = 'Importe';
-
     protected static bool $shouldRegisterNavigation = false;
+
+    public static function getModelLabel(): string
+    {
+        return __('Bulk import');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Bulk imports');
+    }
+
+    public static function getBreadcrumb(): string
+    {
+        return __('Imports');
+    }
 
     public static function canEdit(Model $record): bool
     {

@@ -25,21 +25,21 @@ class ItemsTable
     {
         return ItemGrid::configure($table, [
             TextColumn::make('created_at')
-                ->label('Angelegt')
+                ->label(__('Created'))
                 ->dateTime()
                 ->sortable()
                 ->extraAttributes(['class' => 'tory-visually-hidden']),
         ])
             ->filters([
                 SelectFilter::make('location')
-                    ->label('Lagerort')
+                    ->label(__('Location'))
                     ->options(fn (): array => Location::query()->orderBy('name')->pluck('name', 'id')->all())
                     ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
                         ? $query->whereHas('spot', fn (Builder $spot): Builder => $spot->where('location_id', $data['value']))
                         : $query),
             ])
             ->searchable()
-            ->searchPlaceholder('Suchen …')
+            ->searchPlaceholder(__('Search …'))
             ->searchUsing(self::search(...))
             ->defaultSort('created_at', 'desc');
     }

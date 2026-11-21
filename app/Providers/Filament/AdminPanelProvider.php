@@ -105,8 +105,8 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogoHeight('2rem')
             ->favicon(fn (): string => asset('images/tory-mark.svg'))
             ->navigationGroups([
-                NavigationGroup::make('Inventar')->collapsible(false),
-                NavigationGroup::make('Einstellungen')->collapsible(false),
+                NavigationGroup::make(__('Inventory'))->collapsible(false),
+                NavigationGroup::make(__('Settings'))->collapsible(false),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

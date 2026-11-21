@@ -46,7 +46,7 @@ class EditItem extends EditRecord
         }
 
         Notification::make()
-            ->title('Wird gerade neu generiert. Deine Änderungen wurden nicht gespeichert.')
+            ->title(__('This item is being regenerated. Your changes were not saved.'))
             ->danger()
             ->send();
 
