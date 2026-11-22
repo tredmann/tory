@@ -56,6 +56,7 @@ test('the committed cases load', function (Language $language): void {
 })->with([Language::German, Language::English]);
 
 test('a report is saved and printed', function (): void {
+    activeSearchProvider();
     AiProvider::factory()->create(['name' => 'Ollama lokal']);
     InventoryExtractor::fake(fn (): array => ['title' => 'Testgerät', 'description' => 'Ein Gerät.', 'search_terms' => ['Ding']]);
 
@@ -88,6 +89,7 @@ test('exits non-zero when every case failed', function (): void {
 });
 
 test('exits zero when one case failed', function (): void {
+    activeSearchProvider();
     AiProvider::factory()->create(['name' => 'Ollama lokal']);
     $calls = 0;
     InventoryExtractor::fake(function () use (&$calls): array {
@@ -98,6 +100,7 @@ test('exits zero when one case failed', function (): void {
 });
 
 test('exits zero with a low score', function (): void {
+    activeSearchProvider();
     AiProvider::factory()->create(['name' => 'Ollama lokal']);
     InventoryExtractor::fake(fn (): array => ['title' => 'Gerät', 'description' => 'x']);
 
@@ -107,6 +110,7 @@ test('exits zero with a low score', function (): void {
 });
 
 test('totals show the range across runs', function (): void {
+    activeSearchProvider();
     AiProvider::factory()->create(['name' => 'Ollama lokal']);
     $calls = 0;
     InventoryExtractor::fake(function () use (&$calls): array {
@@ -121,6 +125,7 @@ test('totals show the range across runs', function (): void {
 });
 
 test('an embedding failure after the probe still saves a report and exits zero', function (): void {
+    activeSearchProvider();
     AiProvider::factory()->create(['name' => 'Ollama lokal']);
     InventoryExtractor::fake(fn (): array => ['title' => 'Gerät', 'description' => 'x']);
     Embeddings::fake(fn ($prompt): array => in_array($prompt->inputs[0], ['apc', 'mikrofon'], true)
@@ -135,6 +140,7 @@ test('an embedding failure after the probe still saves a report and exits zero',
 });
 
 test('a broken case file is reported as an error', function (): void {
+    activeSearchProvider();
     AiProvider::factory()->create(['name' => 'Ollama lokal']);
     InventoryExtractor::fake();
     $original = file_get_contents(base_path('tests/Evals/extraction/cases.json'));
@@ -152,6 +158,7 @@ test('a broken case file is reported as an error', function (): void {
 });
 
 test('the language option picks the content language of the extraction', function (): void {
+    activeSearchProvider();
     AiProvider::factory()->create(['name' => 'Ollama lokal']);
     InventoryExtractor::fake(fn (): array => ['title' => 'Microphone', 'description' => 'A microphone.', 'search_terms' => ['rode']]);
 
@@ -164,6 +171,7 @@ test('the language option picks the content language of the extraction', functio
 });
 
 test('the extraction is German by default', function (): void {
+    activeSearchProvider();
     AiProvider::factory()->create(['name' => 'Ollama lokal']);
     InventoryExtractor::fake(fn (): array => ['title' => 'Gerät', 'description' => 'x']);
 

@@ -494,13 +494,14 @@ test('the activation dialog names both models and the number of items', function
         ->assertMountedActionModalSee(['altes-modell', 'neues-modell', '2 Gegenstände', 'unvollständig', 'Kosten']);
 });
 
-test('the activation dialog names the env fallback when no provider is active for search', function (): void {
+test('the activation dialog shows none as the current model when no provider is active for search', function (): void {
     Embeddings::fake();
     $new = AiProvider::factory()->embedding('neues-modell')->create();
 
     Livewire::test(ManageAiProviders::class)
         ->mountAction(TestAction::make('activateForSearch')->table($new))
-        ->assertMountedActionModalSee([config('ai.inventory.embedding_model').' (.env)', 'neues-modell']);
+        ->assertMountedActionModalSee(['keins', 'neues-modell'])
+        ->assertMountedActionModalDontSee('.env');
 });
 
 test('activate for search is hidden without an embedding model and for the active one', function (): void {

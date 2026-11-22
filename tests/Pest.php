@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AiProvider;
 use App\Models\User;
 use Illuminate\Filesystem\LocalFilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -195,4 +196,10 @@ function jpegWithOrientationSix(int $width, int $height): string
     $app1 = "\xFF\xE1\x00\x22"."Exif\x00\x00"."MM\x00\x2A\x00\x00\x00\x08"."\x00\x01"."\x01\x12\x00\x03\x00\x00\x00\x01\x00\x06\x00\x00"."\x00\x00\x00\x00";
 
     return substr($jpeg, 0, 2).$app1.substr($jpeg, 2);
+}
+
+/** An AI provider active for search, as the household sets one up under "Eigene KI". */
+function activeSearchProvider(): AiProvider
+{
+    return AiProvider::factory()->activeForSearch()->create();
 }

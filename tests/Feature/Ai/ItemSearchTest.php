@@ -1,6 +1,7 @@
 <?php
 
 use App\Ai\ItemSearch;
+use App\Ai\ProviderFailure;
 use App\Models\AiProvider;
 use App\Models\Item;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +12,7 @@ use Laravel\Ai\Prompts\EmbeddingsPrompt;
 
 beforeEach(function (): void {
     Queue::fake();
+    AiProvider::factory()->activeForSearch()->create();
 });
 
 /** Creates an item with a fixed embedding (or none). */
@@ -77,7 +79,7 @@ test('keyword matches come before semantic-only matches', function (): void {
 });
 
 test('items below the similarity threshold are left out', function (): void {
-    config(['ai.inventory.search_min_similarity' => 0.9]);
+    AiProvider::query()->update(['search_min_similarity' => 0.9]);
     $half = array_fill(0, 1024, 0.0);
     $half[1] = $half[2] = 1.0; // cosine similarity to axis(1) is about 0.71
     queriesEmbedTo(axis(1));
@@ -93,7 +95,7 @@ test('search falls back to keywords and reports when embedding fails', function 
     itemWith(['title' => 'Gartenschlauch'], axis(1));
 
     expect(searchItems('hdmi')->pluck('id')->all())->toBe([$match->id]);
-    Exceptions::assertReported(RuntimeException::class);
+    Exceptions::assertReported(ProviderFailure::class);
 });
 
 test('search falls back to keywords when the provider returns another dimension', function (): void {
@@ -156,8 +158,7 @@ test('json syntax does not match search terms', function (string $character): vo
 })->with(['[', ']', ',', '"']);
 
 test('the threshold comes from the active search provider', function (): void {
-    config(['ai.inventory.search_min_similarity' => 0.1]);
-    AiProvider::factory()->activeForSearch()->create(['search_min_similarity' => 0.9]);
+    AiProvider::query()->update(['search_min_similarity' => 0.9]);
     $half = array_fill(0, 1024, 0.0);
     $half[1] = $half[2] = 1.0;
     queriesEmbedTo(axis(1));
@@ -189,4 +190,13 @@ test('a failed query embedding is not cached', function (): void {
     $semantic = itemWith(['title' => 'Irgendwas'], axis(1));
 
     expect(searchItems('Kabel')->pluck('id')->all())->toBe([$semantic->id]);
+});
+
+test('without a search provider search matches keywords only and calls no AI', function (): void {
+    AiProvider::query()->update(['is_active_for_search' => false]);
+    Embeddings::fake()->preventStrayEmbeddings();
+    $drill = itemWith(['title' => 'Bohrmaschine'], axis(1));
+    itemWith(['title' => 'Akkuschrauber'], axis(1));
+
+    expect(searchItems('Bohrmaschine')->pluck('id')->all())->toBe([$drill->id]);
 });

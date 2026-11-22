@@ -148,8 +148,9 @@ final readonly class ExtractionEval
         }
 
         $similarity = $this->cosine($wordVector, $itemVector);
+        $minSimilarity = EmbeddingTarget::current()->minSimilarity ?? AiProvider::DEFAULT_SEARCH_MIN_SIMILARITY;
 
-        return new WordHit($word, $keyword, $similarity >= EmbeddingTarget::current()->minSimilarity, $similarity);
+        return new WordHit($word, $keyword, $similarity >= $minSimilarity, $similarity);
     }
 
     private function containsWholeWord(string $text, string $word): bool

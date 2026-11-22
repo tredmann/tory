@@ -156,6 +156,7 @@ test('deleting an item removes the row and its photo files', function (): void {
 });
 
 test('the search field above the list finds items by keyword and by meaning', function (): void {
+    activeSearchProvider();
     $keyword = Item::factory()->create(['title' => 'Kunststoffgehäuse']);
     $semantic = Item::factory()->create(['title' => 'Pi-Hülle', 'created_at' => now()->addMinute()]);
     $semantic->forceFill(['embedding' => axis(1)])->saveQuietly();

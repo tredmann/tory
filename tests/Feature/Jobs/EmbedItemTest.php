@@ -2,6 +2,7 @@
 
 use App\Ai\ItemEmbedder;
 use App\Jobs\EmbedItem;
+use App\Models\AiProvider;
 use App\Models\Item;
 use App\Models\Spot;
 use Illuminate\Support\Facades\Queue;
@@ -9,6 +10,7 @@ use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\EmbeddingsPrompt;
 
 test('the job stores a 1024-dimension embedding', function (): void {
+    activeSearchProvider();
     Queue::fake();
     $item = Item::factory()->create();
 
@@ -85,6 +87,7 @@ test('moving an item keeps its embedding and queues nothing', function (): void 
 });
 
 test('a failing embedding leaves the item in place without an embedding', function (): void {
+    activeSearchProvider();
     Queue::fake();
     $item = Item::factory()->create();
     Embeddings::fake(fn (): never => throw new RuntimeException('down'));
@@ -94,6 +97,7 @@ test('a failing embedding leaves the item in place without an embedding', functi
 });
 
 test('the job asks the provider with a client timeout shorter than its own', function (): void {
+    activeSearchProvider();
     Queue::fake();
     $item = Item::factory()->create();
     $timeouts = [];
@@ -109,6 +113,7 @@ test('the job asks the provider with a client timeout shorter than its own', fun
 });
 
 test('an embedding of text that was edited meanwhile is not stored', function (): void {
+    activeSearchProvider();
     Queue::fake();
     $item = Item::factory()->create(['title' => 'Alt']);
     Embeddings::fake(function (EmbeddingsPrompt $prompt) use ($item): array {
@@ -123,6 +128,7 @@ test('an embedding of text that was edited meanwhile is not stored', function ()
 });
 
 test('storing an embedding leaves updated_at alone', function (): void {
+    activeSearchProvider();
     Queue::fake();
     $item = Item::factory()->create();
     $item->forceFill(['updated_at' => now()->subDay()])->saveQuietly();
@@ -132,4 +138,15 @@ test('storing an embedding leaves updated_at alone', function (): void {
 
     expect($item->fresh()->embedding)->toHaveCount(1024)
         ->and($item->fresh()->updated_at->equalTo($before))->toBeTrue();
+});
+
+test('the job does nothing without a search provider', function (): void {
+    Queue::fake();
+    Embeddings::fake()->preventStrayEmbeddings();
+    $item = Item::factory()->create();
+    AiProvider::query()->update(['is_active_for_search' => false]);
+
+    new EmbedItem($item)->handle(app(ItemEmbedder::class));
+
+    expect($item->fresh()->embedding)->toBeNull();
 });

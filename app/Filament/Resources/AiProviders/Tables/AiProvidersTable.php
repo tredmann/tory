@@ -87,7 +87,7 @@ class AiProvidersTable
                         ->requiresConfirmation()
                         ->modalHeading(__('Activate for search'))
                         ->modalDescription(fn (AiProvider $record): string => AiProviderForm::switchNotice(
-                            AiProvider::activeForSearch()->embedding_model ?? config('ai.inventory.embedding_model').' (.env)',
+                            AiProvider::activeForSearch()->embedding_model ?? __('none'),
                             (string) $record->embedding_model,
                         ))
                         ->modalSubmitActionLabel(__('Activate and recalculate'))

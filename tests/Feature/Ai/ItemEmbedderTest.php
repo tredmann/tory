@@ -1,6 +1,7 @@
 <?php
 
 use App\Ai\ItemEmbedder;
+use App\Ai\NoSearchProvider;
 use App\Ai\ProviderFailure;
 use App\Enums\AiVendor;
 use App\Models\AiProvider;
@@ -11,7 +12,7 @@ use Laravel\Ai\Prompts\EmbeddingsPrompt;
 use Pest\Expectation;
 
 test('it embeds text with the configured provider, model and dimension', function (): void {
-    config(['ai.inventory.embedding_provider' => 'ollama', 'ai.inventory.embedding_model' => 'bge-m3']);
+    AiProvider::factory()->activeForSearch()->create(['embedding_model' => 'bge-m3']);
     Embeddings::fake();
 
     $vector = app(ItemEmbedder::class)->embed('Raspberry Pi Gehäuse');
@@ -19,11 +20,12 @@ test('it embeds text with the configured provider, model and dimension', functio
     expect($vector)->toHaveCount(1024);
     Embeddings::assertGenerated(fn (EmbeddingsPrompt $prompt): bool => $prompt->contains('Raspberry Pi Gehäuse')
         && $prompt->dimensions === 1024
-        && $prompt->provider->name() === 'ollama'
+        && $prompt->provider->driver() === 'openai'
         && $prompt->model === 'bge-m3');
 });
 
 test('it applies the given timeout', function (): void {
+    activeSearchProvider();
     Embeddings::fake();
 
     app(ItemEmbedder::class)->embed('x', 12);
@@ -107,4 +109,17 @@ test('a vector computed before a switch is not stored', function (): void {
 
     expect(app(ItemEmbedder::class)->embedAndStore($item))->toBeFalse()
         ->and($item->fresh()->embedding)->toBeNull();
+});
+
+test('without a search provider an item is not embedded', function (): void {
+    Queue::fake();
+    Embeddings::fake()->preventStrayEmbeddings();
+    $item = Item::factory()->create();
+
+    expect(app(ItemEmbedder::class)->embedAndStore($item))->toBeFalse()
+        ->and($item->fresh()->embedding)->toBeNull();
+});
+
+test('embedding text without a search provider throws NoSearchProvider', function (): void {
+    expect(fn () => app(ItemEmbedder::class)->embed('x'))->toThrow(NoSearchProvider::class);
 });

@@ -32,6 +32,12 @@ class EmbedItems extends Command
             },
         );
 
+        if ($result->noProvider) {
+            $this->info('Keine KI für die Suche eingerichtet, nichts zu tun.');
+
+            return self::SUCCESS;
+        }
+
         if ($result->stoppedEarly) {
             $this->warn(self::MAX_CONSECUTIVE_FAILURES.' Fehler in Folge, der Lauf wird vorzeitig beendet.');
         }

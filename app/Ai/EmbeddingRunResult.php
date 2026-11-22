@@ -5,6 +5,7 @@ namespace App\Ai;
 /**
  * Outcome of one EmbeddingRunner run. `resumeAfterId` is set only when the
  * time budget ran out; a later run continues after that item id.
+ * `noProvider` means no provider is active for search and nothing was tried.
  */
 final readonly class EmbeddingRunResult
 {
@@ -13,5 +14,6 @@ final readonly class EmbeddingRunResult
         public int $failures,
         public bool $stoppedEarly,
         public ?string $resumeAfterId = null,
+        public bool $noProvider = false,
     ) {}
 }
