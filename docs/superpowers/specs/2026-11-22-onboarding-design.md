@@ -1,6 +1,6 @@
 # Onboarding — design
 
-Date: 2026-11-22. Status: draft. Ticket: TOR-49. PRD (German): https://kb.balt.io/doc/onboarding-auf-der-ubersicht-ki-nur-uber-eigene-ki-Dvuo2Mrmvg
+Date: 2026-11-22. Status: approved (PRD). Ticket: TOR-49. PRD (German): https://kb.balt.io/doc/onboarding-auf-der-ubersicht-ki-nur-uber-eigene-ki-Dvuo2Mrmvg
 
 ## Intent
 
