@@ -31,7 +31,7 @@ final readonly class Onboarding
                 url: HouseholdSettingsPage::getUrl(),
                 result: $settings->content_language->getLabel(),
                 explanation: __('The content language decides in which language Tory writes titles, descriptions and search terms for new items. It was taken from your browser; check that it fits.'),
-                actionLabel: __('Fits'),
+                actionLabel: __('Looks right'),
             ),
             new OnboardingStep(
                 key: 'recognition',
@@ -82,6 +82,9 @@ final readonly class Onboarding
         return count(array_filter($this->steps(), fn (OnboardingStep $step): bool => $step->done));
     }
 
+    /**
+     * Whether the onboarding shows for this user; when every step is done it stores the end of the onboarding.
+     */
     public function isShown(?User $user): bool
     {
         if (! $user?->isAdmin()) {

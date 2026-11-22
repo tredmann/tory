@@ -6,6 +6,7 @@ use App\Filament\Resources\BulkImports\BulkImportResource;
 use App\Filament\Resources\Imports\ImportResource;
 use App\Filament\Widgets\ItemSearchWidget;
 use App\Filament\Widgets\LocationsWidget;
+use App\Filament\Widgets\OnboardingWidget;
 use App\Filament\Widgets\OpenBulkImportsWidget;
 use App\Filament\Widgets\OpenImportsWidget;
 use App\Filament\Widgets\RecentItemsWidget;
@@ -44,7 +45,7 @@ class Dashboard extends BaseDashboard
     }
 
     /**
-     * Search, then open (bulk) imports stacked in one column and locations side by side (one fills the row alone), then the recent items.
+     * The onboarding for administrators, then search, then open (bulk) imports stacked in one column and locations side by side (one fills the row alone), then the recent items.
      */
     public function getWidgetsContentComponent(): Component
     {
@@ -56,6 +57,7 @@ class Dashboard extends BaseDashboard
 
         return Grid::make(1)
             ->schema([
+                ...$this->getWidgetsSchemaComponents([OnboardingWidget::class]),
                 ...$this->getWidgetsSchemaComponents([ItemSearchWidget::class]),
                 Grid::make(['default' => 1, 'lg' => max(1, count($overview))])->schema($overview),
                 ...$this->getWidgetsSchemaComponents([RecentItemsWidget::class]),
