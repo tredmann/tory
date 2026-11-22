@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\InventoryExtractor;
 use App\Enums\ImportStatus;
 use App\Enums\ProviderFailureReason;
 use App\Filament\Resources\AiProviders\AiProviderResource;
@@ -377,4 +378,21 @@ test('a location can be created inside the spot picker of convert', function ():
         ], ['name' => 'Keller']);
 
     expect(Location::query()->firstWhere('name', 'Keller'))->not->toBeNull();
+});
+
+test('after setting up a provider retry completes an import that failed for lack of one', function (): void {
+    Storage::fake('local');
+    Storage::disk('local')->put('imports/a.jpg', base64_decode('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q=='));
+    $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::NoProvider, '')->create(['photos' => ['imports/a.jpg']]);
+    AiProvider::factory()->active()->create();
+    InventoryExtractor::fake([['title' => 'Hefter', 'description' => 'Roter Hefter.']]);
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])->callAction('retry');
+    Queue::assertPushed(ExtractImport::class, function (ExtractImport $job): bool {
+        $job->handle();
+
+        return true;
+    });
+
+    expect($import->fresh())->status->toBe(ImportStatus::Completed)->failure_reason->toBeNull();
 });

@@ -18,6 +18,7 @@ enum ProviderFailureReason: string
     case UnknownModel = 'unknown_model';
     case ImagesUnsupported = 'images_unsupported';
     case Unreachable = 'unreachable';
+    case NoProvider = 'no_provider';
 
     /**
      * Returns null for failures that cannot be recognised reliably.
@@ -71,6 +72,7 @@ enum ProviderFailureReason: string
             self::UnknownModel => __(':provider does not know the configured model.', ['provider' => $providerName]),
             self::ImagesUnsupported => __('The model configured for :provider cannot process photos.', ['provider' => $providerName]),
             self::Unreachable => __(':provider is not reachable.', ['provider' => $providerName]),
+            self::NoProvider => __('No AI for image recognition is set up. Set one up under “AI providers”.'),
         };
     }
 }

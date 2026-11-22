@@ -40,6 +40,11 @@ final class ProviderFailure extends RuntimeException
         );
     }
 
+    public static function noRecognitionProvider(): self
+    {
+        return new self('No active AI provider for image recognition.', ProviderFailureReason::NoProvider, '');
+    }
+
     public static function genericEmbeddingMessage(): string
     {
         return (string) __('The embedding failed. Please check the model and credentials.');

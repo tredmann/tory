@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Ai\Agents\InventoryExtractor;
 use App\Ai\PhotoAttachments;
 use App\Ai\ProviderFailure;
+use App\Enums\ProviderFailureReason;
 use App\Models\AiProvider;
 use App\Models\HouseholdSettings;
 use App\Models\Import;
@@ -35,12 +36,12 @@ class RegenerateTexts implements ShouldQueue
         $aiProvider = null;
 
         try {
+            $aiProvider = AiProvider::active() ?? throw ProviderFailure::noRecognitionProvider();
+
             /** @var list<string> $photos */
             $photos = $this->record->photos ?? [];
 
             $attachments = PhotoAttachments::fromStorage($photos);
-
-            $aiProvider = AiProvider::active();
 
             $result = InventoryExtractor::make(
                 aiProvider: $aiProvider,
@@ -51,7 +52,9 @@ class RegenerateTexts implements ShouldQueue
                 $e = ProviderFailure::from($e, $aiProvider);
             }
 
-            report($e);
+            if (! $e instanceof ProviderFailure || $e->reason !== ProviderFailureReason::NoProvider) {
+                report($e);
+            }
 
             throw $e;
         }
@@ -84,7 +87,7 @@ class RegenerateTexts implements ShouldQueue
             'regenerating_at' => null,
             'regeneration_error' => $exception?->getMessage() ?: 'Der Auftrag wurde abgebrochen.',
             'regeneration_failure_reason' => $exception instanceof ProviderFailure ? $exception->reason?->value : null,
-            'regeneration_failure_provider' => $exception instanceof ProviderFailure && $exception->reason !== null ? $exception->providerName : null,
+            'regeneration_failure_provider' => $exception instanceof ProviderFailure && $exception->reason !== null && $exception->reason !== ProviderFailureReason::NoProvider ? $exception->providerName : null,
         ]);
     }
 }

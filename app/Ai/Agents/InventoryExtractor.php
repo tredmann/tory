@@ -18,7 +18,7 @@ final class InventoryExtractor implements Agent, HasStructuredOutput
     use Promptable;
 
     public function __construct(
-        public ?AiProvider $aiProvider = null,
+        public AiProvider $aiProvider,
         public Language $language = Language::German,
     ) {}
 
@@ -86,20 +86,14 @@ final class InventoryExtractor implements Agent, HasStructuredOutput
         ];
     }
 
-    public function provider(): Provider|string
+    public function provider(): Provider
     {
-        if ($this->aiProvider !== null) {
-            return $this->aiProvider->toLaravelProvider();
-        }
-
-        return config('ai.inventory.provider') ?: 'anthropic';
+        return $this->aiProvider->toLaravelProvider();
     }
 
-    public function model(): ?string
+    public function model(): string
     {
-        return $this->aiProvider !== null
-            ? $this->aiProvider->model
-            : (config('ai.inventory.model') ?: null);
+        return $this->aiProvider->model;
     }
 
     public function timeout(): int

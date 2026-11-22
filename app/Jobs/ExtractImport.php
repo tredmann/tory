@@ -6,6 +6,7 @@ use App\Ai\Agents\InventoryExtractor;
 use App\Ai\PhotoAttachments;
 use App\Ai\ProviderFailure;
 use App\Enums\ImportStatus;
+use App\Enums\ProviderFailureReason;
 use App\Models\AiProvider;
 use App\Models\HouseholdSettings;
 use App\Models\Import;
@@ -33,12 +34,12 @@ class ExtractImport implements ShouldQueue
         try {
             $this->import->update(['status' => ImportStatus::Running]);
 
+            $aiProvider = AiProvider::active() ?? throw ProviderFailure::noRecognitionProvider();
+
             /** @var list<string> $photos */
             $photos = $this->import->photos;
 
             $attachments = PhotoAttachments::fromStorage($photos);
-
-            $aiProvider = AiProvider::active();
 
             $result = InventoryExtractor::make(
                 aiProvider: $aiProvider,
@@ -59,7 +60,9 @@ class ExtractImport implements ShouldQueue
                 $e = ProviderFailure::from($e, $aiProvider);
             }
 
-            report($e);
+            if (! $e instanceof ProviderFailure || $e->reason !== ProviderFailureReason::NoProvider) {
+                report($e);
+            }
 
             throw $e;
         }
@@ -74,7 +77,7 @@ class ExtractImport implements ShouldQueue
             'search_terms' => [],
             'error' => $exception?->getMessage() ?: 'Der Auftrag wurde abgebrochen.',
             'failure_reason' => $exception instanceof ProviderFailure ? $exception->reason : null,
-            'failure_provider' => $exception instanceof ProviderFailure && $exception->reason !== null ? $exception->providerName : null,
+            'failure_provider' => $exception instanceof ProviderFailure && $exception->reason !== null && $exception->reason !== ProviderFailureReason::NoProvider ? $exception->providerName : null,
         ]);
     }
 }

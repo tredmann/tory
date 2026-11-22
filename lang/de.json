@@ -16,6 +16,7 @@
     ":name passed the test.": ":name hat den Test bestanden.",
     ":provider does not know the configured model.": ":provider kennt das eingestellte Modell nicht.",
     ":provider is not reachable.": ":provider ist nicht erreichbar.",
+    "No AI for image recognition is set up. Set one up under “AI providers”.": "Keine KI für die Bilderkennung eingerichtet. Richte sie unter „Eigene KI“ ein.",
     ":provider rejected the API key.": ":provider hat den API-Key abgelehnt.",
     ":title is now on :spot (:code), :location.": ":title liegt jetzt auf :spot (:code), :location.",
     "AI provider": "Provider",
