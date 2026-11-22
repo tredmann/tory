@@ -34,9 +34,10 @@ test('it applies the given timeout', function (): void {
 });
 
 test('it rejects a vector of another length', function (): void {
+    activeSearchProvider();
     Embeddings::fake([[array_fill(0, 768, 0.1)]]);
 
-    expect(fn () => app(ItemEmbedder::class)->embed('x'))->toThrow(RuntimeException::class);
+    expect(fn () => app(ItemEmbedder::class)->embed('x'))->toThrow(ProviderFailure::class);
 });
 
 test('the text is title, blank line, description', function (): void {

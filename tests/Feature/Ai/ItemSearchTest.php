@@ -194,9 +194,11 @@ test('a failed query embedding is not cached', function (): void {
 
 test('without a search provider search matches keywords only and calls no AI', function (): void {
     AiProvider::query()->update(['is_active_for_search' => false]);
+    Exceptions::fake();
     Embeddings::fake()->preventStrayEmbeddings();
     $drill = itemWith(['title' => 'Bohrmaschine'], axis(1));
     itemWith(['title' => 'Akkuschrauber'], axis(1));
 
     expect(searchItems('Bohrmaschine')->pluck('id')->all())->toBe([$drill->id]);
+    Exceptions::assertNothingReported();
 });

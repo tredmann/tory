@@ -222,7 +222,9 @@ test('without a search provider the eval reports keyword hits only', function ()
     Embeddings::fake()->preventStrayEmbeddings();
     InventoryExtractor::fake([['title' => 'Hefter', 'description' => 'Mit Heftklammern.']]);
 
-    $hit = runEval([evalCase(searchWords: ['klammer'])])->results[0]->hits[0];
+    $result = runEval([evalCase(searchWords: ['klammer'])])->results[0];
 
-    expect($hit->keyword)->toBeTrue()->and($hit->semantic)->toBeFalse();
+    expect($result->hits[0]->keyword)->toBeTrue()
+        ->and($result->hits[0]->semantic)->toBeFalse()
+        ->and(implode(' ', $result->embeddingNotes))->toContain('No AI provider is active for search.');
 });

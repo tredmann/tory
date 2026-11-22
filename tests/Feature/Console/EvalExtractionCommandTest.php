@@ -192,3 +192,14 @@ test('an unknown language lists the available ones', function (): void {
 
     InventoryExtractor::assertNeverPrompted();
 });
+
+test('without a search provider the command fails before the probe', function (): void {
+    AiProvider::factory()->create(['name' => 'Ollama lokal']);
+    InventoryExtractor::fake();
+
+    $this->artisan('extraction:eval', ['--provider' => 'Ollama lokal'])
+        ->expectsOutputToContain('Keine KI für die Suche eingerichtet.')
+        ->assertFailed();
+
+    InventoryExtractor::assertNeverPrompted();
+});

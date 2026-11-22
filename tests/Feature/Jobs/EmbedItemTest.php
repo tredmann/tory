@@ -20,11 +20,13 @@ test('the job stores a 1024-dimension embedding', function (): void {
 });
 
 test('storing the embedding queues nothing', function (): void {
+    activeSearchProvider();
     Queue::fake();
     $item = Item::factory()->create();
 
     new EmbedItem($item)->handle(app(ItemEmbedder::class));
 
+    expect($item->fresh()->embedding)->toHaveCount(1024);
     Queue::assertPushed(EmbedItem::class, 1);
 });
 

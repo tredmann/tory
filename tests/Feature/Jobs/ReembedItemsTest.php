@@ -138,10 +138,12 @@ test('it dispatches itself with a cursor when the budget runs out', function ():
 });
 
 test('it does not dispatch itself when the run completes', function (): void {
+    activeSearchProvider();
     Item::factory()->count(2)->create();
 
     runReembed();
 
+    expect(Item::query()->whereNull('embedding')->count())->toBe(0);
     Queue::assertNotPushed(ReembedItems::class);
 });
 
