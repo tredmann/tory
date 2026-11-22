@@ -50,6 +50,10 @@ _Avoid_: Registrierungslink, Token
 The page a fresh installation shows while it has no user at all, on which the first visitor creates the first administrator. Once any user exists it is gone for good.
 _Avoid_: Registrierung, Installation
 
+**Onboarding** (Tory einrichten, English UI "Set up Tory"):
+The checklist an administrator sees on the overview until every step is done or it is dismissed.
+_Avoid_: Wizard, Setup (that is the first administrator setup)
+
 **Locked** (gesperrt):
 A user who can no longer log in or use any connection, but whose data stays. An administrator can unlock them again.
 _Avoid_: Deleted, deactivated, banned
