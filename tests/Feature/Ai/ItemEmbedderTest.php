@@ -1,6 +1,7 @@
 <?php
 
 use App\Ai\ItemEmbedder;
+use App\Ai\NoSearchProvider;
 use App\Ai\ProviderFailure;
 use App\Enums\AiVendor;
 use App\Models\AiProvider;
@@ -11,7 +12,7 @@ use Laravel\Ai\Prompts\EmbeddingsPrompt;
 use Pest\Expectation;
 
 test('it embeds text with the configured provider, model and dimension', function (): void {
-    config(['ai.inventory.embedding_provider' => 'ollama', 'ai.inventory.embedding_model' => 'bge-m3']);
+    AiProvider::factory()->activeForSearch()->create(['embedding_model' => 'bge-m3']);
     Embeddings::fake();
 
     $vector = app(ItemEmbedder::class)->embed('Raspberry Pi Gehäuse');
@@ -19,11 +20,12 @@ test('it embeds text with the configured provider, model and dimension', functio
     expect($vector)->toHaveCount(1024);
     Embeddings::assertGenerated(fn (EmbeddingsPrompt $prompt): bool => $prompt->contains('Raspberry Pi Gehäuse')
         && $prompt->dimensions === 1024
-        && $prompt->provider->name() === 'ollama'
+        && $prompt->provider->driver() === 'openai'
         && $prompt->model === 'bge-m3');
 });
 
 test('it applies the given timeout', function (): void {
+    activeSearchProvider();
     Embeddings::fake();
 
     app(ItemEmbedder::class)->embed('x', 12);
@@ -32,9 +34,10 @@ test('it applies the given timeout', function (): void {
 });
 
 test('it rejects a vector of another length', function (): void {
+    activeSearchProvider();
     Embeddings::fake([[array_fill(0, 768, 0.1)]]);
 
-    expect(fn () => app(ItemEmbedder::class)->embed('x'))->toThrow(RuntimeException::class);
+    expect(fn () => app(ItemEmbedder::class)->embed('x'))->toThrow(ProviderFailure::class);
 });
 
 test('the text is title, blank line, description', function (): void {
@@ -68,7 +71,7 @@ test('text for works with search terms and an empty description', function (): v
     expect(app(ItemEmbedder::class)->textFor($item))->toBe("T\n\nSuchbegriffe: A");
 });
 
-test('the active search provider is used instead of the env configuration', function (): void {
+test('the active search provider is used for embeddings', function (): void {
     AiProvider::factory()->activeForSearch()->create(['vendor' => AiVendor::OpenAi, 'embedding_model' => 'text-embedding-3-small']);
     Embeddings::fake();
 
@@ -107,4 +110,17 @@ test('a vector computed before a switch is not stored', function (): void {
 
     expect(app(ItemEmbedder::class)->embedAndStore($item))->toBeFalse()
         ->and($item->fresh()->embedding)->toBeNull();
+});
+
+test('without a search provider an item is not embedded', function (): void {
+    Queue::fake();
+    Embeddings::fake()->preventStrayEmbeddings();
+    $item = Item::factory()->create();
+
+    expect(app(ItemEmbedder::class)->embedAndStore($item))->toBeFalse()
+        ->and($item->fresh()->embedding)->toBeNull();
+});
+
+test('embedding text without a search provider throws NoSearchProvider', function (): void {
+    expect(fn () => app(ItemEmbedder::class)->embed('x'))->toThrow(NoSearchProvider::class);
 });

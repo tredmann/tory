@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
+    AiProvider::factory()->active()->create();
     Storage::fake('local');
     Storage::disk('local')->put('imports/a.jpg', base64_decode('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q=='));
     $this->makeRecord = fn (string $kind) => $kind === 'item'
@@ -95,6 +96,7 @@ test('keeps the old texts when a photo is missing', function (): void {
 test('stores the failure reason and provider for an active provider', function (): void {
     Exceptions::fake();
     Http::fake(['*' => Http::response([], 401)]);
+    AiProvider::query()->delete();
     AiProvider::factory()->active()->create(['name' => 'Claude schnell']);
     $import = ($this->makeRecord)('import');
     $job = new RegenerateTexts($import);
@@ -164,3 +166,19 @@ test('regenerates the texts in the household content language', function (): voi
 
     InventoryExtractor::assertPrompted(fn ($prompt): bool => $prompt->agent->language === Language::English);
 });
+
+test('without an active provider the old texts stay and the reason names the missing setup', function (string $kind): void {
+    AiProvider::query()->delete();
+    InventoryExtractor::fake()->preventStrayPrompts();
+    $record = ($this->makeRecord)($kind);
+    $job = new RegenerateTexts($record);
+
+    expect(fn () => $job->handle())->toThrow(ProviderFailure::class);
+    $job->failed(ProviderFailure::noRecognitionProvider());
+
+    expect($record->fresh())
+        ->title->toBe('Alt')
+        ->regenerating_at->toBeNull()
+        ->regeneration_failure_reason->toBe(ProviderFailureReason::NoProvider)
+        ->regeneration_failure_provider->toBeNull();
+})->with(['item', 'import']);

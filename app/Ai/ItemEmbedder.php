@@ -19,12 +19,11 @@ final class ItemEmbedder
      */
     public function embed(string $text, ?int $timeout = null, ?int $cacheSeconds = null): array
     {
-        return $this->embedFor(EmbeddingTarget::current(), $text, $timeout, $cacheSeconds);
+        return $this->embedFor(EmbeddingTarget::current() ?? throw new NoSearchProvider, $text, $timeout, $cacheSeconds);
     }
 
     /**
-     * With a configured provider every failure leaves as a ProviderFailure
-     * (scrubbed); on the `.env` path it stays as it is.
+     * Every failure leaves as a ProviderFailure (scrubbed).
      *
      * @return list<float>
      */
@@ -49,7 +48,7 @@ final class ItemEmbedder
 
             return array_values($vector);
         } catch (Throwable $e) {
-            throw $target->aiProvider === null ? $e : ProviderFailure::from($e, $target->aiProvider);
+            throw ProviderFailure::from($e, $target->aiProvider);
         }
     }
 
@@ -66,19 +65,24 @@ final class ItemEmbedder
      * and overwrites the row, while a switch committed before the lock is seen
      * by the target check.
      *
-     * @return bool whether the vector was stored
+     * @return bool whether the vector was stored; false without a search provider
      */
     public function embedAndStore(Item $item, ?int $timeout = null): bool
     {
         $text = $this->textFor($item);
         $target = EmbeddingTarget::current();
+
+        if ($target === null) {
+            return false;
+        }
+
         $vector = $this->embedFor($target, $text, $timeout);
 
         return DB::transaction(function () use ($item, $text, $vector, $target): bool {
             $current = Item::query()->whereKey($item->getKey())->lockForUpdate()->first();
 
             if ($current === null
-                || EmbeddingTarget::current()->identity() !== $target->identity()
+                || EmbeddingTarget::current()?->identity() !== $target->identity()
                 || $this->textFor($current) !== $text) {
                 return false;
             }

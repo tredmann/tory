@@ -29,8 +29,15 @@ final readonly class ItemSearch
             return;
         }
 
+        $target = EmbeddingTarget::current();
+
+        if ($target === null) {
+            $query->whereRaw($keyword['sql'], $keyword['bindings']);
+
+            return;
+        }
+
         try {
-            $target = EmbeddingTarget::current();
             $vector = $this->embedder->embedFor($target, $term, timeout: 3, cacheSeconds: self::QUERY_CACHE_SECONDS);
         } catch (Throwable $exception) {
             report($exception);

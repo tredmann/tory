@@ -77,25 +77,11 @@ docker compose exec app php artisan users:make-admin admin@example.com
 
 ## AI
 
-`laravel/ai` is installed with Anthropic as the default provider (`config/ai.php`). Set `ANTHROPIC_API_KEY` in `.env`. The `App\Ai\Agents\Assistant` agent exists but has no UI yet.
+`laravel/ai` is installed. AI is set up only in the panel, on **Eigene KI**; no AI key belongs in `.env`. The `App\Ai\Agents\Assistant` agent exists but has no UI yet.
 
 Photos are imported at `/imports/create` ("Erfassen"): the upload is queued and `App\Ai\Agents\InventoryExtractor` turns the photos into a title and description in the household's content language, which appear on the import's page once the job has finished, so the queue worker must be running. Which AI does the work is set on the panel page **Eigene KI** (`/ai-providers`): "Provider anlegen" with name, vendor (Ollama, Claude, OpenAI, Mistral), API key or Ollama address, and model; "Testen" sends a small test photo; "Aktivieren" makes it the one used from the next extraction on. API keys are stored encrypted with `APP_KEY` and never shown again (only the last four characters), so changing `APP_KEY` makes stored keys unreadable and they must be entered again. The active provider cannot be deleted. Only administrators can see this page and export the keys.
 
-Only while no provider is active does extraction fall back to `.env`; locally it then runs on Ollama with `gemma4:e4b-mlx`, reached from the container via `host.docker.internal`:
-
-```dotenv
-INVENTORY_AI_PROVIDER=ollama
-INVENTORY_AI_MODEL=gemma4:e4b-mlx
-OLLAMA_URL=http://host.docker.internal:11434
-```
-
-Semantic search embeds items and queries with a separate provider and model (defaults `ollama` and `bge-m3`, 1024 dimensions; run `ollama pull bge-m3` once). The minimum cosine similarity for a semantic match is tunable:
-
-```dotenv
-INVENTORY_EMBEDDING_PROVIDER=ollama
-INVENTORY_EMBEDDING_MODEL=bge-m3
-INVENTORY_SEARCH_MIN_SIMILARITY=0.5
-```
+There is no `.env` fallback: without an active provider, image recognition fails with a hint to set one up, and search runs on keywords only. For local development create an Ollama provider under **Eigene KI** with model `gemma4:e4b-mlx` and address `http://host.docker.internal:11434`, and a second one with `bge-m3` for search (1024 dimensions; run `ollama pull bge-m3` once).
 
 ## Everyday commands
 

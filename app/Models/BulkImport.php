@@ -253,7 +253,7 @@ class BulkImport extends Model
                 'groups' => $groups,
                 'grouping_incomplete' => $incomplete,
                 'failure_reason' => $failure?->reason,
-                'failure_provider' => $failure?->reason !== null ? $failure->providerName : null,
+                'failure_provider' => $failure?->reason !== null && $failure->reason !== ProviderFailureReason::NoProvider ? $failure->providerName : null,
                 'status' => BulkImportStatus::Ready,
             ]);
         });

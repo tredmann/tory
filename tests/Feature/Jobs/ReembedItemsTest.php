@@ -37,6 +37,7 @@ function rejectedKey(): RequestException
 }
 
 test('it embeds every item without an embedding and leaves others alone', function (): void {
+    activeSearchProvider();
     $missing = Item::factory()->create();
     $present = Item::factory()->create();
     storeVector($present);
@@ -55,6 +56,7 @@ test('it respects the queue timing invariant', function (): void {
 });
 
 test('it passes the client timeout to the provider', function (): void {
+    activeSearchProvider();
     Item::factory()->create();
     $timeouts = [];
     Embeddings::fake(function (EmbeddingsPrompt $prompt) use (&$timeouts): array {
@@ -120,6 +122,7 @@ test('it stores nothing for a provider that is no longer active for search', fun
 });
 
 test('it dispatches itself with a cursor when the budget runs out', function (): void {
+    activeSearchProvider();
     $first = Item::factory()->create();
     Item::factory()->count(2)->create();
     Embeddings::fake(function (): array {
@@ -135,14 +138,17 @@ test('it dispatches itself with a cursor when the budget runs out', function ():
 });
 
 test('it does not dispatch itself when the run completes', function (): void {
+    activeSearchProvider();
     Item::factory()->count(2)->create();
 
     runReembed();
 
+    expect(Item::query()->whereNull('embedding')->count())->toBe(0);
     Queue::assertNotPushed(ReembedItems::class);
 });
 
 test('an item that always fails does not loop', function (): void {
+    activeSearchProvider();
     $first = Item::factory()->create(['title' => 'Kaputt']);
     $second = Item::factory()->create(['title' => 'Heil']);
     $broken = 0;

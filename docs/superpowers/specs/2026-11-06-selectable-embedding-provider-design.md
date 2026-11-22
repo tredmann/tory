@@ -1,5 +1,7 @@
 # Selectable embedding provider — design
 
+> The `.env` fallback was removed by TOR-49, see 2026-11-22-onboarding-design.md.
+
 Date: 2026-11-06. Status: draft for approval. Builds on `2026-11-06-ai-provider-settings-design.md`, which listed embeddings as a non-goal.
 
 ## Intent

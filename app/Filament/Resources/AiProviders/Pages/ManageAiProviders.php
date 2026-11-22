@@ -119,9 +119,9 @@ class ManageAiProviders extends ManageRecords
     public function getSubheading(): string|Htmlable|null
     {
         return match ([AiProvider::active() === null, AiProvider::activeForSearch() === null]) {
-            [true, true] => (string) __('The server configuration (.env) currently applies.'),
-            [true, false] => (string) __('The server configuration (.env) applies to image recognition.'),
-            [false, true] => (string) __('The server configuration (.env) applies to search.'),
+            [true, true] => (string) __('No AI is active for image recognition and search yet.'),
+            [true, false] => (string) __('No AI is active for image recognition yet.'),
+            [false, true] => (string) __('No AI is active for search yet.'),
             default => null,
         };
     }

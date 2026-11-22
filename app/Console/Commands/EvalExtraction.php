@@ -55,6 +55,12 @@ class EvalExtraction extends Command
             return self::FAILURE;
         }
 
+        if (AiProvider::activeForSearch() === null) {
+            $this->error('Keine KI für die Suche eingerichtet.');
+
+            return self::FAILURE;
+        }
+
         try {
             $embedder->embed('test');
         } catch (Throwable $e) {

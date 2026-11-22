@@ -87,7 +87,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): HtmlString => new HtmlString(Blade::render("@vite(['resources/js/slideshow.js', 'resources/js/item-photos.js', 'resources/js/bulk-photos.js', 'resources/js/item-gallery.js', 'resources/css/item-grid.css', 'resources/css/tory-setup.css', 'resources/css/ai-providers.css'])")),
+                fn (): HtmlString => new HtmlString(Blade::render("@vite(['resources/js/slideshow.js', 'resources/js/item-photos.js', 'resources/js/bulk-photos.js', 'resources/js/item-gallery.js', 'resources/css/item-grid.css', 'resources/css/tory-setup.css', 'resources/css/ai-providers.css', 'resources/css/onboarding.css'])")),
             )
             ->colors([
                 'primary' => array_replace(Color::hex('#C42A18'), [

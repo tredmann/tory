@@ -8,6 +8,7 @@ use App\Enums\ProviderFailureReason;
 use App\Models\AiProvider;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -102,4 +103,14 @@ test('user message is the dimensions text, else the reason message', function ()
     expect($dimensions->userMessage())->toBe('Das Embedding-Modell von Claude liefert 768 statt 1024 Dimensionen.')
         ->and($plain->userMessage())->toBe('Claude hat den API-Key abgelehnt.')
         ->and(ProviderFailure::from(new RuntimeException('x'), $provider)->userMessage())->toBeNull();
+});
+
+test('a missing recognition provider is not reported, other provider failures are', function (): void {
+    Exceptions::fake();
+
+    report(ProviderFailure::noRecognitionProvider());
+    Exceptions::assertNothingReported();
+
+    report(new ProviderFailure('Rate limited.', ProviderFailureReason::KeyRejected, 'Cloud'));
+    Exceptions::assertReportedCount(1);
 });

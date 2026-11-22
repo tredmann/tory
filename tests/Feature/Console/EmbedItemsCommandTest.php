@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\ProviderFailure;
 use App\Console\Commands\EmbedItems;
 use App\Models\AiProvider;
 use App\Models\Item;
@@ -13,6 +14,7 @@ beforeEach(function (): void {
 });
 
 test('items:embed fills only missing embeddings', function (): void {
+    activeSearchProvider();
     $missing = Item::factory()->create();
     $present = Item::factory()->create();
     $present->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->saveQuietly();
@@ -24,6 +26,7 @@ test('items:embed fills only missing embeddings', function (): void {
 });
 
 test('items:embed --all re-embeds everything', function (): void {
+    activeSearchProvider();
     $present = Item::factory()->create();
     $present->forceFill(['embedding' => array_fill(0, 1024, 0.5)])->saveQuietly();
 
@@ -34,6 +37,7 @@ test('items:embed --all re-embeds everything', function (): void {
 });
 
 test('items:embed carries on after one item fails', function (): void {
+    activeSearchProvider();
     Exceptions::fake();
     Item::factory()->count(2)->create();
     $calls = 0;
@@ -44,10 +48,11 @@ test('items:embed carries on after one item fails', function (): void {
     $this->artisan('items:embed')->assertSuccessful();
 
     expect(Item::query()->whereNotNull('embedding')->count())->toBe(1);
-    Exceptions::assertReported(RuntimeException::class);
+    Exceptions::assertReported(ProviderFailure::class);
 });
 
 test('items:embed stops after three failures in a row', function (): void {
+    activeSearchProvider();
     Exceptions::fake();
     Item::factory()->count(5)->create();
     $calls = 0;
@@ -70,6 +75,7 @@ test('items:embed is scheduled hourly', function (): void {
 });
 
 test('items:embed covers a backlog larger than one page', function (): void {
+    activeSearchProvider();
     EmbedItems::$pageSize = 2;
     Item::factory()->count(5)->create();
 
@@ -92,4 +98,14 @@ test('items:embed with an active provider stores a failure too', function (): vo
 
     expect($provider->fresh()->searchFailureMessage())
         ->toBe('Das Embedding ist fehlgeschlagen. Bitte Modell und Zugangsdaten prüfen.');
+});
+
+test('items:embed without a search provider says so and succeeds', function (): void {
+    AiProvider::query()->update(['is_active_for_search' => false]);
+    Item::factory()->create();
+    Embeddings::fake()->preventStrayEmbeddings();
+
+    $this->artisan('items:embed')
+        ->expectsOutputToContain('Keine KI für die Suche eingerichtet')
+        ->assertSuccessful();
 });

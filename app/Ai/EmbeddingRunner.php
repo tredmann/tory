@@ -36,7 +36,12 @@ final readonly class EmbeddingRunner
         ?Closure $onFailure = null,
         ?int $clientTimeout = null,
     ): EmbeddingRunResult {
-        $provider = EmbeddingTarget::current()->aiProvider;
+        $provider = EmbeddingTarget::current()?->aiProvider;
+
+        if ($provider === null) {
+            return new EmbeddingRunResult(0, 0, false, null, noProvider: true);
+        }
+
         $startedAt = now()->getTimestamp();
         $embedded = 0;
         $failures = 0;
@@ -86,12 +91,10 @@ final readonly class EmbeddingRunner
                 return null;
             }, $pageSize);
 
-        if ($provider !== null) {
-            AiProvider::query()
-                ->whereKey($provider->getKey())
-                ->where('is_active_for_search', true)
-                ->update(AiProvider::searchFailureColumns($failures > 0, $lastFailure));
-        }
+        AiProvider::query()
+            ->whereKey($provider->getKey())
+            ->where('is_active_for_search', true)
+            ->update(AiProvider::searchFailureColumns($failures > 0, $lastFailure));
 
         return new EmbeddingRunResult($embedded, $failures, $stoppedEarly, $resumeAfterId);
     }

@@ -40,8 +40,15 @@ class GroupBulkImport implements ShouldQueue
             return;
         }
 
-        $startedAt = now();
         $aiProvider = AiProvider::active();
+
+        if ($aiProvider === null) {
+            $this->bulkImport->finishGrouping(true, ProviderFailure::noRecognitionProvider());
+
+            return;
+        }
+
+        $startedAt = now();
         $paths = array_column($this->bulkImport->photos, 'path');
 
         try {
@@ -77,9 +84,9 @@ class GroupBulkImport implements ShouldQueue
                 return;
             }
 
-            $failure = $aiProvider !== null ? ProviderFailure::from($e, $aiProvider) : null;
+            $failure = ProviderFailure::from($e, $aiProvider);
 
-            report($failure ?? $e);
+            report($failure);
 
             $this->bulkImport->finishGrouping(true, $failure);
 

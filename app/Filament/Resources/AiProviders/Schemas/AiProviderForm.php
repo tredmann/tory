@@ -103,6 +103,17 @@ class AiProviderForm
      * What a switch of the search provider means, for the activation dialog
      * and the confirmation checkbox of the edit dialog.
      */
+    public static function firstSearchNotice(string $newModel): string
+    {
+        $itemCount = Item::query()->count();
+        $items = $itemCount === 1 ? __('1 item is') : __(':count items are', ['count' => $itemCount]);
+
+        return __('The search starts with :new. :items calculated; semantic search stays incomplete until it is done. With a paid provider this causes costs.', [
+            'new' => $newModel,
+            'items' => $items,
+        ]);
+    }
+
     public static function switchNotice(string $oldModel, string $newModel): string
     {
         $itemCount = Item::query()->count();

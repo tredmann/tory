@@ -1,5 +1,7 @@
 <?php
 
+use App\Ai\ProviderFailure;
+use App\Enums\ProviderFailureReason;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\LogOutLockedUser;
 use App\Http\Middleware\SetLocale;
@@ -30,6 +32,10 @@ return Application::configure(basePath: dirname(__DIR__))
         );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // A missing recognition provider is a state to fix in the panel, not an error to log.
+        $exceptions->dontReportWhen(
+            fn (Throwable $e): bool => $e instanceof ProviderFailure && $e->reason === ProviderFailureReason::NoProvider,
+        );
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request): bool => $request->is('api/*') || $request->expectsJson(),
         );

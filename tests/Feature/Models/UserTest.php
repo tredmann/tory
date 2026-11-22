@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\HouseholdSettings;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -82,4 +83,10 @@ test('no first administrator is created once any user exists', function (): void
 
     expect(User::createFirstAdministrator('Anna', 'anna@example.com', 'ein-langes-passwort'))->toBeNull()
         ->and(User::query()->count())->toBe(1);
+});
+
+test('the first administrator setup does not confirm the content language', function (): void {
+    User::createFirstAdministrator('Anna', 'anna@example.com', 'ein-langes-passwort');
+
+    expect(HouseholdSettings::current()->content_language_confirmed_at)->toBeNull();
 });

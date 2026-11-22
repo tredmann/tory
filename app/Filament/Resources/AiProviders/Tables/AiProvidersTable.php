@@ -86,10 +86,9 @@ class AiProvidersTable
                         ->hidden(fn (AiProvider $record): bool => $record->is_active_for_search || blank($record->embedding_model))
                         ->requiresConfirmation()
                         ->modalHeading(__('Activate for search'))
-                        ->modalDescription(fn (AiProvider $record): string => AiProviderForm::switchNotice(
-                            AiProvider::activeForSearch()->embedding_model ?? config('ai.inventory.embedding_model').' (.env)',
-                            (string) $record->embedding_model,
-                        ))
+                        ->modalDescription(fn (AiProvider $record): string => ($current = AiProvider::activeForSearch()) === null
+                            ? AiProviderForm::firstSearchNotice((string) $record->embedding_model)
+                            : AiProviderForm::switchNotice((string) $current->embedding_model, (string) $record->embedding_model))
                         ->modalSubmitActionLabel(__('Activate and recalculate'))
                         ->mountUsing(function (Action $action, AiProvider $record, SearchProviderSwitch $switch): void {
                             $reason = $switch->probe($record, (string) $record->embedding_model);

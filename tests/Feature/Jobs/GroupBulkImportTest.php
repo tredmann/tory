@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
+    AiProvider::factory()->active()->create();
     Storage::fake('local');
     Queue::fake();
     Exceptions::fake();
@@ -140,6 +141,7 @@ test('each window sends at most eight photos', function (): void {
 });
 
 test('a provider failure keeps the decided cuts and records the reason', function (): void {
+    AiProvider::query()->delete();
     AiProvider::factory()->active()->create(['name' => 'Claude schnell']);
     $calls = 0;
     PhotoBoundaryChecker::fake(function () use (&$calls): array {
@@ -163,24 +165,6 @@ test('a provider failure keeps the decided cuts and records the reason', functio
         ->and($fresh->failure_provider)->toBe('Claude schnell')
         ->and(groupsOf($bulkImport))->toHaveCount(2);
     Exceptions::assertReported(ProviderFailure::class);
-});
-
-test('a failure without a provider marks the grouping incomplete', function (): void {
-    PhotoBoundaryChecker::fake(fn (): never => throw new RuntimeException('Connection refused'));
-    $bulkImport = bulkImportWith(3, [true, false]);
-
-    runGrouping($bulkImport);
-
-    $fresh = $bulkImport->fresh();
-    expect($fresh->status)->toBe(BulkImportStatus::Ready)
-        ->and($fresh->grouping_incomplete)->toBeTrue()
-        ->and($fresh->failure_reason)->toBeNull()
-        ->and($fresh->failure_provider)->toBeNull()
-        ->and(groupsOf($bulkImport))->toBe([
-            ['photos' => photoPaths(0), 'mark' => null],
-            ['photos' => photoPaths(1, 2), 'mark' => null],
-        ]);
-    Exceptions::assertReported(fn (RuntimeException $e): bool => $e->getMessage() === 'Connection refused');
 });
 
 test('the job resumes with a cursor when the budget runs out', function (): void {
@@ -256,4 +240,19 @@ test('a single photo becomes one group without calling the AI', function (): voi
         ->and($fresh->grouping_incomplete)->toBeFalse()
         ->and(groupsOf($bulkImport))->toBe([['photos' => photoPaths(0), 'mark' => null]]);
     Exceptions::assertNothingReported();
+});
+
+test('without an active provider grouping keeps the time cuts and names the reason', function (): void {
+    AiProvider::query()->delete();
+    PhotoBoundaryChecker::fake()->preventStrayPrompts();
+    $bulkImport = bulkImportWith(3, [false, true]);
+
+    runGrouping($bulkImport);
+
+    $fresh = $bulkImport->fresh();
+    expect($fresh->status)->toBe(BulkImportStatus::Ready)
+        ->and($fresh->grouping_incomplete)->toBeTrue()
+        ->and($fresh->failure_reason)->toBe(ProviderFailureReason::NoProvider)
+        ->and($fresh->failure_provider)->toBeNull()
+        ->and(groupsOf($bulkImport))->toHaveCount(2);
 });

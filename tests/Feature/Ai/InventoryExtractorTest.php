@@ -8,22 +8,8 @@ use App\Models\AiProvider;
 use Illuminate\JsonSchema\JsonSchemaTypeFactory;
 use Laravel\Ai\Files\Image;
 
-test('provider and model come from the inventory config', function (): void {
-    config(['ai.inventory.provider' => 'ollama', 'ai.inventory.model' => 'gemma4:e4b-mlx']);
-    $agent = new InventoryExtractor;
-
-    expect($agent->provider())->toBe('ollama')
-        ->and($agent->model())->toBe('gemma4:e4b-mlx');
-});
-
-test('the model falls back to the provider default when unset', function (): void {
-    config(['ai.inventory.model' => null]);
-
-    expect((new InventoryExtractor)->model())->toBeNull();
-});
-
 test('uses a 180 second timeout', function (): void {
-    expect((new InventoryExtractor)->timeout())->toBe(180);
+    expect(new InventoryExtractor(AiProvider::factory()->make())->timeout())->toBe(180);
 });
 
 test('returns a structured title and description for the attached images', function (): void {
@@ -31,7 +17,7 @@ test('returns a structured title and description for the attached images', funct
         ['title' => 'Raspberry Pi 4 Model B', 'description' => 'Grüne Platine mit vier USB-Anschlüssen.'],
     ]);
 
-    $response = InventoryExtractor::make()->prompt('Beschreibe das Objekt.', [
+    $response = InventoryExtractor::make(aiProvider: AiProvider::factory()->make())->prompt('Beschreibe das Objekt.', [
         Image::fromBase64(base64_encode('a'), 'image/png'),
         Image::fromBase64(base64_encode('b'), 'image/png'),
     ]);
@@ -45,7 +31,7 @@ test('returns a structured title and description for the attached images', funct
 });
 
 test('instructions ask for German texts with search terms and forbid inventing details', function (): void {
-    $instructions = (new InventoryExtractor)->instructions();
+    $instructions = new InventoryExtractor(AiProvider::factory()->make())->instructions();
 
     expect($instructions)
         ->toContain('Deutsch')
@@ -55,21 +41,9 @@ test('instructions ask for German texts with search terms and forbid inventing d
 });
 
 test('the schema requires search terms', function (): void {
-    $schema = (new InventoryExtractor)->schema(new JsonSchemaTypeFactory);
+    $schema = new InventoryExtractor(AiProvider::factory()->make())->schema(new JsonSchemaTypeFactory);
 
     expect($schema)->toHaveKeys(['title', 'description', 'search_terms']);
-});
-
-test('an empty model env value falls back to the provider default', function (): void {
-    config(['ai.inventory.model' => '']);
-
-    expect((new InventoryExtractor)->model())->toBeNull();
-});
-
-test('an empty provider env value falls back to anthropic', function (): void {
-    config(['ai.inventory.provider' => '']);
-
-    expect((new InventoryExtractor)->provider())->toBe('anthropic');
 });
 
 test('builds its provider from the given AI provider', function (): void {
@@ -97,7 +71,7 @@ test('an Ollama provider uses its stored address and needs no key', function ():
 test('extract rejects an incomplete answer', function (): void {
     InventoryExtractor::fake([['title' => 'Nur Titel', 'description' => ' ']]);
 
-    InventoryExtractor::make()->extract([]);
+    InventoryExtractor::make(aiProvider: AiProvider::factory()->make())->extract([]);
 })->throws(RuntimeException::class, 'Das Modell hat keine vollständige Antwort geliefert.');
 
 test('extract returns a DTO with cleaned search terms', function (): void {
@@ -106,7 +80,7 @@ test('extract returns a DTO with cleaned search terms', function (): void {
         'search_terms' => [' Hefter ', 'hefter', 'Tacker', '', 42],
     ]]);
 
-    $texts = InventoryExtractor::make()->extract([]);
+    $texts = InventoryExtractor::make(aiProvider: AiProvider::factory()->make())->extract([]);
 
     expect($texts)->toBeInstanceOf(ExtractedTexts::class)
         ->and($texts->title)->toBe('Hefter')
@@ -117,7 +91,7 @@ test('extract returns a DTO with cleaned search terms', function (): void {
 test('extract tolerates missing or unusable search terms', function (array $extra): void {
     InventoryExtractor::fake([['title' => 'Hefter', 'description' => 'Roter Hefter.', ...$extra]]);
 
-    expect(InventoryExtractor::make()->extract([])->searchTerms)->toBe([]);
+    expect(InventoryExtractor::make(aiProvider: AiProvider::factory()->make())->extract([])->searchTerms)->toBe([]);
 })->with([
     'missing key' => [[]],
     'string' => [['search_terms' => 'Hefter, Tacker']],
@@ -140,17 +114,17 @@ test('it keeps the German prompt', function (): void {
     Antworte nur mit dem reinen JSON-Objekt. Beginne direkt mit `{` und ende mit `}`, ohne vorangestelltes Wort wie "json", ohne Codeblock und ohne doppelte Klammern.
     TXT;
 
-    expect(new InventoryExtractor(language: Language::German)->instructions())
+    expect(new InventoryExtractor(AiProvider::factory()->make(), language: Language::German)->instructions())
         ->toBe($expected)
         ->toContain('Schreibe alles auf Deutsch.')
-        ->and((new InventoryExtractor)->instructions())->toBe($expected);
+        ->and(new InventoryExtractor(AiProvider::factory()->make())->instructions())->toBe($expected);
 });
 
 test('the German schema and prompt stay German', function (): void {
     InventoryExtractor::fake([['title' => 'Hefter', 'description' => 'Roter Hefter.']]);
-    $schema = (new InventoryExtractor)->schema(new JsonSchemaTypeFactory);
+    $schema = new InventoryExtractor(AiProvider::factory()->make())->schema(new JsonSchemaTypeFactory);
 
-    InventoryExtractor::make()->extract([]);
+    InventoryExtractor::make(aiProvider: AiProvider::factory()->make())->extract([]);
 
     expect($schema['title']->toArray()['description'])->toBe('Kurzer deutscher Titel des Objekts, wenige Worte.')
         ->and($schema['description']->toArray()['description'])->toBe('Deutsche, sachliche Beschreibung für die spätere Suche.')
@@ -160,10 +134,10 @@ test('the German schema and prompt stay German', function (): void {
 
 test('it writes English for English', function (): void {
     InventoryExtractor::fake([['title' => 'Stapler', 'description' => 'A red stapler.']]);
-    $agent = new InventoryExtractor(language: Language::English);
+    $agent = new InventoryExtractor(AiProvider::factory()->make(), language: Language::English);
     $schema = $agent->schema(new JsonSchemaTypeFactory);
 
-    InventoryExtractor::make(language: Language::English)->extract([]);
+    InventoryExtractor::make(aiProvider: AiProvider::factory()->make(), language: Language::English)->extract([]);
 
     expect($agent->instructions())
         ->toContain('Write everything in English.')

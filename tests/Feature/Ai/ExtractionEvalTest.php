@@ -36,6 +36,10 @@ function runEval(array $cases, ?AiProvider $provider = null): EvalRun
     return app(ExtractionEval::class)->run($provider ?? AiProvider::factory()->create(), $cases, Language::German);
 }
 
+beforeEach(function (): void {
+    AiProvider::factory()->activeForSearch()->create();
+});
+
 test('keyword hit is a case-insensitive substring in title, description or terms', function (): void {
     fakeVectors(['klammer' => axis(5), 'rode' => axis(6)]);
     InventoryExtractor::fake([
@@ -58,7 +62,7 @@ test('a word that appears nowhere is no keyword hit', function (): void {
 });
 
 test('semantic hit uses the configured threshold', function (): void {
-    config(['ai.inventory.search_min_similarity' => 0.6]);
+    AiProvider::query()->update(['search_min_similarity' => 0.6]);
     fakeVectors(['nah' => [3.0, 4.0, ...array_fill(0, 1022, 0.0)], 'fern' => [1.0, 2.0, ...array_fill(0, 1022, 0.0)]]);
     InventoryExtractor::fake([['title' => 'Etwas', 'description' => 'Anderes.']]);
 
@@ -70,8 +74,7 @@ test('semantic hit uses the configured threshold', function (): void {
 });
 
 test('semantic hit uses the threshold of the active search provider', function (): void {
-    config(['ai.inventory.search_min_similarity' => 0.1]);
-    AiProvider::factory()->activeForSearch()->create(['search_min_similarity' => 0.9]);
+    AiProvider::query()->update(['search_min_similarity' => 0.9]);
     fakeVectors(['nah' => [3.0, 4.0, ...array_fill(0, 1022, 0.0)]]);
     InventoryExtractor::fake([['title' => 'Etwas', 'description' => 'Anderes.']]);
 
@@ -212,4 +215,16 @@ test('the photo is sent with the mime type of its file', function (): void {
     runEval([evalCase()]);
 
     InventoryExtractor::assertPrompted(fn ($prompt): bool => $prompt->attachments->first()->mimeType() === 'image/png');
+});
+
+test('without a search provider the eval reports keyword hits only', function (): void {
+    AiProvider::query()->update(['is_active_for_search' => false]);
+    Embeddings::fake()->preventStrayEmbeddings();
+    InventoryExtractor::fake([['title' => 'Hefter', 'description' => 'Mit Heftklammern.']]);
+
+    $result = runEval([evalCase(searchWords: ['klammer'])])->results[0];
+
+    expect($result->hits[0]->keyword)->toBeTrue()
+        ->and($result->hits[0]->semantic)->toBeFalse()
+        ->and(implode(' ', $result->embeddingNotes))->toContain('No AI provider is active for search.');
 });
