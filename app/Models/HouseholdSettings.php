@@ -11,6 +11,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property string $id
  * @property Language $content_language
+ * @property Carbon|null $content_language_confirmed_at
+ * @property Carbon|null $onboarding_finished_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -23,6 +25,8 @@ class HouseholdSettings extends Model
     {
         return [
             'content_language' => Language::class,
+            'content_language_confirmed_at' => 'datetime',
+            'onboarding_finished_at' => 'datetime',
         ];
     }
 
@@ -34,5 +38,19 @@ class HouseholdSettings extends Model
     public function changeContentLanguage(Language $language): void
     {
         $this->forceFill(['content_language' => $language])->save();
+    }
+
+    public function confirmContentLanguage(): void
+    {
+        if ($this->content_language_confirmed_at === null) {
+            $this->forceFill(['content_language_confirmed_at' => now()])->save();
+        }
+    }
+
+    public function finishOnboarding(): void
+    {
+        if ($this->onboarding_finished_at === null) {
+            $this->forceFill(['onboarding_finished_at' => now()])->save();
+        }
     }
 }

@@ -93,7 +93,9 @@ class HouseholdSettingsPage extends Page
     {
         $data = $this->form->getState();
 
-        HouseholdSettings::current()->changeContentLanguage(Language::from($data['content_language']));
+        $settings = HouseholdSettings::current();
+        $settings->changeContentLanguage(Language::from($data['content_language']));
+        $settings->confirmContentLanguage();
 
         Notification::make()->title(__('Saved'))->success()->send();
     }

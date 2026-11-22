@@ -56,3 +56,11 @@ test('saving changes the content language and leaves items and the queue alone',
     $item->refresh();
     expect($item->title)->toBe('Gartenschlauch')->and($item->description)->toBe('Grün.')->and($item->search_terms)->toBe(['Schlauch']);
 });
+
+test('saving the household page confirms the content language', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+
+    Livewire::test(HouseholdSettingsPage::class)->call('save');
+
+    expect(HouseholdSettings::current()->content_language_confirmed_at)->not->toBeNull();
+});
