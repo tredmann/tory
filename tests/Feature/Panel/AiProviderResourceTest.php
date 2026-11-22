@@ -220,14 +220,6 @@ test('an unreadable key shows a warning and the page and edit form still work', 
     expect($provider->refresh()->api_key)->toBe('sk-neu-9999');
 });
 
-test('the subheading names the env fallback only without an active provider', function (): void {
-    Livewire::test(ManageAiProviders::class)->assertSee('Serverkonfiguration (.env)');
-
-    AiProvider::factory()->active()->create();
-
-    Livewire::test(ManageAiProviders::class)->assertDontSee('Aktuell gilt die Serverkonfiguration (.env).');
-});
-
 test('export downloads a file with the key and warns about the plain text', function (): void {
     $provider = AiProvider::factory()->create(['api_key' => 'sk-secret-3fa9']);
 
@@ -830,25 +822,30 @@ test('the page polls only while the provider active for search has items to embe
     expect($pollingInterval())->toBeNull();
 });
 
-test('the subheading names the env fallback per role', function (): void {
+test('the subheading names the roles without a provider', function (): void {
     Livewire::test(ManageAiProviders::class)
-        ->assertSee('Aktuell gilt die Serverkonfiguration (.env).');
+        ->assertSee('Noch keine KI für die Bilderkennung und die Suche aktiv.')
+        ->assertDontSee('.env');
 
     $recognition = AiProvider::factory()->active()->create();
 
     Livewire::test(ManageAiProviders::class)
-        ->assertSee('Für die Suche gilt die Serverkonfiguration (.env).')
-        ->assertDontSee('Für die Bilderkennung gilt');
+        ->assertSee('Noch keine KI für die Suche aktiv.')
+        ->assertDontSee('Noch keine KI für die Bilderkennung')
+        ->assertDontSee('.env');
 
     AiProvider::factory()->activeForSearch()->create();
 
-    Livewire::test(ManageAiProviders::class)->assertDontSee('Serverkonfiguration (.env)');
+    Livewire::test(ManageAiProviders::class)
+        ->assertDontSee('Noch keine KI')
+        ->assertDontSee('.env');
 
     $recognition->forceFill(['is_active' => false])->save();
 
     Livewire::test(ManageAiProviders::class)
-        ->assertSee('Für die Bilderkennung gilt die Serverkonfiguration (.env).')
-        ->assertDontSee('Für die Suche gilt');
+        ->assertSee('Noch keine KI für die Bilderkennung aktiv.')
+        ->assertDontSee('und die Suche')
+        ->assertDontSee('.env');
 });
 
 test('an English user sees the provider page in English', function (): void {
@@ -859,9 +856,10 @@ test('an English user sees the provider page in English', function (): void {
 
     Livewire::test(ManageAiProviders::class)
         ->assertSee('AI providers')
-        ->assertSee('The server configuration (.env) currently applies.')
+        ->assertSee('No AI is active for image recognition and search yet.')
+        ->assertDontSee('.env')
         ->assertDontSee('Eigene KI')
-        ->assertDontSee('Aktuell gilt die Serverkonfiguration');
+        ->assertDontSee('Noch keine KI');
 });
 
 test('an English user sees the stored search failure in English', function (): void {
