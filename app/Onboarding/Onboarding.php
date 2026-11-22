@@ -30,7 +30,7 @@ final readonly class Onboarding
                 done: $settings->content_language_confirmed_at !== null,
                 url: HouseholdSettingsPage::getUrl(),
                 result: $settings->content_language->getLabel(),
-                explanation: __('The content language decides in which language Tory writes titles, descriptions and search terms for new items. It was taken from your browser; check that it fits.'),
+                explanation: __('The AI writes titles, descriptions and search terms for new items in this language. You can change it on “Household”.'),
                 actionLabel: __('Looks right'),
             ),
             new OnboardingStep(

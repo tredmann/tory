@@ -45,8 +45,8 @@ class OnboardingWidget extends Widget implements HasActions, HasSchemas
             ->color('gray')
             ->authorize(fn (): bool => self::user()?->isAdmin() ?? false)
             ->requiresConfirmation()
-            ->modalHeading(__('Hide the setup?'))
-            ->modalDescription(__('The setup disappears for every administrator and does not come back.'))
+            ->modalHeading(__('Hide “Set up Tory”?'))
+            ->modalDescription(__('The box disappears for all administrators and cannot be brought back.'))
             ->modalSubmitActionLabel(__('Hide'))
             ->action(fn () => HouseholdSettings::current()->finishOnboarding());
     }

@@ -486,13 +486,13 @@ test('the activation dialog names both models and the number of items', function
         ->assertMountedActionModalSee(['altes-modell', 'neues-modell', '2 Gegenstände', 'unvollständig', 'Kosten']);
 });
 
-test('the activation dialog shows none as the current model when no provider is active for search', function (): void {
+test('the activation dialog words the first activation without a current model', function (): void {
     Embeddings::fake();
     $new = AiProvider::factory()->embedding('neues-modell')->create();
 
     Livewire::test(ManageAiProviders::class)
         ->mountAction(TestAction::make('activateForSearch')->table($new))
-        ->assertMountedActionModalSee(['keins', 'neues-modell'])
+        ->assertMountedActionModalSee(['Die Suche startet mit neues-modell'])->assertMountedActionModalDontSee('keins')
         ->assertMountedActionModalDontSee('.env');
 });
 

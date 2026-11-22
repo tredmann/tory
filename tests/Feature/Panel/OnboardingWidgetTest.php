@@ -73,7 +73,7 @@ test('Ausblenden asks first and hides the onboarding for every administrator', f
     Livewire::test(OnboardingWidget::class)
         ->mountAction('dismiss')
         ->assertActionMounted('dismiss')
-        ->assertMountedActionModalSee('Einrichtung ausblenden?')
+        ->assertMountedActionModalSee(['Tory einrichten', 'ausblenden?'])
         ->callMountedAction();
 
     expect(HouseholdSettings::current()->onboarding_finished_at)->not->toBeNull();

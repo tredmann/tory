@@ -71,7 +71,7 @@ test('text for works with search terms and an empty description', function (): v
     expect(app(ItemEmbedder::class)->textFor($item))->toBe("T\n\nSuchbegriffe: A");
 });
 
-test('the active search provider is used instead of the env configuration', function (): void {
+test('the active search provider is used for embeddings', function (): void {
     AiProvider::factory()->activeForSearch()->create(['vendor' => AiVendor::OpenAi, 'embedding_model' => 'text-embedding-3-small']);
     Embeddings::fake();
 

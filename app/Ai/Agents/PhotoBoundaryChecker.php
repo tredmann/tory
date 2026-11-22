@@ -51,7 +51,7 @@ final class PhotoBoundaryChecker implements Agent, HasStructuredOutput
         return $this->aiProvider->toLaravelProvider();
     }
 
-    public function model(): string
+    public function model(): ?string
     {
         return $this->aiProvider->model;
     }

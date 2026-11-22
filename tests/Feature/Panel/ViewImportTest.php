@@ -2,6 +2,7 @@
 
 use App\Ai\Agents\InventoryExtractor;
 use App\Enums\ImportStatus;
+use App\Enums\Language;
 use App\Enums\ProviderFailureReason;
 use App\Filament\Resources\AiProviders\AiProviderResource;
 use App\Filament\Resources\Imports\ImportResource;
@@ -317,6 +318,15 @@ test('a fixable failure names the provider and links to the settings with debug 
         ->assertSeeHtml(AiProviderResource::getUrl('index'))
         ->assertDontSee('Connection refused')
         ->assertDontSee('Die Analyse ist fehlgeschlagen');
+});
+
+test('the missing provider failure reads in English for an English interface', function (): void {
+    $this->actingAs(User::factory()->admin()->create(['locale' => Language::English]));
+    app()->setLocale('en');
+    $import = Import::factory()->failed()->providerFailure(ProviderFailureReason::NoProvider, '')->create();
+
+    Livewire::test(ViewImport::class, ['record' => $import->getRouteKey()])
+        ->assertSee('No AI for image recognition is set up. Set one up under “AI providers”.');
 });
 
 test('a member sees the failure without the provider link', function (): void {

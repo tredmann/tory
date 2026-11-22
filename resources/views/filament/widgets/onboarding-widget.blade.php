@@ -17,6 +17,9 @@
                             @php($isOpen = $step->key === $openKey)
                             <li @class(['tory-onboarding-step', 'tory-onboarding-step-done' => $step->done, 'tory-onboarding-step-open' => $isOpen])>
                                 <span class="tory-onboarding-dot" aria-hidden="true">{{ $step->done ? '✓' : $loop->iteration }}</span>
+                                @if ($step->done)
+                                    <span class="tory-visually-hidden">{{ __('Completed') }}</span>
+                                @endif
                                 <div class="tory-onboarding-text">
                                     <p>
                                         <a href="{{ $step->url }}" class="tory-onboarding-title">{{ $step->title }}</a>
