@@ -40,7 +40,7 @@ final readonly class Onboarding
                 url: AiProviderResource::getUrl(),
                 result: $recognition?->name,
                 explanation: __('This AI writes the title, description and search terms from your photos.'),
-                actionLabel: __('Open own AI'),
+                actionLabel: __('Open AI providers'),
             ),
             new OnboardingStep(
                 key: 'search',
@@ -49,7 +49,7 @@ final readonly class Onboarding
                 url: AiProviderResource::getUrl(),
                 result: $search?->name,
                 explanation: __('This AI lets search find things by meaning: "drill" also finds "cordless screwdriver". Claude cannot do this, so with Claude for image recognition, search needs OpenAI, Mistral or Ollama.'),
-                actionLabel: __('Open own AI'),
+                actionLabel: __('Open AI providers'),
             ),
             new OnboardingStep(
                 key: 'spot',
