@@ -7,9 +7,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f9fafb" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)">
     <title>{{ __('Allow access?') }} - {{ config('app.name') }}</title>
     <style>
         :root {
+            color-scheme: light dark;
             --background: #f9fafb;
             --card: #ffffff;
             --border: #e5e7eb;
@@ -18,6 +21,7 @@
             --primary: #f59e0b;
             --primary-hover: #d97706;
             --primary-text: #ffffff;
+            --hover: #f3f4f6;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -30,6 +34,7 @@
                 --primary: #fbbf24;
                 --primary-hover: #f59e0b;
                 --primary-text: #18181b;
+                --hover: #27272a;
             }
         }
 
@@ -76,6 +81,7 @@
             color: var(--text);
         }
 
+        button:hover { background: var(--hover); }
         button.primary { border-color: var(--primary); background: var(--primary); color: var(--primary-text); }
         button.primary:hover { background: var(--primary-hover); }
     </style>
