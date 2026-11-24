@@ -117,7 +117,7 @@
     "Imports": "Importe",
     "In Claude Code": "In Claude Code",
     "In Claude Desktop": "In Claude Desktop",
-    "In claude.ai, open Settings, then Connectors, and add a custom connector. Enter “Tory” as the name, paste the address from above, sign in to Tory and click “Allow”.": "Öffne in claude.ai die Einstellungen, dann Connectors, und füge einen eigenen Connector hinzu. Tippe als Name „Tory\" ein und füge die Adresse von oben ein, melde dich bei Tory an und klicke auf „Erlauben\".",
+    "In claude.ai, open Settings, then Connectors, and add a custom connector. Enter “Tory” as the name, paste the address from above, sign in to Tory and click “Allow”.": "Öffne in claude.ai die Einstellungen, dann Connectors, und füge einen eigenen Connector hinzu. Tippe als Name „Tory“ ein und füge die Adresse von oben ein, melde dich bei Tory an und klicke auf „Erlauben“.",
     "In the browser (claude.ai)": "Im Browser (claude.ai)",
     "In the mobile app": "In der Handy-App",
     "Invalid photo path.": "Ungültiger Foto-Pfad.",
@@ -167,7 +167,7 @@
     "Photo :number": "Foto :number",
     "Photograph something and Tory suggests title, description and search terms. You only choose the spot.": "Fotografiere etwas, Tory schlägt Titel, Beschreibung und Suchbegriffe vor. Du wählst nur den Lagerplatz.",
     "Photos": "Fotos",
-    "Photos and new items go through “Add item”.": "Fotos und neue Gegenstände gehen über „Erfassen\".",
+    "Photos and new items go through “Add item”.": "Fotos und neue Gegenstände gehen über „Erfassen“.",
     "Please confirm your email address first.": "Bitte bestätige zuerst deine E-Mail-Adresse.",
     "Provider activated": "Provider aktiviert",
     "Providers": "Provider",
@@ -273,9 +273,9 @@
     "large": "gross",
     "medium": "mittel",
     "small": "klein",
-    "“:client” (:host) wants to access your Tory.": "„:client\" (:host) möchte auf dein Tory zugreifen.",
-    "“:client” wants to access your Tory.": "„:client\" möchte auf dein Tory zugreifen.",
-    "“Create a new spot ‘Shelf 4’ in the basement.”": "„Leg im Keller einen neuen Lagerplatz ‚Regal 4' an.\"",
-    "“I put the cordless screwdriver in the toolbox.”": "„Ich habe den Akkuschrauber in die Kiste Werkzeug gelegt.\"",
-    "“Where is the drill?”": "„Wo ist die Bohrmaschine?\""
+    "“:client” (:host) wants to access your Tory.": "„:client“ (:host) möchte auf dein Tory zugreifen.",
+    "“:client” wants to access your Tory.": "„:client“ möchte auf dein Tory zugreifen.",
+    "“Create a new spot ‘Shelf 4’ in the basement.”": "„Leg im Keller einen neuen Lagerplatz ‚Regal 4‘ an.“",
+    "“I put the cordless screwdriver in the toolbox.”": "„Ich habe den Akkuschrauber in die Kiste Werkzeug gelegt.“",
+    "“Where is the drill?”": "„Wo ist die Bohrmaschine?“"
 }
