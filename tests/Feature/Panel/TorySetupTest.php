@@ -64,7 +64,7 @@ test('trennen disconnects', function (): void {
 test('the page lists what claude cannot do in its own section', function (): void {
     Livewire::test(TorySetup::class)
         ->assertSee('Was Claude nicht kann')
-        ->assertSee('Fotos und neue Gegenstände gehen über „Erfassen".')
+        ->assertSee('Fotos und neue Gegenstände gehen über „Erfassen“.')
         ->assertSee('Tippe als Name')
         ->assertSee('tippe /mcp, wähle „tory“ und melde dich bei Tory an.', escape: false);
 });

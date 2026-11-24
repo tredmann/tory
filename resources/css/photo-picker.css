@@ -115,6 +115,12 @@
     animation: tory-photo-spin 0.8s linear infinite;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .tory-photo-spinner {
+        animation-duration: 3s;
+    }
+}
+
 @keyframes tory-photo-spin {
     to {
         transform: rotate(360deg);

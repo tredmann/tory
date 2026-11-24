@@ -244,6 +244,7 @@ test('the photos field renders real buttons and the add tile', function (): void
         ->assertSee('Foto hinzufügen')
         ->assertSee('Foto entfernen')
         ->assertSee('Hochladen abbrechen')
+        ->assertSee('Foto ${index + 1} wiederherstellen')
         ->assertSeeHtml('toryPhotoUploads');
 });
 

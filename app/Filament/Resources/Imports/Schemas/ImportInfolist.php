@@ -28,7 +28,7 @@ class ImportInfolist
                             ->state(fn (Import $record): array => PhotoLinks::thumbnails($record->photos ?? []))
                             ->imageHeight(160)
                             ->wrap()
-                            ->extraImgAttributes(fn (Import $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),
+                            ->extraImgAttributes(fn (Import $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state, focusable: true)),
                         TextEntry::make('spot.full_label')
                             ->label(__('Spot'))
                             ->placeholder('—'),

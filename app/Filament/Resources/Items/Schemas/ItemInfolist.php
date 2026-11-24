@@ -29,7 +29,7 @@ class ItemInfolist
                                 ->state(fn (Item $record): array => PhotoLinks::thumbnails($record->photos ?? []))
                                 ->imageHeight(160)
                                 ->wrap()
-                                ->extraImgAttributes(fn (Item $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state)),
+                                ->extraImgAttributes(fn (Item $record, string $state): array => PhotoSlideshow::imgAttributes($record->photos, $state, focusable: true)),
                         ]),
                         Grid::make(['default' => 1, 'lg' => 3])
                             ->extraAttributes(['class' => 'tory-item-boxes'])

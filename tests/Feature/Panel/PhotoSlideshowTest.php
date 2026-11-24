@@ -117,6 +117,28 @@ test('each view page thumbnail starts at its own photo', function (string $surfa
     expect($images[2]['urls'][0])->toEndWith('/photos/imports/a.jpg');
 })->with('view pages');
 
+test('a view page photo opens the slideshow by keyboard', function (string $surface): void {
+    $photos = ['imports/a.jpg', 'imports/b.jpg'];
+    storePhotos($photos);
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.photoSurface($surface, $photos)->html());
+    $images = new DOMXPath($document)->query('//img[@data-slideshow]');
+
+    expect($images)->toHaveCount(2);
+    expect($images->item(1)->getAttribute('role'))->toBe('button');
+    expect($images->item(1)->getAttribute('tabindex'))->toBe('0');
+    expect($images->item(1)->getAttribute('aria-label'))->toBe('Foto 2 von 2 groß anzeigen');
+})->with('view pages');
+
+test('a list photo stays out of the tab order, as its row links to the detail page', function (string $surface): void {
+    storePhotos(['imports/a.jpg']);
+
+    photoSurface($surface, ['imports/a.jpg'])
+        ->assertDontSeeHtml('tabindex="0"')
+        ->assertDontSeeHtml('role="button"');
+})->with('lists');
+
 test('a photo whose file is missing is left out and the positions match the rest', function (): void {
     $photos = ['imports/missing.jpg', 'imports/b.jpg', 'imports/c.jpg'];
     storePhotos(['imports/b.jpg', 'imports/c.jpg']);

@@ -78,7 +78,8 @@ test('a ready bulk import shows its cards with counts and marks', function (): v
     Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
         ->assertSee('Bulkimport')
         ->assertSee($spot->label)
-        ->assertSeeInOrder(['Gruppe 1 · 3 Fotos', 'KI: zusammengelegt', 'Mit nächster zusammenlegen ↓', 'Gruppe 2 · 2 Fotos'])
+        ->assertSeeInOrder(['Gruppe 1 · 3 Fotos', 'KI: zusammengelegt', 'Mit nächster zusammenlegen', 'Gruppe 2 · 2 Fotos'])
+        ->assertSeeHtml('<span aria-hidden="true">↓</span>')
         ->assertSeeHtml('wire:sort:group="bulk-photos"')
         ->assertSeeHtml('wire:sort:item="'.$bulkImport->groups[0]['photos'][0].'"')
         ->assertSeeHtml('wire:sort:group-id="'.$bulkImport->groups[1]['id'].'"')
@@ -110,6 +111,7 @@ test('the last card offers no merge and discarded photos do not count', function
     Livewire::test(ViewBulkImport::class, ['record' => $bulkImport->getRouteKey()])
         ->assertSee('Gruppe 1 · 1 Foto')
         ->assertSee('rückgängig')
+        ->assertSeeHtml('aria-label="Foto 2 wiederherstellen"')
         ->assertDontSee('Mit nächster zusammenlegen')
         ->assertActionHasLabel('confirm', '1 Import anlegen');
 });

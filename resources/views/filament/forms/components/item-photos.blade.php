@@ -69,6 +69,7 @@
                     x-show="tile.marked"
                     type="button"
                     class="tory-photo-undo"
+                    x-bind:aria-label="`{{ __('Restore photo :number', ['number' => '${index + 1}']) }}`"
                     x-on:click="undo(tile); $nextTick(() => $el.parentElement.querySelector('.tory-photo-remove').focus())"
                 >{{ __('Undo') }}</button>
 

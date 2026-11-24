@@ -13,7 +13,10 @@ document.addEventListener('pointermove', (event) => {
     const count = gallery.querySelectorAll('img').length;
     const index = Math.min(count - 1, Math.floor(((event.clientX - box.left) / box.width) * count));
 
-    gallery.scrollLeft = index * gallery.clientWidth;
+    // Every pointermove lands here, so the scroll position is only written when the photo changes.
+    if (String(index) !== gallery.dataset.active) {
+        gallery.scrollLeft = index * gallery.clientWidth;
+    }
 });
 
 document.addEventListener('pointerout', (event) => {

@@ -8,7 +8,7 @@
     @if ($bulkImport->status === BulkImportStatus::Grouping)
         <div wire:poll.5s class="tory-review-waiting" role="status">
             <x-filament::loading-indicator class="tory-review-waiting-indicator" />
-            {{ __('Grouping …') }}
+            {{ __('Grouping…') }}
         </div>
     @else
         @if ($bulkImport->failure_reason !== null)
@@ -51,7 +51,7 @@
                                 type="button"
                                 class="tory-review-merge"
                                 wire:click="mergeWithNext(@js($groupId), @js($cards[$index + 1]->group->id))"
-                            >{{ __('Merge with next') }} ↓</button>
+                            >{{ __('Merge with next') }} <span aria-hidden="true">↓</span></button>
                         @endif
                     </header>
 
@@ -90,6 +90,7 @@
                                         class="tory-review-restore"
                                         wire:sort:ignore
                                         wire:click="restore(@js($photo->path))"
+                                        aria-label="{{ __('Restore photo :number', ['number' => $position + 1]) }}"
                                     >{{ __('Undo') }}</button>
                                 @else
                                     <button
